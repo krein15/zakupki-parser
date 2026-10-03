@@ -1,0 +1,267 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<ns7:epNotificationEOK2020 xmlns="http://zakupki.gov.ru/oos/EPtypes/1" xmlns:ns6="http://zakupki.gov.ru/oos/types/1" xmlns:ns5="http://zakupki.gov.ru/oos/KOTypes/1" xmlns:ns7="http://zakupki.gov.ru/oos/printform/1" xmlns:ns2="http://zakupki.gov.ru/oos/base/1" xmlns:ns4="http://zakupki.gov.ru/oos/CPtypes/1" xmlns:ns3="http://zakupki.gov.ru/oos/common/1" schemeVersion="16.2">
+    <id>44143646</id>
+    <versionNumber>1</versionNumber>
+    <commonInfo>
+        <purchaseNumber>1200700110126000001</purchaseNumber>
+        <docNumber>№1200700110126000001</docNumber>
+        <plannedPublishDate>2026-09-30+05:00</plannedPublishDate>
+        <publishDTInEIS>2026-09-30T15:37:51.451+05:00</publishDTInEIS>
+        <href>https://zakupki.gov.ru/epz/order/notice/ok20/view/common-info.html?regNumber=1200700110126000001</href>
+        <placingWay>
+            <ns2:code>OKA20</ns2:code>
+            <ns2:name>Открытый конкурс в электронной форме для заключения договора на проведение аудита бухгалтерской (финансовой) отчетности (согласно ч. 4 ст. 5 Федерального закона от 30.12.2008г. № 307-ФЗ)</ns2:name>
+        </placingWay>
+        <ETP>
+            <ns2:code>ETP_EETP</ns2:code>
+            <ns2:name>РОСЭЛТОРГ (АО«ЕЭТП»)</ns2:name>
+            <ns2:url>http://roseltorg.ru</ns2:url>
+        </ETP>
+        <contractConclusionOnSt83Ch2>true</contractConclusionOnSt83Ch2>
+        <purchaseObjectInfo>Оказание услуг по проведению обязательного ежегодного аудита бухгалтерской (финансовой) отчетности  ООО «Ипотека Строительство Управление» за 2026, 2027, 2028 отчетные годы  </purchaseObjectInfo>
+    </commonInfo>
+    <purchaseResponsibleInfo>
+        <responsibleOrgInfo>
+            <regNum>12007001101</regNum>
+            <fullName>ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ "ИПОТЕКА СТРОИТЕЛЬСТВО УПРАВЛЕНИЕ"</fullName>
+            <shortName>ООО "ИПОТЕКА СТРОИТЕЛЬСТВО УПРАВЛЕНИЕ"</shortName>
+            <postAddress>625000, Тюменская, Тюмень, обл. Тюменская, г. Тюмень, ул. Орджоникидзе, д. 63, оф. 1, дом 63, офис (квартира) 1</postAddress>
+            <factAddress>625000, ТЮМЕНСКАЯ ОБЛАСТЬ, Г.О. ГОРОД ТЮМЕНЬ, Г ТЮМЕНЬ, УЛ ОРДЖОНИКИДЗЕ, Д. 63, ОФИС 1</factAddress>
+            <INN>7203514501</INN>
+            <KPP>720301001</KPP>
+        </responsibleOrgInfo>
+        <responsibleRole>AU</responsibleRole>
+        <responsibleInfo>
+            <orgPostAddress>625000, Тюменская, Тюмень, обл. Тюменская, г. Тюмень, ул. Орджоникидзе, д. 63, оф. 1, дом 63, офис (квартира) 1</orgPostAddress>
+            <orgFactAddress>625000, ТЮМЕНСКАЯ ОБЛАСТЬ, Г.О. ГОРОД ТЮМЕНЬ, Г ТЮМЕНЬ, УЛ ОРДЖОНИКИДЗЕ, Д. 63, ОФИС 1</orgFactAddress>
+            <contactPersonInfo>
+                <ns3:lastName>Иванов</ns3:lastName>
+                <ns3:firstName>Иван</ns3:firstName>
+                <ns3:middleName>Иванович</ns3:middleName>
+            </contactPersonInfo>
+            <contactEMail>contact@example.org</contactEMail>
+            <contactPhone>7-000-0000000</contactPhone>
+        </responsibleInfo>
+    </purchaseResponsibleInfo>
+    <printFormInfo>
+        <ns3:url>https://zakupki.gov.ru/epz/order/notice/printForm/view.html?regNumber=1200700110126000001</ns3:url>
+    </printFormInfo>
+    <attachmentsInfo>
+        <ns3:attachmentInfo>
+            <ns3:publishedContentId>01A0F1C8C6777ABBA20F4EDB0588B738</ns3:publishedContentId>
+            <ns3:fileName>Приложение № 2 Обоснование НМЦК.docx</ns3:fileName>
+            <ns3:fileSize>20413</ns3:fileSize>
+            <ns3:docDescription>Приложение № 2 Обоснование НМЦК</ns3:docDescription>
+            <ns3:docDate>2026-09-30T13:07:42+03:00</ns3:docDate>
+            <ns3:url>https://zakupki.gov.ru/44fz/filestore/public/1.0/download/priz/file.html?uid=01A0F1C8C6777ABBA20F4EDB0588B738</ns3:url>
+            <ns3:docKindInfo>
+                <ns2:code>MRJ</ns2:code>
+            </ns3:docKindInfo>
+        </ns3:attachmentInfo>
+        <ns3:attachmentInfo>
+            <ns3:publishedContentId>01A0F1C8E7897F05B6D8B2F2B0593E0C</ns3:publishedContentId>
+            <ns3:fileName>Приложение № 4 - Проект контракта (договора).docx</ns3:fileName>
+            <ns3:fileSize>31387</ns3:fileSize>
+            <ns3:docDescription>Приложение № 4 - Проект контракта (договора)</ns3:docDescription>
+            <ns3:docDate>2026-09-30T13:07:50+03:00</ns3:docDate>
+            <ns3:url>https://zakupki.gov.ru/44fz/filestore/public/1.0/download/priz/file.html?uid=01A0F1C8E7897F05B6D8B2F2B0593E0C</ns3:url>
+            <ns3:docKindInfo>
+                <ns2:code>CP</ns2:code>
+            </ns3:docKindInfo>
+        </ns3:attachmentInfo>
+        <ns3:attachmentInfo>
+            <ns3:publishedContentId>01A0F1C90415755C9AF9D861F4D28F98</ns3:publishedContentId>
+            <ns3:fileName>Приложение 1 Описание объекта закупки.docx</ns3:fileName>
+            <ns3:fileSize>27997</ns3:fileSize>
+            <ns3:docDescription>Приложение 1 Описание объекта закупки</ns3:docDescription>
+            <ns3:docDate>2026-09-30T13:07:57+03:00</ns3:docDate>
+            <ns3:url>https://zakupki.gov.ru/44fz/filestore/public/1.0/download/priz/file.html?uid=01A0F1C90415755C9AF9D861F4D28F98</ns3:url>
+            <ns3:docKindInfo>
+                <ns2:code>POD</ns2:code>
+            </ns3:docKindInfo>
+        </ns3:attachmentInfo>
+        <ns3:attachmentInfo>
+            <ns3:publishedContentId>01A0F1C91EA977A3AAC6A25712BE3C17</ns3:publishedContentId>
+            <ns3:fileName>Требования к содержанию, составу заявки.docx</ns3:fileName>
+            <ns3:fileSize>46973</ns3:fileSize>
+            <ns3:docDescription>Требования к содержанию, составу заявки</ns3:docDescription>
+            <ns3:docDate>2026-09-30T13:08:04+03:00</ns3:docDate>
+            <ns3:url>https://zakupki.gov.ru/44fz/filestore/public/1.0/download/priz/file.html?uid=01A0F1C91EA977A3AAC6A25712BE3C17</ns3:url>
+            <ns3:docKindInfo>
+                <ns2:code>CAR</ns2:code>
+            </ns3:docKindInfo>
+        </ns3:attachmentInfo>
+        <ns3:attachmentInfo>
+            <ns3:publishedContentId>01A0F1C94AF079E4B81E26103C5F6D07</ns3:publishedContentId>
+            <ns3:fileName>Приложение № 3 Порядок  рассмотрения и оценки заявок.docx</ns3:fileName>
+            <ns3:fileSize>47865</ns3:fileSize>
+            <ns3:docDescription>Приложение № 3 Порядок  рассмотрения и оценки заявок</ns3:docDescription>
+            <ns3:docDate>2026-09-30T13:08:16+03:00</ns3:docDate>
+            <ns3:url>https://zakupki.gov.ru/44fz/filestore/public/1.0/download/priz/file.html?uid=01A0F1C94AF079E4B81E26103C5F6D07</ns3:url>
+            <ns3:docKindInfo>
+                <ns2:code>OCA</ns2:code>
+            </ns3:docKindInfo>
+        </ns3:attachmentInfo>
+    </attachmentsInfo>
+    <serviceSigns>
+        <isControlP1Ch5St99>false</isControlP1Ch5St99>
+    </serviceSigns>
+    <notificationInfo>
+        <procedureInfo>
+            <collectingInfo>
+                <startDT>2026-09-30T15:37:51+05:00</startDT>
+                <endDT>2026-10-20T08:30:00+05:00</endDT>
+            </collectingInfo>
+            <secondPartsDate>2026-10-21+05:00</secondPartsDate>
+            <summarizingDate>2026-10-22+05:00</summarizingDate>
+        </procedureInfo>
+        <contractConditionsInfo>
+            <maxPriceInfo>
+                <maxPrice>1359672.00</maxPrice>
+                <currency>
+                    <ns2:code>RUB</ns2:code>
+                    <ns2:name>РОССИЙСКИЙ РУБЛЬ</ns2:name>
+                </currency>
+            </maxPriceInfo>
+            <contractMultiInfo>
+                <notProvided>true</notProvided>
+            </contractMultiInfo>
+        </contractConditionsInfo>
+        <customerRequirementsInfo>
+            <customerRequirementInfo>
+                <customer>
+                    <ns2:regNum>12007001101</ns2:regNum>
+                    <ns2:fullName>ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ "ИПОТЕКА СТРОИТЕЛЬСТВО УПРАВЛЕНИЕ"</ns2:fullName>
+                </customer>
+                <contractConditionsInfo>
+                    <maxPriceInfo>
+                        <maxPrice>1359672.00</maxPrice>
+                    </maxPriceInfo>
+                    <mustPublicDiscussion>false</mustPublicDiscussion>
+                    <contractExecutionPaymentPlan>
+                        <contractExecutionTermsInfo>
+                            <ns3:notRelativeTermsInfo>
+                                <ns3:isFromConclusionDate>true</ns3:isFromConclusionDate>
+                                <ns3:endDate>2029-12-31+03:00</ns3:endDate>
+                            </ns3:notRelativeTermsInfo>
+                        </contractExecutionTermsInfo>
+                        <financingSourcesInfo>
+                            <currentYear>2026</currentYear>
+                            <financeInfo>
+                                <total>1359672.00</total>
+                                <currentYear>0.00</currentYear>
+                                <firstYear>407901.60</firstYear>
+                                <secondYear>407901.60</secondYear>
+                                <subsecYears>543868.80</subsecYears>
+                            </financeInfo>
+                        </financingSourcesInfo>
+                        <stagesInfo>
+                            <stageInfo>
+                                <sid>22068135</sid>
+                                <termsInfo>
+                                    <ns3:notRelativeTermsInfo>
+                                        <ns3:isFromConclusionDate>true</ns3:isFromConclusionDate>
+                                        <ns3:endDate>2029-12-31+03:00</ns3:endDate>
+                                    </ns3:notRelativeTermsInfo>
+                                </termsInfo>
+                            </stageInfo>
+                        </stagesInfo>
+                    </contractExecutionPaymentPlan>
+                    <deliveryPlacesInfo>
+                        <byGARInfo>
+                            <ns3:sid>61920267</ns3:sid>
+                            <ns3:countryInfo>
+                                <ns2:countryCode>643</ns2:countryCode>
+                                <ns2:countryFullName>Российская Федерация</ns2:countryFullName>
+                            </ns3:countryInfo>
+                            <ns3:GARInfo>
+                                <ns3:GARGuid>b3837064-5e55-48dc-8ba3-895269b4e17a</ns3:GARGuid>
+                                <ns3:GARAddress>обл. Тюменская, г.о. город Тюмень, г. Тюмень, ул. Орджоникидзе, д. 63</ns3:GARAddress>
+                            </ns3:GARInfo>
+                            <ns3:deliveryPlace>УЛ. ОРДЖОНИКИДЗЕ Д. 63,  ОФИС 1</ns3:deliveryPlace>
+                        </byGARInfo>
+                    </deliveryPlacesInfo>
+                    <isOneSideRejectionSt95>true</isOneSideRejectionSt95>
+                    <isExecutionStagesTerms>false</isExecutionStagesTerms>
+                </contractConditionsInfo>
+                <addInfo>Контактные данные удалены</addInfo>
+            </customerRequirementInfo>
+        </customerRequirementsInfo>
+        <purchaseObjectsInfo>
+            <notDrugPurchaseObjectsInfo>
+                <ns3:purchaseObject>
+                    <ns3:sid>223862913</ns3:sid>
+                    <ns3:OKPD2>
+                        <ns2:OKPDCode>69.20.10.000</ns2:OKPDCode>
+                        <ns2:OKPDName>Услуги по проведению финансового аудита</ns2:OKPDName>
+                    </ns3:OKPD2>
+                    <ns3:name>Оказание услуг по проведению обязательного ежегодного аудита бухгалтерской (финансовой) отчетности  ООО «Ипотека Строительство Управление» за 2026, 2027, 2028 отчетные годы  </ns3:name>
+                    <ns3:OKEI>
+                        <ns2:code>366</ns2:code>
+                        <ns2:nationalCode>г; лет</ns2:nationalCode>
+                        <ns2:name>Год</ns2:name>
+                    </ns3:OKEI>
+                    <ns3:price>453224.00</ns3:price>
+                    <ns3:volumeSpecifyingMethod>QF</ns3:volumeSpecifyingMethod>
+                    <ns3:quantity>
+                        <ns3:value>3.00000000000</ns3:value>
+                    </ns3:quantity>
+                    <ns3:sum>1359672.00</ns3:sum>
+                    <ns3:type>SERVICE</ns3:type>
+                    <ns3:hierarchyType>ND</ns3:hierarchyType>
+                </ns3:purchaseObject>
+                <ns3:totalSum>1359672.00</ns3:totalSum>
+                <quantityUndefined>false</quantityUndefined>
+            </notDrugPurchaseObjectsInfo>
+        </purchaseObjectsInfo>
+        <criteriaInfo>
+            <isCertainWorks>false</isCertainWorks>
+            <criterionInfo>
+                <costCriterionInfo>
+                    <code>CP</code>
+                    <valueInfo>
+                        <value>40.00</value>
+                    </valueInfo>
+                </costCriterionInfo>
+            </criterionInfo>
+            <criterionInfo>
+                <qualitativeCriterionInfo>
+                    <code>QO</code>
+                    <valueInfo>
+                        <value>60.00</value>
+                    </valueInfo>
+                </qualitativeCriterionInfo>
+            </criterionInfo>
+        </criteriaInfo>
+        <requirementsInfo>
+            <requirementInfo>
+                <ns3:preferenseRequirementInfo>
+                    <ns2:shortName>ET44</ns2:shortName>
+                    <ns2:name>Единые требования к участникам закупок в соответствии с ч. 1 ст. 31 Закона № 44-ФЗ</ns2:name>
+                </ns3:preferenseRequirementInfo>
+            </requirementInfo>
+            <requirementInfo>
+                <ns3:preferenseRequirementInfo>
+                    <ns2:shortName>TR442</ns2:shortName>
+                    <ns2:name>Требования к участникам закупок в соответствии с ч. 1.1 ст. 31 Закона № 44-ФЗ</ns2:name>
+                </ns3:preferenseRequirementInfo>
+            </requirementInfo>
+            <requirementInfo>
+                <ns3:preferenseRequirementInfo>
+                    <ns2:shortName>TU1131</ns2:shortName>
+                    <ns2:name>Требование к участникам закупок в соответствии с п. 1 ч. 1 ст. 31 Закона № 44-ФЗ</ns2:name>
+                </ns3:preferenseRequirementInfo>
+            </requirementInfo>
+            <requirementInfo>
+                <ns3:preferenseRequirementInfo>
+                    <ns2:shortName>TOVNPIVR</ns2:shortName>
+                    <ns2:name>Требование об отсутствии в реестре недобросовестных поставщиков (подрядчиков, исполнителей) информации, включенной в такой реестр в связи отказом поставщика (подрядчика, исполнителя) от исполнения контракта по причине введения в отношении заказчика санкций и (или) мер ограничительного характера</ns2:name>
+                </ns3:preferenseRequirementInfo>
+            </requirementInfo>
+        </requirementsInfo>
+        <flags>
+            <purchaseObjectsCh9St37>false</purchaseObjectsCh9St37>
+            <competitionCh19St48>true</competitionCh19St48>
+        </flags>
+    </notificationInfo>
+</ns7:epNotificationEOK2020>

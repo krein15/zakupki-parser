@@ -1,0 +1,330 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<ns7:epNotificationEZK2020 xmlns="http://zakupki.gov.ru/oos/EPtypes/1" xmlns:ns6="http://zakupki.gov.ru/oos/types/1" xmlns:ns5="http://zakupki.gov.ru/oos/KOTypes/1" xmlns:ns7="http://zakupki.gov.ru/oos/printform/1" xmlns:ns2="http://zakupki.gov.ru/oos/base/1" xmlns:ns4="http://zakupki.gov.ru/oos/CPtypes/1" xmlns:ns3="http://zakupki.gov.ru/oos/common/1" schemeVersion="16.2">
+    <id>44126100</id>
+    <versionNumber>1</versionNumber>
+    <commonInfo>
+        <purchaseNumber>0167100002326000043</purchaseNumber>
+        <docNumber>№0167100002326000043</docNumber>
+        <plannedPublishDate>2026-09-30+05:00</plannedPublishDate>
+        <publishDTInEIS>2026-09-29T11:11:46.566+05:00</publishDTInEIS>
+        <href>https://zakupki.gov.ru/epz/order/notice/zk20/view/common-info.html?regNumber=0167100002326000043</href>
+        <placingWay>
+            <ns2:code>ZKP20</ns2:code>
+            <ns2:name>Запрос котировок в электронной форме</ns2:name>
+        </placingWay>
+        <ETP>
+            <ns2:code>ETP_SBAST</ns2:code>
+            <ns2:name>АО «Сбербанк-АСТ»</ns2:name>
+            <ns2:url>http://www.sberbank-ast.ru</ns2:url>
+        </ETP>
+        <contractConclusionOnSt83Ch2>true</contractConclusionOnSt83Ch2>
+        <purchaseObjectInfo>Оказание услуг по хранению конфискованного, движимого бесхозяйного, изъятого и иного имущества, обращенного в собственность государства;  вещественных доказательств, хранение которых до окончания уголовного дела или при уголовном деле затруднено; изъятых вещей, явившихся орудиями или предметами административного правонарушения, подвергающихся быстрой порче; товаров, задержанных или изъятых таможенными органами; арестованного имущества, на территории Ханты-Мансийского автономного округа-Югры ( место хранения г. Сургут)</purchaseObjectInfo>
+    </commonInfo>
+    <purchaseResponsibleInfo>
+        <responsibleOrgInfo>
+            <regNum>01671000023</regNum>
+            <consRegistryNum>001А2081</consRegistryNum>
+            <fullName>МЕЖРЕГИОНАЛЬНОЕ ТЕРРИТОРИАЛЬНОЕ УПРАВЛЕНИЕ ФЕДЕРАЛЬНОГО АГЕНТСТВА ПО УПРАВЛЕНИЮ ГОСУДАРСТВЕННЫМ ИМУЩЕСТВОМ В ТЮМЕНСКОЙ ОБЛАСТИ, ХАНТЫ-МАНСИЙСКОМ АВТОНОМНОМ ОКРУГЕ-ЮГРЕ, ЯМАЛО-НЕНЕЦКОМ АВТОНОМНОМ ОКРУГЕ</fullName>
+            <shortName>МТУ РОСИМУЩЕСТВА В ТЮМЕНСКОЙ ОБЛАСТИ, ХАНТЫ-МАНСИЙСКОМ АВТОНОМНОМ ОКРУГЕ-ЮГРЕ, ЯМАЛО-НЕНЕЦКОМ АВТОНОМНОМ ОКРУГЕ</shortName>
+            <postAddress>Российская Федерация, 625000, Тюменская обл, Тюмень г, Володарского,10</postAddress>
+            <factAddress>Российская Федерация, 625000, Тюменская обл, Тюмень г, Володарского ул, Д. 10, ОФИС 210</factAddress>
+            <INN>7202198042</INN>
+            <KPP>720301001</KPP>
+        </responsibleOrgInfo>
+        <responsibleRole>CU</responsibleRole>
+        <responsibleInfo>
+            <orgPostAddress>Российская Федерация, 625000, Тюменская обл, Тюмень г, Володарского,10</orgPostAddress>
+            <orgFactAddress>Российская Федерация, 625000, Тюменская обл, Тюмень г, Володарского ул, Д. 10, ОФИС 210</orgFactAddress>
+            <contactPersonInfo>
+                <ns3:lastName>Иванов</ns3:lastName>
+                <ns3:firstName>Иван</ns3:firstName>
+                <ns3:middleName>Иванович</ns3:middleName>
+            </contactPersonInfo>
+            <contactEMail>contact@example.org</contactEMail>
+            <contactPhone>7-000-0000000</contactPhone>
+        </responsibleInfo>
+    </purchaseResponsibleInfo>
+    <printFormInfo>
+        <ns3:url>https://zakupki.gov.ru/epz/order/notice/printForm/view.html?regNumber=0167100002326000043</ns3:url>
+    </printFormInfo>
+    <attachmentsInfo>
+        <ns3:attachmentInfo>
+            <ns3:publishedContentId>01A0EBC4D6FA705FBD0FFCC4626C4B41</ns3:publishedContentId>
+            <ns3:fileName>Приложение №1 Обоснование НМЦЕ.xlsx</ns3:fileName>
+            <ns3:fileSize>97540</ns3:fileSize>
+            <ns3:docDescription>Приложение №1 Обоснование НМЦЕ</ns3:docDescription>
+            <ns3:docDate>2026-09-29T09:05:40+03:00</ns3:docDate>
+            <ns3:url>https://zakupki.gov.ru/44fz/filestore/public/1.0/download/priz/file.html?uid=01A0EBC4D6FA705FBD0FFCC4626C4B41</ns3:url>
+            <ns3:docKindInfo>
+                <ns2:code>MRJ</ns2:code>
+                <ns2:name>Обоснование начальной (максимальной) цены контракта</ns2:name>
+            </ns3:docKindInfo>
+        </ns3:attachmentInfo>
+        <ns3:attachmentInfo>
+            <ns3:publishedContentId>01A0EBC4F72677609D458DEF991B6B98</ns3:publishedContentId>
+            <ns3:fileName>Приложение № 2. Проект ГК.docx</ns3:fileName>
+            <ns3:fileSize>61043</ns3:fileSize>
+            <ns3:docDescription>Приложение № 2. Проект ГК</ns3:docDescription>
+            <ns3:docDate>2026-09-29T09:05:49+03:00</ns3:docDate>
+            <ns3:url>https://zakupki.gov.ru/44fz/filestore/public/1.0/download/priz/file.html?uid=01A0EBC4F72677609D458DEF991B6B98</ns3:url>
+            <ns3:docKindInfo>
+                <ns2:code>CP</ns2:code>
+                <ns2:name>Проект контракта</ns2:name>
+            </ns3:docKindInfo>
+        </ns3:attachmentInfo>
+        <ns3:attachmentInfo>
+            <ns3:publishedContentId>01A0EBC511A371F0882F071453920632</ns3:publishedContentId>
+            <ns3:fileName>Приложение №3. Описание объекта закупки.docx</ns3:fileName>
+            <ns3:fileSize>32538</ns3:fileSize>
+            <ns3:docDescription>Приложение №3. Описание объекта закупки</ns3:docDescription>
+            <ns3:docDate>2026-09-29T09:05:55+03:00</ns3:docDate>
+            <ns3:url>https://zakupki.gov.ru/44fz/filestore/public/1.0/download/priz/file.html?uid=01A0EBC511A371F0882F071453920632</ns3:url>
+            <ns3:docKindInfo>
+                <ns2:code>POD</ns2:code>
+                <ns2:name>Описание объекта закупки</ns2:name>
+            </ns3:docKindInfo>
+        </ns3:attachmentInfo>
+        <ns3:attachmentInfo>
+            <ns3:publishedContentId>01A0EBC53F3975568ADFB70150D9252F</ns3:publishedContentId>
+            <ns3:fileName>Требования к содержанию, составу заявки ЗАПРОС КОТИРОВОК..docx</ns3:fileName>
+            <ns3:fileSize>26594</ns3:fileSize>
+            <ns3:docDescription>Требования к содержанию, составу заявки ЗАПРОС КОТИРОВОК.</ns3:docDescription>
+            <ns3:docDate>2026-09-29T09:06:07+03:00</ns3:docDate>
+            <ns3:url>https://zakupki.gov.ru/44fz/filestore/public/1.0/download/priz/file.html?uid=01A0EBC53F3975568ADFB70150D9252F</ns3:url>
+            <ns3:docKindInfo>
+                <ns2:code>CAR</ns2:code>
+                <ns2:name>Требование к содержанию, составу заявки на участие в закупке</ns2:name>
+            </ns3:docKindInfo>
+        </ns3:attachmentInfo>
+    </attachmentsInfo>
+    <serviceSigns>
+        <isControlP1Ch5St99>true</isControlP1Ch5St99>
+    </serviceSigns>
+    <notificationInfo>
+        <procedureInfo>
+            <collectingInfo>
+                <startDT>2026-09-29T11:11:46+05:00</startDT>
+                <endDT>2026-10-07T11:00:00+05:00</endDT>
+            </collectingInfo>
+            <summarizingDate>2026-10-09+05:00</summarizingDate>
+        </procedureInfo>
+        <contractConditionsInfo>
+            <maxPriceInfo>
+                <maxPrice>1000000.00</maxPrice>
+                <currency>
+                    <ns2:code>RUB</ns2:code>
+                    <ns2:name>РОССИЙСКИЙ РУБЛЬ</ns2:name>
+                </currency>
+            </maxPriceInfo>
+        </contractConditionsInfo>
+        <customerRequirementsInfo>
+            <customerRequirementInfo>
+                <customer>
+                    <ns2:regNum>01671000023</ns2:regNum>
+                    <ns2:consRegistryNum>001А2081</ns2:consRegistryNum>
+                    <ns2:fullName>МЕЖРЕГИОНАЛЬНОЕ ТЕРРИТОРИАЛЬНОЕ УПРАВЛЕНИЕ ФЕДЕРАЛЬНОГО АГЕНТСТВА ПО УПРАВЛЕНИЮ ГОСУДАРСТВЕННЫМ ИМУЩЕСТВОМ В ТЮМЕНСКОЙ ОБЛАСТИ, ХАНТЫ-МАНСИЙСКОМ АВТОНОМНОМ ОКРУГЕ-ЮГРЕ, ЯМАЛО-НЕНЕЦКОМ АВТОНОМНОМ ОКРУГЕ</ns2:fullName>
+                </customer>
+                <applicationGuarantee>
+                    <amount>5000.00</amount>
+                    <account>
+                        <ns3:bik>015004950</ns3:bik>
+                        <ns3:settlementAccount>03212643000000015114</ns3:settlementAccount>
+                        <ns3:personalAccount>05671А20810</ns3:personalAccount>
+                        <ns3:creditOrgName>ОКЦ № 1 СибГУ Банка России//УФК по Новосибирской области, г Новосибирск</ns3:creditOrgName>
+                        <ns3:corrAccountNumber>40102810445370000043</ns3:corrAccountNumber>
+                    </account>
+                    <accountBudget>
+                        <accountBudgetAdmin>
+                            <anotherAdmin>true</anotherAdmin>
+                            <INN>7202198042</INN>
+                            <KPP>720301001</KPP>
+                            <OKTMOInfo>
+                                <ns2:code>71701000001</ns2:code>
+                                <ns2:name>Муниципальные образования Тюменской области / Городские округа Тюменской области/ / город Тюмень / г Тюмень</ns2:name>
+                            </OKTMOInfo>
+                            <bankAccount>40102810945370000060</bankAccount>
+                            <ksNumber>03100643000000016700</ksNumber>
+                            <bik>017102101</bik>
+                            <counterpartyName>УПРАВЛЕНИЕ ФЕДЕРАЛЬНОГО КАЗНАЧЕЙСТВА ПО ТЮМЕНСКОЙ ОБЛАСТИ (МТУ РОСИМУЩЕСТВА В ТЮМЕНСКОЙ ОБЛАСТИ, ХАНТЫ-МАНСИЙСКОМ АВТОНОМНОМ ОКРУГЕ-ЮГРЕ, ЯМАЛО-НЕНЕЦКОМ АВТОНОМНОМ ОКРУГЕ)</counterpartyName>
+                        </accountBudgetAdmin>
+                    </accountBudget>
+                    <procedureInfo> Обеспечение заявки на участие в закупке может предоставляться участником закупки в виде денежных средств или независимой гарантии, предусмотренной статьей 45 Федерального закона №44. Выбор способа обеспечения осуществляется участником закупки самостоятельно. Срок действия независимой гарантии должен составлять не менее месяца с даты окончания срока подачи заявок.</procedureInfo>
+                    <part>0.5</part>
+                </applicationGuarantee>
+                <contractGuarantee>
+                    <account>
+                        <ns3:bik>015004950</ns3:bik>
+                        <ns3:settlementAccount>03212643000000015114</ns3:settlementAccount>
+                        <ns3:personalAccount>05671А20810</ns3:personalAccount>
+                        <ns3:creditOrgName>ОКЦ № 1 СибГУ Банка России//УФК по Новосибирской области, г Новосибирск</ns3:creditOrgName>
+                        <ns3:corrAccountNumber>40102810445370000043</ns3:corrAccountNumber>
+                    </account>
+                    <procedureInfo> Исполнение Контракта может обеспечиваться предоставлением независимой гарантии, соответствующей требованиям статьи 45 Федерального закона № 44-ФЗ, Постановлением Правительства от 08.11.2013 № 1005 или внесением денежных средств на указанный заказчиком счет, на котором в соответствии с законодательством Российской Федерации учитываются операции со средствами, поступающими заказчику. Способ обеспечения исполнения Контракта, срок действия независимой гарантии определяются в соответствии с требованиями Федерального закона № 44-ФЗ участником закупки, с которым заключается Контракт, самостоятельно. При этом срок действия независимой гарантии должен превышать предусмотренный Контрактом срок исполнения обязательств, которые должны быть обеспечены такой независимой гарантией, не менее чем на один месяц, в том числе в случае его изменения в соответствии со статьей 95 Федерального закона № 44-ФЗ.</procedureInfo>
+                    <part>10.0</part>
+                </contractGuarantee>
+                <contractConditionsInfo>
+                    <maxPriceInfo>
+                        <maxPrice>1000000.00</maxPrice>
+                    </maxPriceInfo>
+                    <IKZInfo>
+                        <purchaseCode>261720219804272030100100600025210244</purchaseCode>
+                        <publishYear>2026</publishYear>
+                        <OKPD2Info>
+                            <ns3:OKPD2>
+                                <ns2:OKPDCode>52.10</ns2:OKPDCode>
+                                <ns2:OKPDName>Услуги по складированию и хранению</ns2:OKPDName>
+                            </ns3:OKPD2>
+                        </OKPD2Info>
+                        <KVRInfo>
+                            <ns3:KVR>
+                                <ns2:code>244</ns2:code>
+                                <ns2:name>Прочая закупка товаров, работ и услуг</ns2:name>
+                            </ns3:KVR>
+                        </KVRInfo>
+                        <customerCode>17202198042720301001</customerCode>
+                        <purchaseNumber>0060</purchaseNumber>
+                        <purchaseOrderNumber>002</purchaseOrderNumber>
+                    </IKZInfo>
+                    <tenderPlan2020Info>
+                        <ns3:plan2020Number>202601671000023001</ns3:plan2020Number>
+                        <ns3:position2020Number>202601671000023001000057</ns3:position2020Number>
+                    </tenderPlan2020Info>
+                    <contractExecutionPaymentPlan>
+                        <contractExecutionTermsInfo>
+                            <ns3:notRelativeTermsInfo>
+                                <ns3:isFromConclusionDate>true</ns3:isFromConclusionDate>
+                                <ns3:endDate>2026-12-01+03:00</ns3:endDate>
+                            </ns3:notRelativeTermsInfo>
+                        </contractExecutionTermsInfo>
+                        <financingSourcesInfo>
+                            <budgetFinancingsInfo>
+                                <budgetInfo>
+                                    <ns2:code>99010001</ns2:code>
+                                    <ns2:name>Федеральный бюджет</ns2:name>
+                                </budgetInfo>
+                                <budgetLevelInfo>
+                                    <ns2:code>10</ns2:code>
+                                    <ns2:name>федеральный бюджет</ns2:name>
+                                </budgetLevelInfo>
+                                <OKTMOInfo>
+                                    <ns2:code>00000001</ns2:code>
+                                    <ns2:name>Раздел 1. Муниципальные образования субъектов Российской Федерации / Федеральный бюджет</ns2:name>
+                                </OKTMOInfo>
+                            </budgetFinancingsInfo>
+                            <currentYear>2026</currentYear>
+                            <financeInfo>
+                                <total>1000000.00</total>
+                                <currentYear>1000000.00</currentYear>
+                                <firstYear>0.00</firstYear>
+                                <secondYear>0.00</secondYear>
+                                <subsecYears>0.00</subsecYears>
+                            </financeInfo>
+                        </financingSourcesInfo>
+                        <stagesInfo>
+                            <stageInfo>
+                                <sid>22042934</sid>
+                                <termsInfo>
+                                    <ns3:notRelativeTermsInfo>
+                                        <ns3:isFromConclusionDate>true</ns3:isFromConclusionDate>
+                                        <ns3:endDate>2026-12-01+03:00</ns3:endDate>
+                                    </ns3:notRelativeTermsInfo>
+                                </termsInfo>
+                                <budgetFinancingsInfo>
+                                    <budgetFinancingInfo>
+                                        <KBK>16701133941292150244</KBK>
+                                        <paymentYearInfo>
+                                            <total>1000000.00</total>
+                                            <currentYear>1000000.00</currentYear>
+                                            <firstYear>0.00</firstYear>
+                                            <secondYear>0.00</secondYear>
+                                            <subsecYears>0.00</subsecYears>
+                                        </paymentYearInfo>
+                                    </budgetFinancingInfo>
+                                </budgetFinancingsInfo>
+                            </stageInfo>
+                        </stagesInfo>
+                    </contractExecutionPaymentPlan>
+                    <deliveryPlacesInfo>
+                        <byGARInfo>
+                            <ns3:sid>61892279</ns3:sid>
+                            <ns3:countryInfo>
+                                <ns2:countryCode>643</ns2:countryCode>
+                                <ns2:countryFullName>Российская Федерация</ns2:countryFullName>
+                            </ns3:countryInfo>
+                            <ns3:GARInfo>
+                                <ns3:GARGuid>d66e5325-3a25-4d29-ba86-4ca351d9704b</ns3:GARGuid>
+                                <ns3:GARAddress>а.окр. Ханты-Мансийский Автономный округ - Югра</ns3:GARAddress>
+                            </ns3:GARInfo>
+                            <ns3:deliveryPlace>прием имущества, место хранения имущества осуществляется в г. Сургуте;  получение и предоставление документов в рамках Контракта осуществляется Исполнителем по месту нахождения Заказчика, по адресу: 628012, Ханты-Мансийский автономный округ - Югра, г. Ханты-Мансийск, ул. Светлая, 39/2.</ns3:deliveryPlace>
+                        </byGARInfo>
+                    </deliveryPlacesInfo>
+                    <isOneSideRejectionSt95>true</isOneSideRejectionSt95>
+                    <isExecutionStagesTerms>true</isExecutionStagesTerms>
+                </contractConditionsInfo>
+                <warrantyInfo>
+                    <warrantyTerm>Исполнитель гарантирует, что оказанные услуги соответствуют требованиям, установленным в контракте, обязательным нормам и правилам, регулирующим данную деятельность, а также иным требованиям законодательства Российской Федерации, действующим на момент оказания услуги.</warrantyTerm>
+                </warrantyInfo>
+            </customerRequirementInfo>
+        </customerRequirementsInfo>
+        <purchaseObjectsInfo>
+            <notDrugPurchaseObjectsInfo>
+                <ns3:purchaseObject>
+                    <ns3:sid>223677414</ns3:sid>
+                    <ns3:OKPD2>
+                        <ns2:OKPDCode>52.10.19.900</ns2:OKPDCode>
+                        <ns2:OKPDName>Услуги по складированию и хранению прочие, не включенные в другие группировки</ns2:OKPDName>
+                    </ns3:OKPD2>
+                    <ns3:name>Услуги хранения конфискованного, движимого бесхозяйного, изъятого и иного имущества, обращенного в собственность государств на открытой площадке&#13;
+</ns3:name>
+                    <ns3:OKEI>
+                        <ns2:code>055</ns2:code>
+                        <ns2:nationalCode>м[2*]</ns2:nationalCode>
+                        <ns2:name>Квадратный метр</ns2:name>
+                    </ns3:OKEI>
+                    <ns3:price>25.94</ns3:price>
+                    <ns3:volumeSpecifyingMethod>VTF</ns3:volumeSpecifyingMethod>
+                    <ns3:quantity>
+                        <ns3:undefined>true</ns3:undefined>
+                    </ns3:quantity>
+                    <ns3:sum>25.94</ns3:sum>
+                    <ns3:type>SERVICE</ns3:type>
+                    <ns3:hierarchyType>ND</ns3:hierarchyType>
+                    <ns3:isSoftware>false</ns3:isSoftware>
+                </ns3:purchaseObject>
+                <ns3:totalSum>25.94</ns3:totalSum>
+                <quantityUndefined>true</quantityUndefined>
+            </notDrugPurchaseObjectsInfo>
+        </purchaseObjectsInfo>
+        <preferensesInfo>
+            <preferenseInfo>
+                <ns3:preferenseRequirementInfo>
+                    <ns2:shortName>PVS33044</ns2:shortName>
+                    <ns2:name>Преимущество в соответствии с ч. 3 ст. 30 Закона № 44-ФЗ</ns2:name>
+                </ns3:preferenseRequirementInfo>
+            </preferenseInfo>
+        </preferensesInfo>
+        <requirementsInfo>
+            <requirementInfo>
+                <ns3:preferenseRequirementInfo>
+                    <ns2:shortName>ET44</ns2:shortName>
+                    <ns2:name>Единые требования к участникам закупок в соответствии с ч. 1 ст. 31 Закона № 44-ФЗ</ns2:name>
+                </ns3:preferenseRequirementInfo>
+            </requirementInfo>
+            <requirementInfo>
+                <ns3:preferenseRequirementInfo>
+                    <ns2:shortName>TR442</ns2:shortName>
+                    <ns2:name>Требования к участникам закупок в соответствии с ч. 1.1 ст. 31 Закона № 44-ФЗ</ns2:name>
+                </ns3:preferenseRequirementInfo>
+            </requirementInfo>
+            <requirementInfo>
+                <ns3:preferenseRequirementInfo>
+                    <ns2:shortName>TOVNPIVR</ns2:shortName>
+                    <ns2:name>Требование об отсутствии в реестре недобросовестных поставщиков (подрядчиков, исполнителей) информации, включенной в такой реестр в связи отказом поставщика (подрядчика, исполнителя) от исполнения контракта по причине введения в отношении заказчика санкций и (или) мер ограничительного характера</ns2:name>
+                </ns3:preferenseRequirementInfo>
+            </requirementInfo>
+        </requirementsInfo>
+    </notificationInfo>
+    <printFormFieldsInfo>
+        <is449Features>false</is449Features>
+    </printFormFieldsInfo>
+</ns7:epNotificationEZK2020>

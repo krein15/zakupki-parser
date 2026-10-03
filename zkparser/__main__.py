@@ -1,6 +1,7 @@
 """Command line: ``python -m zkparser fetch --region 72 --date 2026-09-30``.
 
 * ``fetch`` searches the site and keeps the XML of every notice found in the local cache.
+* ``show`` prints a notice as parsed from its XML (downloading it if it is not cached yet).
 * ``regions`` lists the regions ``--region`` accepts.
 """
 
@@ -13,10 +14,13 @@ from datetime import date, datetime
 from pathlib import Path
 
 from .cache import NoticeCache
+from .display import format_notice
 from .fetch import FetchReport, fetch_notices
+from .notice_xml import NoticeFormatError, parse_notice
 from .regions import REGIONS, resolve_region
 from .settings import default_cache_dir
-from .website.client import SiteClient
+from .website.client import SiteClient, SiteError
+from .website.notice import download_notice
 from .website.search import SearchHit, SearchQuery, Stage
 
 DATE_FORMATS = ("%Y-%m-%d", "%d.%m.%Y")
@@ -48,9 +52,12 @@ def build_parser() -> argparse.ArgumentParser:
     fetch.add_argument("--price-from", type=int, metavar="РУБ", help="начальная цена от")
     fetch.add_argument("--price-to", type=int, metavar="РУБ", help="начальная цена до")
     fetch.add_argument("--all-stages", action="store_true", help="любой этап, а не только «Подача заявок»")
-    fetch.add_argument(
-        "--cache-dir", type=Path, help="папка кэша (по умолчанию %%LOCALAPPDATA%%\\ZakupkiParser\\cache)"
-    )
+    cache_help = "папка кэша (по умолчанию %%LOCALAPPDATA%%\\ZakupkiParser\\cache)"
+    fetch.add_argument("--cache-dir", type=Path, help=cache_help)
+
+    show = commands.add_parser("show", help="показать разобранное извещение")
+    show.add_argument("number", help="номер закупки, например 0167200003426008040")
+    show.add_argument("--cache-dir", type=Path, help=cache_help)
 
     commands.add_parser("regions", help="коды регионов для --region")
     return parser
@@ -136,6 +143,27 @@ def run_fetch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     return 1 if report.error else 0
 
 
+def run_show(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
+    number = args.number.strip().lstrip("№").strip()
+    if not number.isdigit():
+        parser.error(f"номер закупки состоит из цифр: «{args.number}»")
+    with NoticeCache(args.cache_dir or default_cache_dir()) as cache:
+        xml = cache.load(number)
+        if xml is None:
+            try:
+                xml = download_notice(SiteClient(), number)
+            except SiteError as error:
+                print(error, file=sys.stderr)
+                return 1
+            cache.store(SearchHit(reg_number=number, url=""), xml)
+    try:
+        print(format_notice(parse_notice(xml)))
+    except NoticeFormatError as error:
+        print(error, file=sys.stderr)
+        return 1
+    return 0
+
+
 def run_regions() -> int:
     for code, name in sorted(REGIONS.items(), key=lambda item: item[1]):
         print(f"{code[:2]}  {name}")
@@ -150,6 +178,8 @@ def main(argv: list[str] | None = None) -> int:
         logging.getLogger(noisy).setLevel(logging.WARNING)
     if args.command == "regions":
         return run_regions()
+    if args.command == "show":
+        return run_show(args, parser)
     return run_fetch(args, parser)
 
 
