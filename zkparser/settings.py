@@ -17,3 +17,7 @@ def app_data_dir() -> Path:
 
 def default_cache_dir() -> Path:
     return app_data_dir() / "cache"
+
+
+def default_output_dir() -> Path:
+    return Path.home() / "Documents" / APP_NAME

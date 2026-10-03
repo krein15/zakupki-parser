@@ -17,12 +17,13 @@ from pathlib import Path
 
 from .cache import NoticeCache
 from .display import format_match, format_notice
+from .excel import build_file_name, export_profile
 from .fetch import CACHED, FetchReport, fetch_notices
 from .notice_xml import NoticeFormatError, parse_notice
-from .pipeline import run_profiles
+from .pipeline import ProfileResult, run_profiles
 from .profiles import ProfileError, load_profile
 from .regions import REGIONS, resolve_region
-from .settings import default_cache_dir
+from .settings import default_cache_dir, default_output_dir
 from .website.client import SiteClient, SiteError
 from .website.notice import download_notice
 from .website.search import SearchHit, SearchQuery, Stage
@@ -59,6 +60,10 @@ def build_parser() -> argparse.ArgumentParser:
     match = commands.add_parser("match", help="отобрать закупки по профилям (словарям ниш или клиентов)")
     match.add_argument("profiles", nargs="+", type=Path, metavar="ПРОФИЛЬ", help="файл профиля .toml")
     add_period(match)
+    match.add_argument(
+        "--out", type=Path, metavar="ПАПКА", help="куда сохранить Excel (по умолчанию Документы\\Zakupki Parser)"
+    )
+    match.add_argument("--no-excel", action="store_true", help="только вывод в консоль, без Excel")
     add_cache_dir(match)
 
     show = commands.add_parser("show", help="показать разобранное извещение")
@@ -172,6 +177,21 @@ def print_region(region: str, report: FetchReport) -> None:
     print(f"{REGIONS[region]}: найдено {report.found}, скачано {report.downloaded}, из кэша {report.cached}{failed}")
 
 
+def write_reports(results: list[ProfileResult], start: date, end: date, out_dir: Path) -> list[Path]:
+    """One Excel file per profile; profiles with the same name get numbered files."""
+    generated_at = datetime.now().replace(microsecond=0)
+    paths = []
+    for result in results:
+        name = build_file_name(result.profile, generated_at)
+        path = out_dir / name
+        number = 2
+        while path in paths or path.exists():
+            path = out_dir / f"{Path(name).stem} ({number}).xlsx"
+            number += 1
+        paths.append(export_profile(path, result, start, end, generated_at))
+    return paths
+
+
 def run_match(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     start, end = period(args, parser)
     try:
@@ -197,6 +217,10 @@ def run_match(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
             print("\n" + textwrap.indent(format_match(found.notice, found.verdict.reasons), "  "))
     for reg_number, reason in result.broken:
         print(f"\nНе удалось разобрать {reg_number}: {reason}")
+    if not args.no_excel:
+        print()
+        for path in write_reports(result.profiles, start, end, args.out or default_output_dir()):
+            print(f"Отчёт: {path}")
     print(f"\nЗапросов к сайту {client.stats.requests}, просьб подождать (429) {client.stats.throttled}.")
     if result.error:
         print(f"Скачивание остановлено: {result.error}")

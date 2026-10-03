@@ -26,6 +26,7 @@ class Found:
     notice: Notice
     hit: SearchHit
     verdict: Verdict
+    regions: tuple[str, ...] = ()  # where the search found it; a joint purchase can span regions
 
 
 @dataclass
@@ -86,7 +87,7 @@ def run_profiles(
             profile_result.checked += 1
             verdict = matcher.evaluate(notice)
             if verdict.matched:
-                profile_result.matches.append(Found(notice, hit, verdict))
+                profile_result.matches.append(Found(notice, hit, verdict, tuple(sorted(regions))))
 
     for profile_result in result.profiles:
         profile_result.matches.sort(key=lambda item: item.notice.applications_end or NO_DEADLINE)

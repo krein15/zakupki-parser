@@ -15,3 +15,4 @@ data/
 # профили клиентов не выкладываются, только пример
 profiles/*
 !profiles/example.toml
+!docs/**/*.xlsx
