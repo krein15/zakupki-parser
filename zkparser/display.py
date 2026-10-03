@@ -66,6 +66,25 @@ def format_notice(notice: Notice) -> str:
     return "\n".join(lines)
 
 
+def format_match(notice: Notice, reasons: tuple[str, ...]) -> str:
+    """A matched notice in a few lines: what, how much, until when, for whom and why it matched."""
+    customers = notice.customers
+    if len(customers) == 1:
+        customer = f"{customers[0].customer.name} (ИНН {customers[0].customer.inn or 'не указан'})"
+    else:
+        customer = f"{len(customers)} заказчиков, совместная закупка"
+    deadline = f"заявки до {moment(notice.applications_end)}" if notice.applications_end else "срок подачи не указан"
+    return "\n".join(
+        [
+            f"{notice.reg_number} · {money(notice.max_price, notice.currency)} · {deadline}",
+            notice.title,
+            f"Заказчик: {customer}",
+            f"Почему: {'; '.join(reasons)}",
+            notice.url,
+        ]
+    )
+
+
 def _position(position: Position, notice: Notice) -> str:
     if notice.quantity_undefined or position.quantity is None:
         return f"{position.name} — {money(position.price, notice.currency)} за ед. ({position.unit})"

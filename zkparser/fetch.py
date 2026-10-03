@@ -27,6 +27,7 @@ class FetchReport:
     failed: list[tuple[str, str]] = field(default_factory=list)  # registry number, reason
     truncated: bool = False  # the search hit the site's limit of 5 000 results
     error: str = ""  # why the run stopped early; empty if it went through
+    hits: list[SearchHit] = field(default_factory=list)  # everything the search found
 
 
 def fetch_notices(
@@ -38,7 +39,7 @@ def fetch_notices(
     except SiteError as error:
         report.error = str(error)
         return report
-    report.found, report.truncated = len(result.hits), result.truncated
+    report.hits, report.found, report.truncated = result.hits, len(result.hits), result.truncated
 
     failures_in_row = 0
     for number, hit in enumerate(result.hits, 1):

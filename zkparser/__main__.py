@@ -1,6 +1,7 @@
 """Command line: ``python -m zkparser fetch --region 72 --date 2026-09-30``.
 
 * ``fetch`` searches the site and keeps the XML of every notice found in the local cache.
+* ``match`` picks the notices that fit one or more profiles (TOML files) and says why each one fits.
 * ``show`` prints a notice as parsed from its XML (downloading it if it is not cached yet).
 * ``regions`` lists the regions ``--region`` accepts.
 """
@@ -10,13 +11,16 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
+import textwrap
 from datetime import date, datetime
 from pathlib import Path
 
 from .cache import NoticeCache
-from .display import format_notice
-from .fetch import FetchReport, fetch_notices
+from .display import format_match, format_notice
+from .fetch import CACHED, FetchReport, fetch_notices
 from .notice_xml import NoticeFormatError, parse_notice
+from .pipeline import run_profiles
+from .profiles import ProfileError, load_profile
 from .regions import REGIONS, resolve_region
 from .settings import default_cache_dir
 from .website.client import SiteClient, SiteError
@@ -45,22 +49,36 @@ def build_parser() -> argparse.ArgumentParser:
         "-r", "--region", action="append", required=True, metavar="РЕГИОН",
         help="код (72) или часть названия (тюмен); можно указать несколько раз",
     )
-    fetch.add_argument("-d", "--date", type=parse_day, help="дата размещения (по умолчанию сегодня)")
-    fetch.add_argument("--from", dest="date_from", type=parse_day, metavar="ДАТА", help="начало периода размещения")
-    fetch.add_argument("--to", dest="date_to", type=parse_day, metavar="ДАТА", help="конец периода размещения")
+    add_period(fetch)
     fetch.add_argument("-q", "--query", default="", help="слова для поиска на сайте ЕИС, с учётом словоформ")
     fetch.add_argument("--price-from", type=int, metavar="РУБ", help="начальная цена от")
     fetch.add_argument("--price-to", type=int, metavar="РУБ", help="начальная цена до")
     fetch.add_argument("--all-stages", action="store_true", help="любой этап, а не только «Подача заявок»")
-    cache_help = "папка кэша (по умолчанию %%LOCALAPPDATA%%\\ZakupkiParser\\cache)"
-    fetch.add_argument("--cache-dir", type=Path, help=cache_help)
+    add_cache_dir(fetch)
+
+    match = commands.add_parser("match", help="отобрать закупки по профилям (словарям ниш или клиентов)")
+    match.add_argument("profiles", nargs="+", type=Path, metavar="ПРОФИЛЬ", help="файл профиля .toml")
+    add_period(match)
+    add_cache_dir(match)
 
     show = commands.add_parser("show", help="показать разобранное извещение")
     show.add_argument("number", help="номер закупки, например 0167200003426008040")
-    show.add_argument("--cache-dir", type=Path, help=cache_help)
+    add_cache_dir(show)
 
     commands.add_parser("regions", help="коды регионов для --region")
     return parser
+
+
+def add_period(command: argparse.ArgumentParser) -> None:
+    command.add_argument("-d", "--date", type=parse_day, help="дата размещения (по умолчанию сегодня)")
+    command.add_argument("--from", dest="date_from", type=parse_day, metavar="ДАТА", help="начало периода размещения")
+    command.add_argument("--to", dest="date_to", type=parse_day, metavar="ДАТА", help="конец периода размещения")
+
+
+def add_cache_dir(command: argparse.ArgumentParser) -> None:
+    command.add_argument(
+        "--cache-dir", type=Path, help="папка кэша (по умолчанию %%LOCALAPPDATA%%\\ZakupkiParser\\cache)"
+    )
 
 
 def period(args: argparse.Namespace, parser: argparse.ArgumentParser) -> tuple[date, date]:
@@ -92,13 +110,14 @@ def build_query(args: argparse.Namespace, parser: argparse.ArgumentParser) -> Se
     )
 
 
+def format_period(start: date, end: date) -> str:
+    return f"{start:%d.%m.%Y}" if start == end else f"{start:%d.%m.%Y}–{end:%d.%m.%Y}"
+
+
 def describe(query: SearchQuery) -> str:
     regions = [REGIONS[code] for code in query.regions]
     parts = [", ".join(regions) if len(regions) <= 3 else f"{len(regions)} регионов"]
-    days = f"{query.published_from:%d.%m.%Y}"
-    if query.published_to != query.published_from:
-        days += f"–{query.published_to:%d.%m.%Y}"
-    parts.append(days)
+    parts.append(format_period(query.published_from, query.published_to))
     if query.text:
         parts.append(f"«{query.text}»")
     if query.price_from is not None or query.price_to is not None:
@@ -143,6 +162,48 @@ def run_fetch(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     return 1 if report.error else 0
 
 
+def print_download(number: int, total: int, hit: SearchHit, status: str) -> None:
+    if status != CACHED:  # cached notices take no time: only downloads show progress
+        print_progress(number, total, hit, status)
+
+
+def print_region(region: str, report: FetchReport) -> None:
+    failed = f", ошибок {len(report.failed)}" if report.failed else ""
+    print(f"{REGIONS[region]}: найдено {report.found}, скачано {report.downloaded}, из кэша {report.cached}{failed}")
+
+
+def run_match(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
+    start, end = period(args, parser)
+    try:
+        profiles = [load_profile(path) for path in args.profiles]
+    except ProfileError as error:
+        parser.error(str(error))
+    client = SiteClient()
+    print(f"Профили: {', '.join(profile.name for profile in profiles)} · {format_period(start, end)}")
+    with NoticeCache(args.cache_dir or default_cache_dir()) as cache:
+        try:
+            result = run_profiles(
+                client, cache, profiles, start, end, progress=print_download, region_done=print_region
+            )
+        except ProfileError as error:
+            parser.error(str(error))
+        except KeyboardInterrupt:
+            print("\nОстановлено. Скачанное сохранено в кэше.")
+            return 130
+
+    for profile_result in result.profiles:
+        print(f"\n«{profile_result.profile.name}»: подошло {len(profile_result.matches)} из {profile_result.checked}")
+        for found in profile_result.matches:
+            print("\n" + textwrap.indent(format_match(found.notice, found.verdict.reasons), "  "))
+    for reg_number, reason in result.broken:
+        print(f"\nНе удалось разобрать {reg_number}: {reason}")
+    print(f"\nЗапросов к сайту {client.stats.requests}, просьб подождать (429) {client.stats.throttled}.")
+    if result.error:
+        print(f"Скачивание остановлено: {result.error}")
+        print("Отобрано из того, что успело скачаться. Повторный запуск продолжит с того же места.")
+    return 1 if result.error else 0
+
+
 def run_show(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     number = args.number.strip().lstrip("№").strip()
     if not number.isdigit():
@@ -174,12 +235,14 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, format="%(message)s")
-    for noisy in ("urllib3", "requests"):
+    for noisy in ("urllib3", "requests", "pymorphy3"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
     if args.command == "regions":
         return run_regions()
     if args.command == "show":
         return run_show(args, parser)
+    if args.command == "match":
+        return run_match(args, parser)
     return run_fetch(args, parser)
 
 

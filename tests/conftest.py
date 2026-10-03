@@ -25,12 +25,16 @@ def search_empty() -> bytes:
     return (FIXTURES / "search_empty.html").read_bytes()
 
 
-def results_page(numbers: list[str], total: int, updated: str = "30.09.2026") -> bytes:
+def results_page(
+    numbers: list[str], total: int, updated: str = "30.09.2026", stages: dict[str, str] | None = None
+) -> bytes:
     """A results page in the site's markup, reduced to what the parser reads."""
+    stages = stages or {}
     blocks = "".join(
         '<div class="search-registry-entry-block box-shadow-search-input">'
         '<div class="registry-entry__header-mid__number">'
         f'<a href="/epz/order/notice/ea20/view/common-info.html?regNumber={number}">№ {number}</a></div>'
+        f'<div class="registry-entry__header-mid__title">{stages.get(number, "Подача заявок")}</div>'
         f'<div class="data-block__title">Обновлено</div><div class="data-block__value">{updated}</div>'
         "</div>"
         for number in numbers
