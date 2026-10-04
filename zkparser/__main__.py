@@ -4,6 +4,7 @@
 * ``match`` picks the notices that fit one or more profiles (TOML files) and says why each one fits.
 * ``show`` prints a notice as parsed from its XML (downloading it if it is not cached yet).
 * ``regions`` lists the regions ``--region`` accepts.
+* ``monitor``, ``telegram`` and ``schedule`` run the checks for new notices, see monitor_cli.py.
 """
 
 from __future__ import annotations
@@ -15,7 +16,9 @@ import textwrap
 from datetime import date, datetime
 from pathlib import Path
 
+from . import monitor_cli
 from .cache import NoticeCache
+from .config import load_telegram_settings
 from .display import format_match, format_notice
 from .excel import build_file_name, export_profile
 from .fetch import CACHED, FetchReport, fetch_notices
@@ -71,6 +74,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_cache_dir(show)
 
     commands.add_parser("regions", help="коды регионов для --region")
+    monitor_cli.add_commands(commands, add_cache_dir)
     return parser
 
 
@@ -261,6 +265,9 @@ def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, format="%(message)s")
     for noisy in ("urllib3", "requests", "pymorphy3"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
+    monitor_cli.protect_logs(load_telegram_settings().token)
+    if args.command in ("monitor", "telegram", "schedule"):
+        return monitor_cli.run(args, parser)
     if args.command == "regions":
         return run_regions()
     if args.command == "show":
@@ -270,7 +277,22 @@ def main(argv: list[str] | None = None) -> int:
     return run_fetch(args, parser)
 
 
+def capture_console() -> None:
+    """pythonw.exe (Task Scheduler) has no console and drops output and tracebacks: keep them in a file instead."""
+    if sys.stdout is not None and sys.stderr is not None:
+        return
+    from .settings import app_data_dir
+
+    path = app_data_dir() / "logs" / "console.log"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    stream = path.open("a", encoding="utf-8", buffering=1)
+    stream.write(f"\n--- {datetime.now():%Y-%m-%d %H:%M:%S} {' '.join(sys.argv)}\n")
+    sys.stdout = sys.stdout or stream
+    sys.stderr = sys.stderr or stream
+
+
 if __name__ == "__main__":
+    capture_console()
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")

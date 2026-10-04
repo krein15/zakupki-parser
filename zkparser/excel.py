@@ -96,8 +96,16 @@ POSITION_COLUMNS = [
 
 
 def build_file_name(profile: Profile, generated_at: datetime) -> str:
-    subject = " ".join(re.sub(r'[<>:"/\\|?*\x00-\x1f]+', " ", profile.name).split())[:60].strip() or "закупки"
-    return f"{subject}_{generated_at:%Y-%m-%d_%H-%M-%S}.xlsx"
+    return f"{_file_subject(profile)}_{generated_at:%Y-%m-%d_%H-%M-%S}.xlsx"
+
+
+def daily_file_name(profile: Profile, day: date) -> str:
+    """Monitoring rewrites one report a day instead of piling up a file an hour."""
+    return f"{_file_subject(profile)}_мониторинг_{day:%Y-%m-%d}.xlsx"
+
+
+def _file_subject(profile: Profile) -> str:
+    return " ".join(re.sub(r'[<>:"/\\|?*\x00-\x1f]+', " ", profile.name).split())[:60].strip() or "закупки"
 
 
 def export_profile(path: Path, result: ProfileResult, start: date, end: date, generated_at: datetime) -> Path:

@@ -85,3 +85,34 @@ def numbers(count: int, start: int = 0) -> list[str]:
 
 def days(first: date, count: int) -> list[date]:
     return [first + timedelta(days=i) for i in range(count)]
+
+
+NOTICES = {
+    "0167100004126000028": "auction_ktru",  # diesel fuel and petrol, applications until 09.10
+    "0167100002326000043": "quotation",  # storage services, until 07.10
+    "0167200003426008040": "drugs",  # until 08.10 08:00
+    "0167200003426008053": "joint",  # tomato paste, until 08.10 08:00
+    "1200700110126000001": "audit_contest",  # until 20.10
+}
+
+
+class RegionSite:
+    """Search results by region (one page) and notice XML from the fixtures."""
+
+    def __init__(self, by_region: dict[str, list[str]], stages: dict[str, str] | None = None, xml=None):
+        self.by_region = by_region
+        self.stages = stages or {}
+        self.xml = xml or {}
+        self.calls: list[tuple[str, dict]] = []
+
+    def get(self, path, params=None):
+        self.calls.append((path, params))
+        if path == NOTICE_XML_PATH:
+            number = params["regNumber"]
+            return self.xml.get(number) or (FIXTURES / f"notice_{NOTICES[number]}.xml").read_bytes()
+        assert path == SEARCH_PATH
+        numbers = self.by_region.get(params["customerPlace"], [])
+        return results_page(numbers, len(numbers), stages=self.stages)
+
+    def searches(self) -> list[dict]:
+        return [params for path, params in self.calls if path == SEARCH_PATH]

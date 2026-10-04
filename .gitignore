@@ -16,3 +16,9 @@ data/
 profiles/*
 !profiles/example.toml
 !docs/**/*.xlsx
+
+# служебные файлы Office при открытом документе
+~$*
+
+# служебные файлы Office при открытом документе
+~$*

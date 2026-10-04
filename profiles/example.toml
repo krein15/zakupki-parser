@@ -39,3 +39,7 @@ exclude_customer_inn = []  # кроме этих
 price_from = 10000         # начальная цена, ₽
 price_to = 3000000
 all_stages = false         # true — любой этап, а не только «Подача заявок»
+
+# Куда слать новые закупки при мониторинге; пусто — чат по умолчанию (TELEGRAM_CHAT_ID в .env).
+# Номер чата подскажет: python -m zkparser telegram
+telegram_chat = ""

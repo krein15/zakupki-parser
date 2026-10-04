@@ -7,6 +7,7 @@ price range. See profiles/example.toml.
 
 from __future__ import annotations
 
+import re
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -14,7 +15,8 @@ from pathlib import Path
 from .regions import resolve_region
 
 LIST_FIELDS = ("regions", "keywords", "minus", "okpd2", "ktru", "customer_inn", "exclude_customer_inn")
-KNOWN_FIELDS = {"name", "price_from", "price_to", "all_stages", *LIST_FIELDS}
+KNOWN_FIELDS = {"name", "price_from", "price_to", "all_stages", "telegram_chat", *LIST_FIELDS}
+TELEGRAM_CHAT = re.compile(r"-?\d{3,}|@[A-Za-z]\w{3,}")
 
 
 class ProfileError(ValueError):
@@ -34,6 +36,7 @@ class Profile:
     price_from: int | None = None
     price_to: int | None = None
     all_stages: bool = False
+    telegram_chat: str = ""  # where to send new notices; empty — the default chat from .env
     path: Path | None = field(default=None, compare=False)
 
 
@@ -89,6 +92,10 @@ def parse_profile(data: dict, path: Path) -> Profile:
     if not isinstance(all_stages, bool):
         raise ProfileError(f"{path}: «all_stages» — true или false")
 
+    telegram_chat = str(data.get("telegram_chat", "")).strip()
+    if telegram_chat and (isinstance(data["telegram_chat"], bool) or not TELEGRAM_CHAT.fullmatch(telegram_chat)):
+        raise ProfileError(f"{path}: «telegram_chat» — номер чата (123456789, -1001234567890) или @канал")
+
     return Profile(
         name=str(data.get("name") or path.stem),
         regions=regions,
@@ -101,5 +108,6 @@ def parse_profile(data: dict, path: Path) -> Profile:
         price_from=prices["price_from"],
         price_to=prices["price_to"],
         all_stages=all_stages,
+        telegram_chat=telegram_chat,
         path=path,
     )
