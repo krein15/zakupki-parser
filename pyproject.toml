@@ -13,7 +13,7 @@ build-backend = "setuptools.build_meta"
 include = ["zkparser*"]
 
 [tool.setuptools.package-data]
-zkparser = ["certs/*.pem"]
+zkparser = ["certs/*.pem", "templates/*.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

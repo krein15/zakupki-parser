@@ -2,7 +2,7 @@
 
 A profile names its regions and the matching rules: keywords and minus words (word forms are matched, ``*`` ends
 a word prefix, quotes keep a phrase in order), OKPD2/KTRU code prefixes, customer INNs to include or exclude and the
-price range. See profiles/example.toml.
+price range. See docs/example-profile.toml; ready-made starters for common niches are in templates/.
 """
 
 from __future__ import annotations
@@ -18,6 +18,8 @@ from .regions import resolve_region
 LIST_FIELDS = ("regions", "keywords", "minus", "okpd2", "ktru", "customer_inn", "exclude_customer_inn")
 KNOWN_FIELDS = {"name", "price_from", "price_to", "all_stages", "telegram_chat", *LIST_FIELDS}
 TELEGRAM_CHAT = re.compile(r"-?\d{3,}|@[A-Za-z]\w{3,}")
+TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
+TEMPLATE_FIELDS = ("keywords", "minus", "okpd2", "ktru")
 
 
 class ProfileError(ValueError):
@@ -39,6 +41,38 @@ class Profile:
     all_stages: bool = False
     telegram_chat: str = ""  # where to send new notices; empty — the default chat from .env
     path: Path | None = field(default=None, compare=False)
+
+
+@dataclass(frozen=True)
+class Template:
+    """A starter dictionary of a common niche: words and codes, no regions, prices or customers."""
+
+    name: str
+    keywords: tuple[str, ...] = ()
+    minus: tuple[str, ...] = ()
+    okpd2: tuple[str, ...] = ()
+    ktru: tuple[str, ...] = ()
+
+
+def load_templates(folder: Path = TEMPLATES_DIR) -> list[Template]:
+    """The templates shipped with the program. Their OKPD2 classes were checked against real notices of the Tyumen
+    region in October 2026; a template is where a niche dictionary starts, not where it ends."""
+    templates = []
+    for path in sorted(folder.glob("*.toml")):
+        data = tomllib.loads(path.read_text(encoding="utf-8"))
+        templates.append(Template(data["name"], *(tuple(data.get(field, ())) for field in TEMPLATE_FIELDS)))
+    return templates
+
+
+def from_template(template: Template, regions: tuple[str, ...] = ()) -> Profile:
+    return Profile(
+        name=template.name,
+        regions=regions,
+        keywords=template.keywords,
+        minus=template.minus,
+        okpd2=template.okpd2,
+        ktru=template.ktru,
+    )
 
 
 def dump_profile(profile: Profile) -> str:

@@ -8,7 +8,7 @@ import pytest
 
 from zkparser.profiles import ProfileError, load_profile, parse_profile, save_profile
 
-EXAMPLE = Path(__file__).resolve().parents[1] / "profiles" / "example.toml"
+EXAMPLE = Path(__file__).resolve().parents[1] / "docs" / "example-profile.toml"
 PATH = Path("client.toml")
 
 

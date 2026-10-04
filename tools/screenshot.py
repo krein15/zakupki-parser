@@ -2,13 +2,16 @@
 
 Usage: python tools/screenshot.py OUTPUT.png [light|dark] [tab name]
 
-The "Результаты" tab is filled with the anonymized test notices, so no network is needed. On the "Мониторинг" tab the
-bot's name and the chat number are replaced: the screenshots go into a public repository.
+The window works on a temporary profiles folder with one profile made from the "Канцтовары и бумага" template, so the
+screenshots do not depend on your own profiles. The "Результаты" tab is filled with the anonymized test notices, so no
+network is needed. On the "Мониторинг" tab the bot's name and the chat number are replaced: the screenshots go into a
+public repository.
 """
 
 from __future__ import annotations
 
 import sys
+import tempfile
 from datetime import date
 from pathlib import Path
 
@@ -18,11 +21,12 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 import window_capture  # noqa: E402
 
+from zkparser.gui import app as window  # noqa: E402
 from zkparser.gui.app import App, setup_logging  # noqa: E402
 from zkparser.matching import Matcher  # noqa: E402
 from zkparser.notice_xml import parse_notice  # noqa: E402
 from zkparser.pipeline import Found, ProfileResult, RunResult  # noqa: E402
-from zkparser.profiles import Profile  # noqa: E402
+from zkparser.profiles import Profile, from_template, load_templates, save_profile  # noqa: E402
 from zkparser.website.search import SearchHit  # noqa: E402
 
 FIXTURES = ROOT / "tests" / "fixtures"
@@ -43,11 +47,22 @@ def demo_results() -> RunResult:
     return RunResult([ProfileResult(profile, checked=112, matches=matches)])
 
 
+def demo_profiles() -> Path:
+    folder = Path(tempfile.mkdtemp(prefix="zk-demo-"))
+    template = next(t for t in load_templates() if t.name == "Канцтовары и бумага")
+    profile = from_template(template, ("72000000000",))
+    save_profile(Profile(**{**profile.__dict__, "name": "Канцтовары — Тюмень", "price_from": 10000}),
+                 folder / "Канцтовары — Тюмень.toml")
+    return folder
+
+
 def main() -> None:
     output = Path(sys.argv[1])
     appearance = sys.argv[2] if len(sys.argv) > 2 else "light"
     tab = sys.argv[3] if len(sys.argv) > 3 else None
     setup_logging()
+    folder = demo_profiles()
+    window.profiles_dir = lambda: folder
     if tab == "Мониторинг":
         App._refresh_monitoring = lambda _app: None  # no real bot name or chat id on a public screenshot
     app = App()

@@ -10,7 +10,7 @@ from PyInstaller.utils.hooks import collect_data_files, copy_metadata
 
 datas = [
     ("assets/icon.ico", "assets"),
-    ("profiles/example.toml", "profiles"),  # copied to Documents\Zakupki Parser\profiles on the first start
+    ("zkparser/templates/*.toml", "zkparser/templates"),  # niche templates of the "Новый профиль…" menu
     ("zkparser/certs/russian_trusted_root_ca.pem", "zkparser/certs"),
 ]
 datas += collect_data_files("customtkinter")  # themes and fonts

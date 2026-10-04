@@ -10,7 +10,6 @@ from __future__ import annotations
 import logging
 import os
 import queue
-import shutil
 import subprocess
 import threading
 import webbrowser
@@ -31,7 +30,7 @@ from ..fetch import STOPPED, FetchReport
 from ..monitor import MonitorResult, MonitorState, monitor
 from ..monitor_cli import TEST_MESSAGE, parse_time
 from ..pipeline import Found, RunResult, run_profiles
-from ..profiles import Profile, ProfileError, load_profile, parse_profile, save_profile
+from ..profiles import Profile, ProfileError, from_template, load_profile, load_templates, parse_profile, save_profile
 from ..regions import REGIONS
 from ..scheduler import MOSCOW, SchedulerError
 from ..settings import APP_NAME, app_data_dir, default_cache_dir, default_output_dir, profiles_dir
@@ -58,8 +57,9 @@ from .widgets import (
 log = logging.getLogger("zkparser.gui")
 
 LOG_COLORS = {"warning": theme.WARNING, "error": theme.DANGER, "success": theme.SUCCESS}
-EXAMPLE_PROFILE = "example.toml"
 NEW_PROFILE = "— новый профиль —"
+NEW_MENU = "Новый профиль…"
+EMPTY_TEMPLATE = "Пустой"
 MAX_RESULT_CARDS = 60
 INTERVALS = ["30", "60", "120"]
 ENV_TEMPLATE = (
@@ -127,7 +127,6 @@ class App(ctk.CTk):
         for name in ("zkparser.website", "zkparser.monitor"):
             logging.getLogger(name).addHandler(handler)
 
-        seed_profiles()
         self._load_profile_list(self.prefs.profile)
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.after(100, self._poll_events)
@@ -169,14 +168,22 @@ class App(ctk.CTk):
         card.pack(fill="x")
         row = ctk.CTkFrame(card.body, fg_color="transparent")
         row.pack(fill="x", pady=(0, 12))
+        # Buttons are packed from the right first; the list of profiles takes whatever width is left.
+        neutral_button(row, "Папка", lambda: self._open_path(profiles_dir()), width=72).pack(side="right", padx=(8, 0))
+        accent_button(row, "Сохранить", self._save_profile, width=106).pack(side="right", padx=(8, 0))
+        self.templates = {template.name: template for template in load_templates()}
+        self.template_menu = ctk.CTkOptionMenu(
+            row, values=[EMPTY_TEMPLATE, *self.templates], command=self._new_from_template, width=150, height=34,
+            font=theme.font(13), dropdown_font=theme.font(13), fg_color=theme.NEUTRAL_BUTTON,
+            button_color=theme.NEUTRAL_BUTTON, button_hover_color=theme.NEUTRAL_BUTTON_HOVER, text_color=theme.TEXT,
+            dynamic_resizing=False)
+        self.template_menu.set(NEW_MENU)
+        self.template_menu.pack(side="right", padx=(8, 0))
         self.profile_menu = ctk.CTkOptionMenu(
-            row, values=[NEW_PROFILE], command=self._choose_profile, width=280, height=34, font=theme.font(13),
+            row, values=[NEW_PROFILE], command=self._choose_profile, width=160, height=34, font=theme.font(13),
             dropdown_font=theme.font(13), fg_color=theme.INPUT_BG, button_color=theme.NEUTRAL_BUTTON,
             button_hover_color=theme.NEUTRAL_BUTTON_HOVER, text_color=theme.TEXT, dynamic_resizing=False)
-        self.profile_menu.pack(side="left")
-        neutral_button(row, "Новый", self._new_profile, width=90).pack(side="left", padx=(8, 0))
-        accent_button(row, "Сохранить", self._save_profile, width=110).pack(side="left", padx=(8, 0))
-        neutral_button(row, "Папка", lambda: self._open_path(profiles_dir()), width=80).pack(side="left", padx=(8, 0))
+        self.profile_menu.pack(side="left", fill="x", expand=True)
 
         # Labels on the left of the fields: everything fits without scrolling on a laptop screen.
         grid = ctk.CTkFrame(card.body, fg_color="transparent")
@@ -376,7 +383,8 @@ class App(ctk.CTk):
 
     def _load_profile_list(self, select: str = "") -> None:
         folder = profiles_dir()
-        self.profile_files = {path.name: path for path in sorted(folder.glob("*.toml"))} if folder.exists() else {}
+        # Shown without ".toml": the menu lists profiles, not files.
+        self.profile_files = {path.stem: path for path in sorted(folder.glob("*.toml"))} if folder.exists() else {}
         self.profile_menu.configure(values=[*self.profile_files, NEW_PROFILE])
         self._build_monitored_list()
         choice = select if select in self.profile_files else next(iter(self.profile_files), "")
@@ -407,6 +415,17 @@ class App(ctk.CTk):
         self.profile_path = None
         self.profile_menu.set(NEW_PROFILE)
         self._show_profile(Profile(name="Новый профиль", regions=tuple(self.regions)))
+
+    def _new_from_template(self, choice: str) -> None:
+        """A new, not yet saved profile: words and codes from the template, regions kept from the form."""
+        self.template_menu.set(NEW_MENU)
+        if choice not in self.templates:
+            self._new_profile()
+            return
+        self.profile_path = None
+        self.profile_menu.set(NEW_PROFILE)
+        self._show_profile(from_template(self.templates[choice], tuple(self.regions)))
+        self._log("info", f"Шаблон «{choice}»: проверьте регионы и слова, затем «Сохранить».")
 
     def _show_profile(self, profile: Profile) -> None:
         set_entry(self.name, profile.name)
@@ -455,7 +474,8 @@ class App(ctk.CTk):
             self._warn(without_path(error))
             return
         path = self.profile_path
-        if path is None or path.name == EXAMPLE_PROFILE:  # the example keeps its comments: save a copy instead
+        if path is None:
+            profiles_dir().mkdir(parents=True, exist_ok=True)
             chosen = filedialog.asksaveasfilename(
                 parent=self, initialdir=profiles_dir(), initialfile=f"{safe_file_name(profile.name)}.toml",
                 defaultextension=".toml", filetypes=[("Профиль", "*.toml")], title="Сохранить профиль")
@@ -464,7 +484,7 @@ class App(ctk.CTk):
             path = Path(chosen)
         save_profile(profile, path)
         self._log("success", f"Профиль сохранён: {path.name}")
-        self._load_profile_list(path.name)
+        self._load_profile_list(path.stem)
 
     def _pick_regions(self) -> None:
         def done(selected: list[str]) -> None:
@@ -605,7 +625,7 @@ class App(ctk.CTk):
         label(self.monitored_frame, "Профили:").grid(row=0, column=0, sticky="w", padx=(0, 10))
         for index, name in enumerate(self.profile_files):
             var = ctk.BooleanVar(value=name in self.prefs.monitored)
-            ctk.CTkCheckBox(self.monitored_frame, text=Path(name).stem, variable=var, font=theme.font(13),
+            ctk.CTkCheckBox(self.monitored_frame, text=name, variable=var, font=theme.font(13),
                             text_color=theme.TEXT, fg_color=theme.ACCENT, hover_color=theme.ACCENT_HOVER,
                             checkbox_width=18, checkbox_height=18, corner_radius=5,
                             command=self._remember_monitored).grid(row=index // 3, column=1 + index % 3, sticky="w",
@@ -939,15 +959,6 @@ def _schedule_text(status: scheduler.TaskStatus) -> str:
     if status.last_run:
         text += f" Последняя: {status.last_run} — {status.last_result}."
     return text
-
-
-def seed_profiles() -> None:
-    """The built program keeps profiles in the documents folder: start it with the example."""
-    folder = profiles_dir()
-    example = theme.resource_path(f"profiles/{EXAMPLE_PROFILE}")
-    if not folder.exists() and example.exists():
-        folder.mkdir(parents=True)
-        shutil.copy2(example, folder / EXAMPLE_PROFILE)
 
 
 def setup_logging() -> None:

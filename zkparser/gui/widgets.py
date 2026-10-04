@@ -133,6 +133,8 @@ class RegionPicker(ctk.CTkToplevel):
         for code, (var, box) in self._items.items():
             if not text or text in REGIONS[code].casefold() or text == code[:2] or var.get():
                 box.pack(anchor="w", padx=8, pady=3)
+        # A list scrolled down keeps its offset when it gets shorter, and the matches stay out of sight above.
+        self.list._parent_canvas.yview_moveto(0)
 
     def _clear(self) -> None:
         for var, _ in self._items.values():

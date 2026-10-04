@@ -12,9 +12,8 @@ dist/
 .env
 data/
 
-# профили клиентов не выкладываются, только пример
+# профили клиентов не выкладываются: пример формата — docs/example-profile.toml, шаблоны — zkparser/templates
 profiles/*
-!profiles/example.toml
 !docs/**/*.xlsx
 
 # служебные файлы Office при открытом документе
