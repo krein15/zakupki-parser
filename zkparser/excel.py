@@ -1,7 +1,7 @@
 """Excel report for one profile: one file per profile, so a client gets a report of their own.
 
 * "Закупки" — a row per matching notice: number (a link to the notice), title, why it matched, price, application
-  deadline, customers and their INNs, region, platform, notes.
+  deadline, current stage, customers and their INNs, region, platform, notes.
 * "Позиции" — every position of those notices, the matching ones highlighted.
 * "Профиль" — what was searched for, over which period and how many notices were checked.
 
@@ -37,6 +37,14 @@ SECTION_FONT = Font(bold=True, size=12, color="2B2D42")
 MUTED_FONT = Font(color="6B7280")
 LINK_FONT = Font(color="0563C1", underline="single")
 MATCH_FILL = PatternFill("solid", fgColor="E8F5E9")
+# The stage as the search shows it at report time, coloured by a word it contains.
+STAGE_FONTS = {
+    "подача": Font(bold=True, color="15803D"),  # Подача заявок
+    "комисси": Font(bold=True, color="B45309"),  # Работа комиссии
+    "отмен": Font(bold=True, color="B91C1C"),  # Определение поставщика отменено, Закупка отменена
+    "заверш": Font(color="6B7280"),  # Определение поставщика завершено, Закупка завершена
+}
+STAGE_COLUMN = "Этап"
 TABLE_STYLE = TableStyleInfo(name="TableStyleLight1", showRowStripes=True)
 
 MONEY = '#,##0.00 "₽"'
@@ -64,6 +72,7 @@ NOTICE_COLUMNS = [
     Column("Начальная цена", 17, MONEY),
     Column("Подача заявок до", 17, DATETIME),
     Column("Часовой пояс", 10),
+    Column("Этап", 18, wrap=True),
     Column("Способ", 24, wrap=True),
     Column("Заказчик", 40, wrap=True),
     Column("ИНН заказчика", 14, wrap=True),
@@ -144,6 +153,11 @@ def moscow_offset(moment: datetime | None) -> str:
     return "МСК" if hours == 0 else f"МСК{hours:+g}"
 
 
+def stage_font(stage: str) -> Font:
+    lowered = stage.casefold()
+    return next((font for word, font in STAGE_FONTS.items() if word in lowered), Font())
+
+
 def _notice_row(found: Found) -> list[Any]:
     notice = found.notice
     customers = [part.customer for part in notice.customers]
@@ -163,6 +177,7 @@ def _notice_row(found: Found) -> list[Any]:
         notice.max_price,
         _local(notice.applications_end),
         moscow_offset(notice.applications_end),
+        found.hit.stage,
         notice.placing_way,
         "\n".join(customer.name for customer in customers),
         "\n".join(customer.inn for customer in customers if customer.inn),
@@ -208,6 +223,8 @@ def _write_table(
             cell.alignment = Alignment(vertical="top", wrap_text=column.wrap)
             if highlighted and highlighted[index]:
                 cell.fill = MATCH_FILL
+            if column.title == STAGE_COLUMN and isinstance(value, str):
+                cell.font = stage_font(value)
             if column.wrap and isinstance(value, str):
                 lines = max(lines, _estimate_lines(value, column.width))
         if links and links[index]:

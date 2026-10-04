@@ -214,7 +214,7 @@ def run_match(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     for profile_result in result.profiles:
         print(f"\n«{profile_result.profile.name}»: подошло {len(profile_result.matches)} из {profile_result.checked}")
         for found in profile_result.matches:
-            print("\n" + textwrap.indent(format_match(found.notice, found.verdict.reasons), "  "))
+            print("\n" + textwrap.indent(format_match(found.notice, found.verdict.reasons, found.hit.stage), "  "))
     for reg_number, reason in result.broken:
         print(f"\nНе удалось разобрать {reg_number}: {reason}")
     if not args.no_excel:

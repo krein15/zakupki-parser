@@ -26,9 +26,11 @@ PROFILE = Profile(
 )
 
 
-def found(name: str, reasons=("название: «томатн*»",), positions=(1,), **changes) -> Found:
+def found(
+    name: str, reasons=("название: «томатн*»",), positions=(1,), stage="Подача заявок", **changes
+) -> Found:
     notice = replace(parse_notice((FIXTURES / f"notice_{name}.xml").read_bytes()), **changes)
-    hit = SearchHit(reg_number=notice.reg_number, url=notice.url, published=date(2026, 10, 2))
+    hit = SearchHit(reg_number=notice.reg_number, url=notice.url, published=date(2026, 10, 2), stage=stage)
     return Found(notice, hit, Verdict(True, reasons, positions), (TYUMEN,))
 
 
@@ -57,13 +59,29 @@ def test_notice_row(tmp_path):
     assert row["D"].number_format == '#,##0.00 "₽"'
     assert row["E"].value == datetime(2026, 10, 8, 8, 0)  # local time of the customer, Excel keeps no zones
     assert row["F"].value == "МСК+2"
-    assert row["G"].value == "Электронный аукцион"
-    assert len(row["H"].value.splitlines()) == 4
-    assert row["I"].value.splitlines() == ["7224009250", "7216001666", "7228000177", "7215004008"]
-    assert row["J"].value == "Тюменская область"
-    assert row["K"].value == "АО «Сбербанк-АСТ»"
-    assert row["L"].value == datetime(2026, 10, 2)  # from the search, not the XML's signing date
-    assert row["M"].value == "совместная закупка, заказчиков: 4"
+    assert row["G"].value == "Подача заявок"
+    assert row["H"].value == "Электронный аукцион"
+    assert len(row["I"].value.splitlines()) == 4
+    assert row["J"].value.splitlines() == ["7224009250", "7216001666", "7228000177", "7215004008"]
+    assert row["K"].value == "Тюменская область"
+    assert row["L"].value == "АО «Сбербанк-АСТ»"
+    assert row["M"].value == datetime(2026, 10, 2)  # from the search, not the XML's signing date
+    assert row["N"].value == "совместная закупка, заказчиков: 4"
+
+
+@pytest.mark.parametrize(
+    ("stage", "color"),
+    [
+        ("Подача заявок", "15803D"),
+        ("Работа комиссии", "B45309"),
+        ("Определение поставщика отменено", "B91C1C"),
+        ("Закупка завершена", "6B7280"),
+    ],
+)
+def test_stage_is_coloured(tmp_path, stage, color):
+    cell = export(tmp_path, [found("drugs", stage=stage)])["Закупки"]["G2"]
+    assert cell.value == stage
+    assert cell.font.color.rgb.endswith(color)
 
 
 def test_positions_sheet_marks_matching_positions(tmp_path):
@@ -83,7 +101,7 @@ def test_positions_sheet_marks_matching_positions(tmp_path):
 
 def test_undefined_quantity_keeps_unit_prices_only(tmp_path):
     workbook = export(tmp_path, [found("quotation")])
-    assert "количество не определено" in workbook["Закупки"]["M2"].value
+    assert "количество не определено" in workbook["Закупки"]["N2"].value
     quantity, _, price, total = next(workbook["Позиции"].iter_rows(min_row=2, min_col=7, values_only=True))
     assert (quantity, price, total) == (None, 25.94, None)
 
