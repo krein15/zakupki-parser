@@ -42,7 +42,8 @@ def test_repetition_errors(start, end, every, message):
 def test_task_definition(tmp_path):
     profile = tmp_path / "мой профиль.toml"
     python = Path(r"C:\Python\pythonw.exe")
-    text = task_xml([profile], time(8), time(20), 60, datetime(2026, 10, 4, 9, 0, tzinfo=UTC5), python)
+    program = (python, ["-m", "zkparser"], scheduler.PROJECT_DIR)
+    text = task_xml([profile], time(8), time(20), 60, datetime(2026, 10, 4, 9, 0, tzinfo=UTC5), program)
     root = ET.fromstring(text.encode("utf-16"))
     find = lambda path: root.find(path, NS).text  # noqa: E731
     assert find("t:Triggers/t:CalendarTrigger/t:StartBoundary") == "2026-10-04T10:00:00"
@@ -118,3 +119,10 @@ def test_remove_only_an_existing_task():
     runner = FakeRunner({"state": "Ready", "result": 0})
     scheduler.remove(run=runner)
     assert runner.calls[-1] == ["schtasks", "/Delete", "/F", "/TN", scheduler.TASK_PATH]
+
+
+def test_built_program_starts_itself(monkeypatch, tmp_path):
+    exe = tmp_path / "ZakupkiParser.exe"
+    monkeypatch.setattr(scheduler.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(scheduler.sys, "executable", str(exe))
+    assert scheduler.launcher() == (exe, [], tmp_path)

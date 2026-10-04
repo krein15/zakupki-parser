@@ -17,6 +17,8 @@ CACHED = "из кэша"
 FAILED = "ошибка"
 
 Progress = Callable[[int, int, SearchHit, str], None]  # number, total, notice, one of the statuses above
+Cancel = Callable[[], bool]  # asked between notices: True stops the run, what was downloaded stays in the cache
+STOPPED = "Остановлено по запросу"
 
 
 @dataclass
@@ -31,7 +33,11 @@ class FetchReport:
 
 
 def fetch_notices(
-    client: Client, cache: NoticeCache, query: SearchQuery, progress: Progress | None = None
+    client: Client,
+    cache: NoticeCache,
+    query: SearchQuery,
+    progress: Progress | None = None,
+    cancel: Cancel | None = None,
 ) -> FetchReport:
     report = FetchReport()
     try:
@@ -43,6 +49,9 @@ def fetch_notices(
 
     failures_in_row = 0
     for number, hit in enumerate(result.hits, 1):
+        if cancel and cancel():
+            report.error = STOPPED
+            return report
         if cache.is_fresh(hit):
             report.cached += 1
             status = CACHED

@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 
 from .cache import NoticeCache
-from .fetch import FetchReport, Progress, fetch_notices
+from .fetch import Cancel, FetchReport, Progress, fetch_notices
 from .matching import Matcher, Verdict
 from .models import Notice
 from .notice_xml import NoticeFormatError, parse_notice
@@ -53,13 +53,14 @@ def run_profiles(
     *,
     progress: Progress | None = None,
     region_done: RegionDone | None = None,
+    cancel: Cancel | None = None,
 ) -> RunResult:
     matchers = [Matcher(profile) for profile in profiles]  # a broken keyword surfaces before any download
     result = RunResult([ProfileResult(profile) for profile in profiles])
 
     found: dict[str, tuple[SearchHit, set[str]]] = {}  # a joint purchase can come up in several regions
     for region, query in _queries(profiles, start, end):
-        report = fetch_notices(client, cache, query, progress)
+        report = fetch_notices(client, cache, query, progress, cancel)
         result.reports[region] = report
         if region_done:
             region_done(region, report)

@@ -65,10 +65,15 @@ def repetition(start: time, end: time, every_minutes: int) -> str:
 
 
 def task_xml(
-    profiles: list[Path], start: time, end: time, every_minutes: int, now: datetime, python: Path | None = None
+    profiles: list[Path],
+    start: time,
+    end: time,
+    every_minutes: int,
+    now: datetime,
+    program: tuple[Path, list[str], Path] | None = None,
 ) -> str:
-    python = python or windowless_python()
-    arguments = " ".join(["-m", "zkparser", "monitor", *(f'"{path.resolve()}"' for path in profiles)])
+    command, prefix, workdir = program or launcher()
+    arguments = " ".join([*prefix, "monitor", *(f'"{path.resolve()}"' for path in profiles)])
     first = local_start(start, now)
     return f"""<?xml version="1.0" encoding="UTF-16"?>
 <Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
@@ -105,13 +110,21 @@ def task_xml(
   </Settings>
   <Actions Context="Author">
     <Exec>
-      <Command>{escape(str(python))}</Command>
+      <Command>{escape(str(command))}</Command>
       <Arguments>{escape(arguments)}</Arguments>
-      <WorkingDirectory>{escape(str(PROJECT_DIR))}</WorkingDirectory>
+      <WorkingDirectory>{escape(str(workdir))}</WorkingDirectory>
     </Exec>
   </Actions>
 </Task>
 """
+
+
+def launcher() -> tuple[Path, list[str], Path]:
+    """What the task starts: the built program itself, or pythonw with the package from the project folder."""
+    if getattr(sys, "frozen", False):
+        executable = Path(sys.executable)
+        return executable, [], executable.parent
+    return windowless_python(), ["-m", "zkparser"], PROJECT_DIR
 
 
 def windowless_python() -> Path:

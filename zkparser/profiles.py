@@ -7,6 +7,7 @@ price range. See profiles/example.toml.
 
 from __future__ import annotations
 
+import json
 import re
 import tomllib
 from dataclasses import dataclass, field
@@ -38,6 +39,45 @@ class Profile:
     all_stages: bool = False
     telegram_chat: str = ""  # where to send new notices; empty — the default chat from .env
     path: Path | None = field(default=None, compare=False)
+
+
+def dump_profile(profile: Profile) -> str:
+    """The profile as TOML, the way load_profile reads it. A JSON string is a valid TOML basic string."""
+    lines = [
+        "# Профиль Zakupki Parser: что искать для одной ниши или одного клиента.",
+        "# Слова ищутся по словоформам, «*» — начало слова, фраза в кавычках — точный порядок слов.",
+        "",
+        f"name = {_string(profile.name)}",
+        f"regions = {_strings([code[:2] for code in profile.regions])}",
+    ]
+    for name in ("keywords", "minus", "okpd2", "ktru", "customer_inn", "exclude_customer_inn"):
+        values = getattr(profile, name)
+        if values or name in ("keywords", "minus"):
+            lines.append(f"{name} = {_strings(values)}")
+    for name in ("price_from", "price_to"):
+        if getattr(profile, name) is not None:
+            lines.append(f"{name} = {getattr(profile, name)}")
+    lines.append(f"all_stages = {'true' if profile.all_stages else 'false'}")
+    if profile.telegram_chat:
+        lines.append(f"telegram_chat = {_string(profile.telegram_chat)}")
+    return "\n".join(lines) + "\n"
+
+
+def save_profile(profile: Profile, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(dump_profile(profile), encoding="utf-8")
+
+
+def _string(value: str) -> str:
+    return json.dumps(value, ensure_ascii=False)
+
+
+def _strings(values) -> str:
+    if not values:
+        return "[]"
+    if sum(len(value) for value in values) < 80:
+        return "[" + ", ".join(_string(value) for value in values) + "]"
+    return "[\n" + "".join(f"    {_string(value)},\n" for value in values) + "]"
 
 
 def load_profile(path: Path) -> Profile:

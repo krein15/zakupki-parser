@@ -18,7 +18,7 @@ from pathlib import Path
 
 from .cache import NoticeCache
 from .excel import daily_file_name, export_profile
-from .fetch import Progress
+from .fetch import Cancel, Progress
 from .pipeline import Found, ProfileResult, RegionDone, RunResult, run_profiles
 from .profiles import Profile
 from .telegram import TelegramBot, TelegramError, notice_message
@@ -141,9 +141,12 @@ def monitor(
     out_dir: Path | None = None,
     progress: Progress | None = None,
     region_done: RegionDone | None = None,
+    cancel: Cancel | None = None,
 ) -> MonitorResult:
     start, end = monitoring_period(profiles, state, today)
-    run = run_profiles(client, cache, profiles, start, end, progress=progress, region_done=region_done)
+    run = run_profiles(
+        client, cache, profiles, start, end, progress=progress, region_done=region_done, cancel=cancel
+    )
     result = MonitorResult(start, end, run)
 
     for profile_result in run.profiles:

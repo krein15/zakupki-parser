@@ -1,9 +1,9 @@
 [project]
 name = "zkparser"
-version = "0.1.0"
+version = "0.6.0"
 description = "Finds 44-FZ procurement notices on zakupki.gov.ru by keywords, customer, region and price"
 requires-python = ">=3.12"
-dependencies = ["requests", "lxml", "pymorphy3", "openpyxl"]
+dependencies = ["requests", "lxml", "pymorphy3", "openpyxl", "customtkinter"]
 
 [build-system]
 requires = ["setuptools>=68"]

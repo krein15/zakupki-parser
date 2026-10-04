@@ -16,7 +16,7 @@ from pathlib import Path
 
 from . import scheduler
 from .cache import NoticeCache
-from .config import CHAT_KEY, load_telegram_settings, save_env_value
+from .config import CHAT_KEY, load_telegram_settings, primary_env_file, save_env_value
 from .fetch import FetchReport
 from .monitor import MonitorResult, MonitorState, monitor
 from .profiles import ProfileError, load_profile
@@ -186,7 +186,7 @@ def run_telegram(args: argparse.Namespace) -> int:
             print("Боту пока никто не писал: напишите ему любое сообщение из нужного чата и повторите команду.")
         default = settings.chat
         if args.save:
-            save_env_value(Path.cwd() / ".env", CHAT_KEY, args.save)
+            save_env_value(primary_env_file(), CHAT_KEY, args.save)
             default = args.save
             print(f"Чат {args.save} записан в .env как чат по умолчанию.")
         print(f"Чат по умолчанию: {default or 'не задан'}")

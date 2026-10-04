@@ -1,12 +1,14 @@
 """Secrets and personal settings from ``.env``: the Telegram bot token and the default chat.
 
 Values come from environment variables first, then from ``.env`` in the current folder (the project folder when
-Task Scheduler starts the program), then from ``.env`` in the program's data folder. ``.env`` never goes to git.
+Task Scheduler starts the program), the project folder itself and the program's data folder. ``.env`` never goes
+to git.
 """
 
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -42,7 +44,20 @@ def read_env_file(path: Path) -> dict[str, str]:
 
 
 def env_files() -> list[Path]:
-    return [Path.cwd() / ".env", app_data_dir() / ".env"]
+    files = [Path.cwd() / ".env"]
+    if not getattr(sys, "frozen", False):  # the window may be started by a shortcut from any folder
+        files.append(Path(__file__).resolve().parents[1] / ".env")
+    files.append(app_data_dir() / ".env")
+    return list(dict.fromkeys(files))
+
+
+def primary_env_file() -> Path:
+    """Where to save a setting: the first .env that exists, else the project's (the program's data folder if built)."""
+    files = env_files()
+    existing = next((path for path in files if path.is_file()), None)
+    if existing:
+        return existing
+    return files[-1] if getattr(sys, "frozen", False) else files[min(1, len(files) - 1)]
 
 
 def load_telegram_settings(files: list[Path] | None = None) -> TelegramSettings:

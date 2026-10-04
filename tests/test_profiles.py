@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from zkparser.profiles import ProfileError, load_profile, parse_profile
+from zkparser.profiles import ProfileError, load_profile, parse_profile, save_profile
 
 EXAMPLE = Path(__file__).resolve().parents[1] / "profiles" / "example.toml"
 PATH = Path("client.toml")
@@ -56,6 +56,28 @@ def test_mistakes_are_named(data, message):
     with pytest.raises(ProfileError, match=message) as error:
         parse_profile(data, PATH)
     assert str(error.value).startswith("client.toml:")
+
+
+def test_saved_profile_reads_back_the_same(tmp_path):
+    profile = parse_profile(
+        {
+            "name": 'Канцтовары "Тюмень"',
+            "regions": ["72", "86"],
+            "keywords": ["канцеляр* товар*", '"бумага для офисной техники"', "ёлка\\ель"],
+            "minus": ["ремонт*"],
+            "okpd2": ["17.23"],
+            "customer_inn": ["7202161807"],
+            "price_from": 10000,
+            "all_stages": True,
+            "telegram_chat": "-1001234567890",
+        },
+        tmp_path / "a.toml",
+    )
+    path = tmp_path / "saved.toml"
+    save_profile(profile, path)
+    again = load_profile(path)
+    assert again == profile  # the path is not compared
+    assert "price_to" not in path.read_text(encoding="utf-8")
 
 
 def test_broken_toml(tmp_path):
