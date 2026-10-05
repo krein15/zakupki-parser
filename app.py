@@ -10,10 +10,10 @@ import sys
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        from zkparser.__main__ import capture_console
         from zkparser.__main__ import main as cli_main
+        from zkparser.__main__ import setup_console
 
-        capture_console()
+        setup_console()
         sys.exit(cli_main())
 
     from zkparser.gui.app import main

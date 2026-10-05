@@ -413,9 +413,15 @@ def capture_console() -> None:
     sys.stderr = sys.stderr or stream
 
 
-if __name__ == "__main__":
+def setup_console() -> None:
+    """Before the command line runs: no console — output goes to a file; any output is UTF-8. Redirected to a file
+    or a pipe, Windows would encode it in cp1251, which has no "₽" and fails on the first price."""
     capture_console()
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
+
+
+if __name__ == "__main__":
+    setup_console()
     sys.exit(main())
