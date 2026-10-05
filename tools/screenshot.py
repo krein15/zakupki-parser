@@ -23,6 +23,7 @@ import window_capture  # noqa: E402
 
 from zkparser.gui import app as window  # noqa: E402
 from zkparser.gui.app import App, setup_logging  # noqa: E402
+from zkparser.gui.widgets import set_entry  # noqa: E402
 from zkparser.matching import Matcher  # noqa: E402
 from zkparser.notice_xml import parse_notice  # noqa: E402
 from zkparser.pipeline import Found, ProfileResult, RunResult  # noqa: E402
@@ -71,6 +72,12 @@ def main() -> None:
         app.schedule_status.configure(text="Проверки по расписанию включены. Следующая: 05.10.2026 10:00.")
         for var in app.monitored_vars.values():
             var.set(True)
+    if tab == "По бюджету":  # the same example as in the README, whatever the window remembers
+        app.export_regions = ["72000000000"]
+        app._show_export_regions()
+        set_entry(app.export_price_from, "1000000")
+        set_entry(app.export_price_to, "5000000")
+        set_entry(app.export_words, "")
     choice = "Светлая" if appearance == "light" else "Тёмная"
     app.appearance.set(choice)
     app._set_appearance(choice)

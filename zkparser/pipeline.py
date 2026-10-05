@@ -16,6 +16,9 @@ from .profiles import Profile
 from .website.search import Client, SearchHit, SearchQuery, Stage
 
 APPLICATIONS_STAGE = "Подача заявок"  # how the search results name Stage.APPLICATIONS
+# The site keeps "Подача заявок" for years after the deadline (in Tyumen 749 of 855 such notices had closed, the
+# oldest in 2014), so a notice past its deadline is shown as closed whatever the site says.
+CLOSED_STAGE = "Приём заявок окончен"
 NO_DEADLINE = datetime.max.replace(tzinfo=UTC)  # sorts notices without an application deadline last
 
 RegionDone = Callable[[str, FetchReport], None]
@@ -27,6 +30,22 @@ class Found:
     hit: SearchHit
     verdict: Verdict
     regions: tuple[str, ...] = ()  # where the search found it; a joint purchase can span regions
+
+    def stage(self, now: datetime) -> str:
+        return actual_stage(self.hit, now, self.notice.applications_end)
+
+
+def actual_stage(hit: SearchHit, now: datetime, deadline: datetime | None = None) -> str:
+    """The stage of the search results, or CLOSED_STAGE once the applications are over.
+
+    ``deadline`` is the exact end of applications from the notice's XML; without it the day from the search results
+    is used, and a notice stays open through its last day.
+    """
+    if hit.stage != APPLICATIONS_STAGE:
+        return hit.stage
+    if deadline is not None:
+        return CLOSED_STAGE if deadline < now else hit.stage
+    return CLOSED_STAGE if hit.deadline is not None and hit.deadline < now.date() else hit.stage
 
 
 @dataclass
@@ -54,7 +73,9 @@ def run_profiles(
     progress: Progress | None = None,
     region_done: RegionDone | None = None,
     cancel: Cancel | None = None,
+    now: datetime | None = None,
 ) -> RunResult:
+    now = now or datetime.now(UTC)
     matchers = [Matcher(profile) for profile in profiles]  # a broken keyword surfaces before any download
     result = RunResult([ProfileResult(profile) for profile in profiles])
 
@@ -90,8 +111,12 @@ def run_profiles(
             if verdict.matched:
                 profile_result.matches.append(Found(notice, hit, verdict, tuple(sorted(regions))))
 
+    def order(item: Found) -> tuple[bool, datetime]:  # open notices first, the nearest deadline on top
+        deadline = item.notice.applications_end or NO_DEADLINE
+        return deadline < now, deadline
+
     for profile_result in result.profiles:
-        profile_result.matches.sort(key=lambda item: item.notice.applications_end or NO_DEADLINE)
+        profile_result.matches.sort(key=order)
     return result
 
 

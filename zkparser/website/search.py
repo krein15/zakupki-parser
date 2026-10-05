@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
@@ -104,18 +105,23 @@ class Client(Protocol):
     def get(self, path: str, params: dict[str, str] | None = None) -> bytes: ...
 
 
-def search(client: Client, query: SearchQuery) -> SearchResult:
+PageDone = Callable[[int, int], None]  # notices collected so far, the total the site reports; may raise to stop
+
+
+def search(client: Client, query: SearchQuery, on_page: PageDone | None = None) -> SearchResult:
     """Every notice matching the query. A period with more than 5 000 is split in halves until each part fits."""
     hits, total = read_page(client, query, 1)
     if total > MAX_RESULTS and query.published_from < query.published_to:
         log.info("ЕИС: %d результатов больше предела %d, период делится пополам", total, MAX_RESULTS)
-        parts = [search(client, part) for part in query.split()]
+        parts = [search(client, part, on_page) for part in query.split()]
         merged = {hit.reg_number: hit for part in parts for hit in part.hits}
         return SearchResult(list(merged.values()), truncated=any(part.truncated for part in parts))
 
     found = {hit.reg_number: hit for hit in hits}
     previous = [hit.reg_number for hit in hits]
     page = 1
+    if on_page:
+        on_page(len(found), total)
     while len(previous) == PAGE_SIZE:
         if page == MAX_PAGES:
             truncated = total > MAX_RESULTS
@@ -130,6 +136,8 @@ def search(client: Client, query: SearchQuery) -> SearchResult:
         for hit in hits:
             found.setdefault(hit.reg_number, hit)  # new notices push older ones to the next page
         previous = numbers
+        if on_page:
+            on_page(len(found), total)
     return SearchResult(list(found.values()))
 
 

@@ -12,6 +12,16 @@ def split_list(text: str) -> list[str]:
     return [item for item in re.split(r"[,;\s]+", text) if item]
 
 
+def rubles(text: str) -> int | None:
+    """A price typed in the window: "1 000 000" → 1000000, empty → None. Raises ValueError with a message."""
+    digits = re.sub(r"[\s\u00a0]+", "", text)
+    if not digits:
+        return None
+    if not digits.isdigit():
+        raise ValueError("Цена — целое число рублей")
+    return int(digits)
+
+
 def safe_file_name(name: str) -> str:
     return " ".join(re.sub(r'[<>:"/\\|?*\x00-\x1f]+', " ", name).split())[:60] or "профиль"
 

@@ -7,7 +7,7 @@ from pathlib import PureWindowsPath
 
 import pytest
 
-from zkparser.gui.forms import period_text, safe_file_name, short_path, split_list, without_path
+from zkparser.gui.forms import period_text, rubles, safe_file_name, short_path, split_list, without_path
 from zkparser.gui.preferences import CUSTOM, THREE_DAYS, TODAY, WEEK, Preferences, period_dates
 from zkparser.profiles import ProfileError
 
@@ -82,3 +82,14 @@ def test_short_path():
     assert short_path(documents) == str(documents)
     long = PureWindowsPath(r"C:\Users\Я\AppData\Local\Temp\claude\session\scratchpad\reports")
     assert short_path(long) == r"C:\…\scratchpad\reports"
+
+
+@pytest.mark.parametrize(("text", "value"), [("", None), ("  ", None), ("1 000 000", 1_000_000), ("5 000", 5000)])
+def test_rubles(text, value):
+    assert rubles(text) == value
+
+
+@pytest.mark.parametrize("text", ["1,5 млн", "-100", "1.5"])
+def test_rubles_rejects_anything_but_whole_rubles(text):
+    with pytest.raises(ValueError, match="целое число"):
+        rubles(text)

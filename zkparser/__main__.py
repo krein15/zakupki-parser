@@ -2,6 +2,7 @@
 
 * ``fetch`` searches the site and keeps the XML of every notice found in the local cache.
 * ``match`` picks the notices that fit one or more profiles (TOML files) and says why each one fits.
+* ``export`` lists the notices of regions in a price range that still take applications, no keywords needed.
 * ``show`` prints a notice as parsed from its XML (downloading it if it is not cached yet).
 * ``regions`` lists the regions ``--region`` accepts; ``templates`` lists niche templates and makes profiles of them.
 * ``monitor``, ``telegram`` and ``schedule`` run the checks for new notices, see monitor_cli.py.
@@ -19,9 +20,10 @@ from pathlib import Path
 from . import monitor_cli
 from .cache import NoticeCache
 from .config import load_telegram_settings
-from .display import format_match, format_notice
-from .excel import build_file_name, export_profile
-from .fetch import CACHED, FetchReport, fetch_notices
+from .display import days_left, format_match, format_notice, money, price_range, regions_count
+from .excel import build_file_name, export_file_name, export_open_notices, export_profile
+from .export import LOOKBACK_DAYS, ExportQuery, ExportResult, export_open
+from .fetch import CACHED, STOPPED, FetchReport, fetch_notices
 from .notice_xml import NoticeFormatError, parse_notice
 from .pipeline import ProfileResult, run_profiles
 from .profiles import ProfileError, from_template, load_profile, load_templates, save_profile
@@ -68,6 +70,24 @@ def build_parser() -> argparse.ArgumentParser:
     )
     match.add_argument("--no-excel", action="store_true", help="только вывод в консоль, без Excel")
     add_cache_dir(match)
+
+    export = commands.add_parser(
+        "export", help="открытые закупки регионов в диапазоне цены — без ключевых слов, сразу в Excel"
+    )
+    export.add_argument(
+        "-r", "--region", action="append", required=True, metavar="РЕГИОН",
+        help="код (72) или часть названия (тюмен); можно указать несколько раз",
+    )
+    export.add_argument("--price-from", type=int, metavar="РУБ", help="начальная цена от")
+    export.add_argument("--price-to", type=int, metavar="РУБ", help="начальная цена до")
+    export.add_argument("-q", "--query", default="", help="необязательно: слова для поиска на сайте ЕИС")
+    export.add_argument(
+        "--details", action="store_true",
+        help="скачать каждое извещение: настоящий заказчик, ИНН, позиции (дольше — запрос на закупку)",
+    )
+    export.add_argument("--out", type=Path, metavar="ПАПКА", help="куда сохранить Excel")
+    export.add_argument("--no-excel", action="store_true", help="только вывод в консоль, без Excel")
+    add_cache_dir(export)
 
     show = commands.add_parser("show", help="показать разобранное извещение")
     show.add_argument("number", help="номер закупки, например 0167200003426008040")
@@ -134,7 +154,7 @@ def format_period(start: date, end: date) -> str:
 
 def describe(query: SearchQuery) -> str:
     regions = [REGIONS[code] for code in query.regions]
-    parts = [", ".join(regions) if len(regions) <= 3 else f"{len(regions)} регионов"]
+    parts = [", ".join(regions) if len(regions) <= 3 else regions_count(len(regions))]
     parts.append(format_period(query.published_from, query.published_to))
     if query.text:
         parts.append(f"«{query.text}»")
@@ -224,10 +244,11 @@ def run_match(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
             print("\nОстановлено. Скачанное сохранено в кэше.")
             return 130
 
+    now = datetime.now().astimezone()
     for profile_result in result.profiles:
         print(f"\n«{profile_result.profile.name}»: подошло {len(profile_result.matches)} из {profile_result.checked}")
         for found in profile_result.matches:
-            print("\n" + textwrap.indent(format_match(found.notice, found.verdict.reasons, found.hit.stage), "  "))
+            print("\n" + textwrap.indent(format_match(found.notice, found.verdict.reasons, found.stage(now)), "  "))
     for reg_number, reason in result.broken:
         print(f"\nНе удалось разобрать {reg_number}: {reason}")
     if not args.no_excel:
@@ -239,6 +260,69 @@ def run_match(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
         print(f"Скачивание остановлено: {result.error}")
         print("Отобрано из того, что успело скачаться. Повторный запуск продолжит с того же места.")
     return 1 if result.error else 0
+
+
+MAX_PRINTED = 30
+
+
+def run_export(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
+    try:
+        regions = tuple(dict.fromkeys(resolve_region(value) for value in args.region))
+    except ValueError as error:
+        parser.error(str(error))
+    if args.price_from is not None and args.price_to is not None and args.price_from > args.price_to:
+        parser.error("цена «от» больше цены «до»")
+    query = ExportQuery(regions, args.price_from, args.price_to, args.query.strip(), args.details)
+    client = SiteClient()
+    now = datetime.now().astimezone()
+    names = ", ".join(REGIONS[code] for code in regions) if len(regions) <= 3 else regions_count(len(regions))
+    conditions = [names, price_range(query.price_from, query.price_to) or "любая цена"]
+    if query.text:
+        conditions.append(f"«{query.text}»")
+    print(f"Открытые закупки: {' · '.join(conditions)} · размещены за {LOOKBACK_DAYS} дней")
+    with NoticeCache(args.cache_dir or default_cache_dir()) as cache:
+        try:
+            result = export_open(client, cache, query, now, listing=print_listing, progress=print_download)
+        except KeyboardInterrupt:
+            print("\nОстановлено.")
+            return 130
+
+    if sys.stdout.isatty():
+        print("\r" + " " * 70 + "\r", end="")
+    for code, count in result.regions.items():
+        cut = " — сайт отдал не всё (больше 5 000), сузьте цену" if count.truncated else ""
+        print(f"{REGIONS[code]}: с этапом «Подача заявок» {count.listed}, из них открыто {count.open}{cut}")
+    print(f"Открыто {len(result.notices)}, срок подачи уже прошёл у {result.closed} из {result.listed}.\n")
+    print_open(result)
+    for reg_number, reason in result.broken:
+        print(f"Не удалось разобрать {reg_number}: {reason}")
+    if not args.no_excel:
+        generated_at = now.replace(microsecond=0, tzinfo=None)
+        out_dir = args.out or default_output_dir()
+        path = export_open_notices(out_dir / export_file_name(result, generated_at), result, generated_at)
+        print(f"\nОтчёт: {path}")
+    print(f"Запросов к сайту {client.stats.requests}, просьб подождать (429) {client.stats.throttled}.")
+    if result.error and result.error != STOPPED:
+        print(f"Выгрузка остановлена: {result.error}")
+    return 1 if result.error else 0
+
+
+def print_listing(region: str, collected: int, total: int) -> None:
+    """One line updated in place: only in a terminal, a log file would get a line per page."""
+    if sys.stdout.isatty():
+        print(f"\r{REGIONS[region][:40]}: собрано {collected} из {total}   ", end="", flush=True)
+
+
+def print_open(result: ExportResult) -> None:
+    for item in result.notices[:MAX_PRINTED]:
+        hit = item.hit
+        deadline = f"до {hit.deadline:%d.%m.%Y}" if hit.deadline else "срок не указан"
+        days = item.days_left(result.today)
+        left = f" ({days_left(days)})" if days is not None else ""
+        title = hit.title if len(hit.title) <= 90 else hit.title[:89] + "…"
+        print(f"  {hit.reg_number} · {money(hit.price)} · {deadline}{left}\n    {title}")
+    if len(result.notices) > MAX_PRINTED:
+        print(f"  …и ещё {len(result.notices) - MAX_PRINTED} — в отчёте Excel")
 
 
 def run_show(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
@@ -310,6 +394,8 @@ def main(argv: list[str] | None = None) -> int:
         return run_show(args, parser)
     if args.command == "match":
         return run_match(args, parser)
+    if args.command == "export":
+        return run_export(args, parser)
     return run_fetch(args, parser)
 
 

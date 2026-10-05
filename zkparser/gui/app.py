@@ -1,7 +1,8 @@
 """Main window: the profile on the left, the search with its log and report on the right.
 
-Tabs: "Профиль" (where and for whom), "Слова и коды" (what to look for), "Результаты" (what was found and why),
-"Мониторинг" (Telegram and the hourly schedule). Network work runs in a background thread; the window learns about
+Tabs: "Профиль" (where and for whom), "Слова и коды" (what to look for), "По бюджету" (every open notice of
+regions in a price range, no keywords), "Результаты" (what was found and why), "Мониторинг" (Telegram and the hourly
+schedule). Network work runs in a background thread; the window learns about
 its progress through a queue it polls every 100 ms and never touches widgets from that thread.
 """
 
@@ -24,8 +25,9 @@ import customtkinter as ctk
 from .. import __version__, scheduler
 from ..cache import NoticeCache
 from ..config import CHAT_KEY, TOKEN_KEY, load_telegram_settings, primary_env_file, save_env_value
-from ..display import moment, money
-from ..excel import build_file_name, export_profile, moscow_offset
+from ..display import days_left, moment, money, price_range, regions_count
+from ..excel import build_file_name, export_file_name, export_open_notices, export_profile, moscow_offset
+from ..export import LOOKBACK_DAYS, ExportQuery, ExportResult, OpenNotice, export_open
 from ..fetch import STOPPED, FetchReport
 from ..monitor import MonitorResult, MonitorState, monitor
 from ..monitor_cli import TEST_MESSAGE, parse_time
@@ -37,7 +39,7 @@ from ..settings import APP_NAME, app_data_dir, default_cache_dir, default_output
 from ..telegram import SecretFilter, TelegramBot, TelegramError
 from ..website.client import SiteClient
 from . import theme
-from .forms import period_text, safe_file_name, short_path, split_list, without_path
+from .forms import period_text, rubles, safe_file_name, short_path, split_list, without_path
 from .preferences import CUSTOM, PERIODS, Preferences, period_dates
 from .widgets import (
     RegionPicker,
@@ -94,6 +96,7 @@ class App(ctk.CTk):
         self.profile_path: Path | None = None
         self.profile_files: dict[str, Path] = {}
         self.regions: list[str] = []
+        self.export_regions: list[str] = [code for code in self.prefs.export_regions if code in REGIONS]
         self.last_report: Path | None = None
         self._closing = False
 
@@ -118,6 +121,7 @@ class App(ctk.CTk):
         self.tabs.grid(row=0, column=0, sticky="nsew", padx=(0, 16))
         self._build_profile_tab(self.tabs.add("Профиль"))
         self._build_words_tab(self.tabs.add("Слова и коды"))
+        self._build_export_tab(self.tabs.add("По бюджету"))
         self._build_results_tab(self.tabs.add("Результаты"))
         self._build_monitoring_tab(self.tabs.add("Мониторинг"))
         self._build_run_panel(content)
@@ -252,10 +256,67 @@ class App(ctk.CTk):
         self.ktru = entry(codes.body, "нет")
         self.ktru.pack(fill="x", pady=(2, 0))
 
+    def _build_export_tab(self, tab: ctk.CTkBaseClass) -> None:
+        card = SectionCard(tab, "Открытые закупки по бюджету",
+                           "Все закупки выбранных регионов, по которым ещё принимаются заявки, — без ключевых слов "
+                           "и профиля. Сайт ЕИС годами не меняет этап «Подача заявок», поэтому программа сама сверяет "
+                           "срок подачи.")
+        card.pack(fill="x")
+        grid = ctk.CTkFrame(card.body, fg_color="transparent")
+        grid.pack(fill="x")
+        grid.grid_columnconfigure(1, weight=1)
+        rows = iter(range(10))
+
+        def field(text: str, widget: ctk.CTkBaseClass) -> None:
+            row_number = next(rows)
+            label(grid, text).grid(row=row_number, column=0, sticky="w", padx=(0, 14), pady=5)
+            widget.grid(row=row_number, column=1, sticky="ew", pady=5)
+
+        regions_row = ctk.CTkFrame(grid, fg_color="transparent")
+        neutral_button(regions_row, "Выбрать…", self._pick_export_regions, width=100).pack(side="left")
+        self.export_regions_label = ctk.CTkLabel(regions_row, text="", font=theme.font(13), text_color=theme.TEXT,
+                                                 anchor="w", justify="left", wraplength=440)
+        self.export_regions_label.pack(side="left", padx=10, fill="x", expand=True)
+        field("Регионы заказчиков", regions_row)
+
+        prices = ctk.CTkFrame(grid, fg_color="transparent")
+        self.export_price_from = entry(prices, "от, ₽", width=150)
+        self.export_price_from.pack(side="left")
+        label(prices, "—").pack(side="left", padx=8)
+        self.export_price_to = entry(prices, "до, ₽", width=150)
+        self.export_price_to.pack(side="left")
+        field("Начальная цена", prices)
+
+        self.export_words = entry(grid, "необязательно, например: бумага")
+        field("Слова", self.export_words)
+        self.export_details = ctk.CTkSwitch(grid, text="заказчик, ИНН и позиции из извещений — дольше",
+                                            font=theme.font(13), text_color=theme.TEXT, progress_color=theme.ACCENT)
+        field("Подробности", self.export_details)
+
+        self.export_button = ctk.CTkButton(card.body, text="Выгрузить в Excel", width=220, height=40, corner_radius=10,
+                                           font=theme.font(15, "bold"), fg_color=theme.ACCENT,
+                                           hover_color=theme.ACCENT_HOVER, command=self._start_export)
+        self.export_button.pack(anchor="w", pady=(12, 0))
+        note = ctk.CTkLabel(card.body, font=theme.font(12), text_color=theme.TEXT_MUTED, anchor="w", justify="left",
+                            text=f"Ищутся закупки, размещённые за последние {LOOKBACK_DAYS} дней. Без подробностей — "
+                                 "один запрос к сайту на 50 закупок; с подробностями — ещё по запросу на каждую, "
+                                 "зато настоящий заказчик вместо уполномоченного органа.", wraplength=500)
+        note.pack(fill="x", pady=(10, 0))
+        wrap_to_width(card, [note])
+
+        set_entry(self.export_price_from, self.prefs.export_price_from)
+        set_entry(self.export_price_to, self.prefs.export_price_to)
+        set_entry(self.export_words, self.prefs.export_words)
+        if self.prefs.export_details:
+            self.export_details.select()
+        self._show_export_regions()
+
     def _build_results_tab(self, tab: ctk.CTkBaseClass) -> None:
         self.results_header = ctk.CTkLabel(tab, text="Здесь появятся подошедшие закупки: нажмите «Найти закупки».",
-                                           font=theme.font(14, "bold"), text_color=theme.TEXT, anchor="w")
+                                           font=theme.font(14, "bold"), text_color=theme.TEXT, anchor="w",
+                                           justify="left", wraplength=600)
         self.results_header.pack(fill="x", pady=(0, 8))
+        wrap_to_width(tab, [self.results_header], margin=10)
         self.results_list = ctk.CTkScrollableFrame(tab, fg_color="transparent")
         self.results_list.pack(fill="both", expand=True)
 
@@ -494,9 +555,7 @@ class App(ctk.CTk):
         RegionPicker(self, self.regions, done)
 
     def _show_regions(self) -> None:
-        names = [REGIONS[code] for code in self.regions if code in REGIONS]
-        self.regions_label.configure(text=", ".join(names) or "не выбраны",
-                                     text_color=theme.TEXT if names else theme.DANGER)
+        _show_region_names(self.regions_label, self.regions)
 
     # ------------------------------------------------------------------ search
 
@@ -570,9 +629,10 @@ class App(ctk.CTk):
                     if notice.applications_end else "срок подачи не указан")
         ctk.CTkLabel(top, text=f"{money(notice.max_price, notice.currency)} · {deadline}", font=theme.font(13, "bold"),
                      text_color=theme.TEXT, anchor="w").pack(side="left")
-        if found.hit.stage:
-            ctk.CTkLabel(top, text=found.hit.stage, font=theme.font(12, "bold"),
-                         text_color=theme.stage_color(found.hit.stage)).pack(side="right")
+        stage = found.stage(datetime.now().astimezone())
+        if stage:
+            ctk.CTkLabel(top, text=stage, font=theme.font(12, "bold"), text_color=theme.stage_color(stage)).pack(
+                side="right")
         title = ctk.CTkLabel(card, text=notice.title, font=theme.font(14, "bold"), text_color=theme.ACCENT,
                              anchor="w", justify="left", wraplength=500, cursor="hand2")
         title.pack(fill="x", padx=14, pady=(4, 0))
@@ -590,6 +650,137 @@ class App(ctk.CTk):
         wrap_to_width(card, [title, meta, why])
         return card
 
+    # ------------------------------------------------------------------ export by budget
+
+    def _pick_export_regions(self) -> None:
+        def done(selected: list[str]) -> None:
+            self.export_regions = selected
+            self._show_export_regions()
+
+        RegionPicker(self, self.export_regions, done)
+
+    def _show_export_regions(self) -> None:
+        _show_region_names(self.export_regions_label, self.export_regions)
+
+    def _export_query(self) -> ExportQuery:
+        if not self.export_regions:
+            raise ValueError("Выберите хотя бы один регион")
+        price_from, price_to = rubles(self.export_price_from.get()), rubles(self.export_price_to.get())
+        if price_from is not None and price_to is not None and price_from > price_to:
+            raise ValueError("Цена «от» больше цены «до»")
+        return ExportQuery(tuple(self.export_regions), price_from, price_to, self.export_words.get().strip(),
+                           bool(self.export_details.get()))
+
+    def _start_export(self) -> None:
+        if self._busy():
+            return
+        try:
+            query = self._export_query()
+        except ValueError as error:
+            self._warn(str(error))
+            return
+        out_dir = self._output_dir()
+        self._begin(f"Открытые закупки: {_export_title(query)}")
+        self.export_button.configure(text="Идёт выгрузка…")
+
+        def work() -> None:
+            client = SiteClient()
+            # With details the downloads take the second half of the progress bar.
+            share = 0.5 if query.details else 1.0
+
+            def listing(region: str, collected: int, total: int) -> None:
+                done = query.regions.index(region) + collected / max(total, 1)
+                self.events.put(("progress", (done / len(query.regions) * share,
+                                              f"{REGIONS[region]}: {collected} из {total}")))
+
+            def progress(number: int, total: int, _hit: object, _status: str) -> None:
+                self.events.put(("progress", (share + (1 - share) * number / max(total, 1),
+                                              f"Извещения: {number} из {total}")))
+
+            with NoticeCache(default_cache_dir()) as cache:
+                result = export_open(client, cache, query, datetime.now().astimezone(), listing=listing,
+                                     progress=progress, cancel=self.cancel_event.is_set)
+            generated_at = datetime.now().replace(microsecond=0)
+            path = None
+            try:
+                path = export_open_notices(out_dir / export_file_name(result, generated_at), result, generated_at)
+            except OSError as error:
+                self.events.put(("log", ("error", f"Отчёт не сохранён: {error}")))
+            self.events.put(("export_done", (result, path, client.stats.requests)))
+
+        self._run_in_background(work, "export")
+
+    def _finish_export(self, result: ExportResult, path: Path | None, requests: int) -> None:
+        self._set_running(False)
+        self._show_export(result)
+        stopped = result.error == STOPPED
+        prefix = "Остановлено" if stopped else "Готово"
+        for code, count in result.regions.items():
+            cut = " — сайт отдал не всё (больше 5 000), сузьте цену" if count.truncated else ""
+            self._log("warning" if cut else "info",
+                      f"{REGIONS.get(code, code)}: с этапом «Подача заявок» {count.listed}, открыто {count.open}{cut}")
+        if result.error and not stopped:
+            self._log("warning", f"Выгрузка остановлена: {result.error}. В отчёте — то, что успело собраться.")
+        if result.downloads and result.downloads.failed:
+            self._log("warning", f"Не скачалось извещений: {len(result.downloads.failed)} — в отчёте без подробностей")
+        for number, reason in result.broken:
+            self._log("warning", f"Не удалось разобрать {number}: {reason}")
+        self._log("success", f"{prefix}: открыто {len(result.notices)}, срок подачи уже прошёл у {result.closed} "
+                             f"из {result.listed}; запросов к сайту {requests}")
+        self.result_title.configure(text=f"{prefix}: открытых закупок {len(result.notices)}")
+        self._show_report_card(path, stopped)
+        if result.notices:
+            self.tabs.set("Результаты")
+
+    def _show_export(self, result: ExportResult) -> None:
+        for child in self.results_list.winfo_children():
+            child.destroy()
+        self.results_header.configure(
+            text=f"Открытые закупки, {_export_title(result.query)}: {len(result.notices)} "
+                 f"(срок подачи прошёл у {result.closed} из {result.listed})")
+        several = len(result.query.regions) > 1
+        for item in result.notices[:MAX_RESULT_CARDS]:
+            self._open_card(item, result.today, several).pack(fill="x", pady=(0, 10), padx=(0, 6))
+        if len(result.notices) > MAX_RESULT_CARDS:
+            label(self.results_list, f"…и ещё {len(result.notices) - MAX_RESULT_CARDS} — в отчёте Excel").pack(
+                anchor="w")
+
+    def _open_card(self, item: OpenNotice, today: date, show_regions: bool) -> ctk.CTkFrame:
+        hit, notice = item.hit, item.notice
+        card = ctk.CTkFrame(self.results_list, fg_color=theme.CARD_BG, corner_radius=12, border_width=1,
+                            border_color=theme.CARD_BORDER)
+        top = ctk.CTkFrame(card, fg_color="transparent")
+        top.pack(fill="x", padx=14, pady=(10, 0))
+        if notice and notice.applications_end:
+            deadline = f"заявки до {moment(notice.applications_end)} ({moscow_offset(notice.applications_end)})"
+        else:
+            deadline = f"заявки до {hit.deadline:%d.%m.%Y}" if hit.deadline else "срок подачи не указан"
+        price = money(notice.max_price, notice.currency) if notice else money(hit.price)
+        ctk.CTkLabel(top, text=f"{price} · {deadline}", font=theme.font(13, "bold"), text_color=theme.TEXT,
+                     anchor="w").pack(side="left")
+        days = item.days_left(today)
+        if days is not None:
+            ctk.CTkLabel(top, text=days_left(days), font=theme.font(12, "bold"),
+                         text_color=theme.WARNING if days <= 2 else theme.SUCCESS).pack(side="right")
+        title = ctk.CTkLabel(card, text=notice.title if notice else hit.title, font=theme.font(14, "bold"),
+                             text_color=theme.ACCENT, anchor="w", justify="left", wraplength=500, cursor="hand2")
+        title.pack(fill="x", padx=14, pady=(4, 0))
+        title.bind("<Button-1>", lambda _: webbrowser.open(hit.url))
+        if notice and len(notice.customers) == 1:
+            customer = f"{notice.customers[0].customer.name}, ИНН {notice.customers[0].customer.inn}"
+        elif notice:
+            customer = f"Совместная закупка, заказчиков: {len(notice.customers)}"
+        else:
+            customer = hit.organization
+        parts = [f"№ {hit.reg_number}", hit.placing_way, customer]
+        if show_regions:
+            parts.append(", ".join(REGIONS.get(code, code) for code in item.regions))
+        meta = ctk.CTkLabel(card, text=" · ".join(part for part in parts if part), font=theme.font(12),
+                            text_color=theme.TEXT_MUTED, anchor="w", justify="left", wraplength=500)
+        meta.pack(fill="x", padx=14, pady=(0, 10))
+        wrap_to_width(card, [title, meta])
+        return card
+
     def _finish_search(self, result: RunResult, path: Path | None, start: date, end: date, requests: int) -> None:
         self._set_running(False)
         self._show_results(result, start, end)
@@ -603,6 +794,11 @@ class App(ctk.CTk):
             self._log("warning", f"Не удалось разобрать {number}: {reason}")
         self._log("success", f"{prefix}: подошло {len(profile_result.matches)} из {profile_result.checked}, "
                              f"запросов к сайту {requests}")
+        self._show_report_card(path, stopped)
+        if profile_result.matches:
+            self.tabs.set("Результаты")
+
+    def _show_report_card(self, path: Path | None, stopped: bool) -> None:
         self.status.configure(text="Готов к работе")
         self.progress.set(1)
         if path:
@@ -611,8 +807,6 @@ class App(ctk.CTk):
             self.result_card.pack(side="bottom", fill="x", padx=20, pady=(10, 0), before=self.log_box)
             if self.open_report_switch.get() and not stopped:
                 self._open_report()
-        if profile_result.matches:
-            self.tabs.set("Результаты")
 
     # ------------------------------------------------------------------ monitoring
 
@@ -830,6 +1024,9 @@ class App(ctk.CTk):
     def _set_running(self, running: bool) -> None:
         self.start_button.configure(state="disabled" if running else "normal",
                                     text="Идёт поиск…" if running else "Найти закупки")
+        self.export_button.configure(state="disabled" if running else "normal")
+        if not running:
+            self.export_button.configure(text="Выгрузить в Excel")
         if running:
             self.stop_button.configure(state="normal", text="Остановить")
             self.stop_button.pack(fill="x", padx=20, before=self.progress)
@@ -852,6 +1049,8 @@ class App(ctk.CTk):
                     self.status.configure(text=text)
                 elif kind == "search_done":
                     self._finish_search(*payload)
+                elif kind == "export_done":
+                    self._finish_export(*payload)
                 elif kind == "monitor_done":
                     self._finish_monitor(payload)
                 elif kind == "failed":
@@ -938,10 +1137,29 @@ class App(ctk.CTk):
         self.prefs.date_from = self.date_from.get().strip()
         self.prefs.date_to = self.date_to.get().strip()
         self.prefs.open_report = bool(self.open_report_switch.get())
+        self.prefs.export_regions = list(self.export_regions)
+        self.prefs.export_price_from = self.export_price_from.get().strip()
+        self.prefs.export_price_to = self.export_price_to.get().strip()
+        self.prefs.export_words = self.export_words.get().strip()
+        self.prefs.export_details = bool(self.export_details.get())
         try:
             self.prefs.save()
         except OSError:
             log.debug("Could not save window settings", exc_info=True)
+
+
+def _show_region_names(widget: ctk.CTkLabel, codes: list[str]) -> None:
+    names = [REGIONS[code] for code in codes if code in REGIONS]
+    widget.configure(text=", ".join(names) or "не выбраны", text_color=theme.TEXT if names else theme.DANGER)
+
+
+def _export_title(query: ExportQuery) -> str:
+    regions = [REGIONS.get(code, code) for code in query.regions]
+    parts = [", ".join(regions) if len(regions) <= 2 else regions_count(len(regions))]
+    parts.append(price_range(query.price_from, query.price_to, short=True) or "любая цена")
+    if query.text:
+        parts.append(f"«{query.text}»")
+    return " · ".join(parts)
 
 
 def _region_line(region: str, report: FetchReport) -> str:

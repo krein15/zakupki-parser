@@ -129,3 +129,9 @@ def test_a_period_over_the_limit_is_split_until_it_fits():
     result = search(site, query(published_from=first, published_to=date(2026, 9, 3)))
     assert len(result.hits) == 7800
     assert not result.truncated
+
+
+def test_page_callback_sees_the_count_grow():
+    seen = []
+    search(FakeSite({DAY: numbers(112)}), query(), on_page=lambda collected, total: seen.append((collected, total)))
+    assert seen == [(50, 112), (100, 112), (112, 112)]

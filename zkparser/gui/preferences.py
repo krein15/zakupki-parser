@@ -31,6 +31,11 @@ class Preferences:
     schedule_from: str = "08:00"
     schedule_to: str = "20:00"
     schedule_every: int = 60
+    export_regions: list[str] = field(default_factory=list)  # the "По бюджету" tab
+    export_price_from: str = ""
+    export_price_to: str = ""
+    export_words: str = ""
+    export_details: bool = False
 
     @staticmethod
     def default_path() -> Path:

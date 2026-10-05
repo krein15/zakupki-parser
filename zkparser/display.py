@@ -17,6 +17,54 @@ def money(value: Decimal | None, currency: str = "RUB") -> str:
     return f"{value:,.2f}".replace(",", " ").replace(".", ",") + " " + CURRENCY_SIGNS.get(currency, currency)
 
 
+def plural(count: int, one: str, few: str, many: str) -> str:
+    """plural(2, "регион", "региона", "регионов") → "2 региона"."""
+    tens, units = count % 100, count % 10
+    if units == 1 and tens != 11:
+        word = one
+    elif 2 <= units <= 4 and not 12 <= tens <= 14:
+        word = few
+    else:
+        word = many
+    return f"{count} {word}"
+
+
+def regions_count(count: int) -> str:
+    return plural(count, "регион", "региона", "регионов")
+
+
+def days_left(days: int) -> str:
+    """0 → "последний день", 1 → "остался 1 день", 3 → "осталось 3 дня"."""
+    if days <= 0:
+        return "последний день"
+    text = plural(days, "день", "дня", "дней")
+    return f"остался {text}" if text.endswith(" день") else f"осталось {text}"
+
+
+def short_money(value: int) -> str:
+    """1 500 000 → "1,5 млн", 300 000 → "300 тыс.", 950 → "950": a price range in a file name or a title."""
+    for size, unit in ((1_000_000_000, "млрд"), (1_000_000, "млн"), (1_000, "тыс.")):
+        if value >= size:
+            return f"{value / size:.2f}".rstrip("0").rstrip(".").replace(".", ",") + f" {unit}"
+    return str(value)
+
+
+def price_range(price_from: int | None, price_to: int | None, short: bool = False) -> str:
+    """"от 1 000 000,00 ₽ до 5 000 000,00 ₽", or "1 млн – 5 млн ₽" when short; empty for any price."""
+    if short:
+        if price_from is not None and price_to is not None:
+            return f"{short_money(price_from)} – {short_money(price_to)} ₽"
+        if price_from is not None:
+            return f"от {short_money(price_from)} ₽"
+        return f"до {short_money(price_to)} ₽" if price_to is not None else ""
+    parts = []
+    if price_from is not None:
+        parts.append(f"от {money(Decimal(price_from))}")
+    if price_to is not None:
+        parts.append(f"до {money(Decimal(price_to))}")
+    return " ".join(parts)
+
+
 def quantity(value: Decimal) -> str:
     """800.00000000000 → 800, 2.500 → 2,5."""
     return format(value.normalize(), "f").replace(".", ",")

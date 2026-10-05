@@ -24,7 +24,7 @@ NEUTRAL_BUTTON = ("#E8EAF2", "#2A2E3D")
 NEUTRAL_BUTTON_HOVER = ("#DADDE8", "#343949")
 
 # The stage of a notice, coloured by a word it contains (as in the Excel report).
-STAGE_COLORS = {"подача": SUCCESS, "комисси": WARNING, "отмен": DANGER, "заверш": TEXT_MUTED}
+STAGE_COLORS = {"подача": SUCCESS, "окончен": WARNING, "комисси": WARNING, "отмен": DANGER, "заверш": TEXT_MUTED}
 
 FONT_FAMILY = "Segoe UI"
 
