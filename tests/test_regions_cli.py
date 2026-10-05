@@ -82,3 +82,17 @@ def test_build_query():
 def test_all_stages_flag():
     query = build_query(*args("--all-stages"))
     assert query.stages == ()
+
+
+def test_templates_command_lists_and_creates(tmp_path, capsys):
+    from zkparser.__main__ import main
+    from zkparser.profiles import load_profile
+
+    assert main(["templates"]) == 0
+    assert "Канцтовары и бумага:" in capsys.readouterr().out
+    target = tmp_path / "mebel.toml"
+    assert main(["templates", "мебел", "-r", "66", "--out", str(target)]) == 0
+    profile = load_profile(target)
+    assert (profile.name, profile.regions) == ("Мебель", ("66000000000",))
+    with pytest.raises(SystemExit):
+        main(["templates", "мебел", "-r", "66", "--out", str(target)])  # an existing file is not overwritten

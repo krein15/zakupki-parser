@@ -3,7 +3,7 @@
 * ``fetch`` searches the site and keeps the XML of every notice found in the local cache.
 * ``match`` picks the notices that fit one or more profiles (TOML files) and says why each one fits.
 * ``show`` prints a notice as parsed from its XML (downloading it if it is not cached yet).
-* ``regions`` lists the regions ``--region`` accepts.
+* ``regions`` lists the regions ``--region`` accepts; ``templates`` lists niche templates and makes profiles of them.
 * ``monitor``, ``telegram`` and ``schedule`` run the checks for new notices, see monitor_cli.py.
 """
 
@@ -24,9 +24,9 @@ from .excel import build_file_name, export_profile
 from .fetch import CACHED, FetchReport, fetch_notices
 from .notice_xml import NoticeFormatError, parse_notice
 from .pipeline import ProfileResult, run_profiles
-from .profiles import ProfileError, load_profile
+from .profiles import ProfileError, from_template, load_profile, load_templates, save_profile
 from .regions import REGIONS, resolve_region
-from .settings import default_cache_dir, default_output_dir
+from .settings import default_cache_dir, default_output_dir, profiles_dir
 from .website.client import SiteClient, SiteError
 from .website.notice import download_notice
 from .website.search import SearchHit, SearchQuery, Stage
@@ -74,6 +74,15 @@ def build_parser() -> argparse.ArgumentParser:
     add_cache_dir(show)
 
     commands.add_parser("regions", help="коды регионов для --region")
+
+    templates = commands.add_parser(
+        "templates", help="шаблоны ниш; с названием и регионом — создать из шаблона профиль"
+    )
+    templates.add_argument("name", nargs="?", help="название шаблона или его начало, например «канц»")
+    templates.add_argument("-r", "--region", action="append", default=[], metavar="РЕГИОН", help="регион профиля")
+    templates.add_argument(
+        "-o", "--out", type=Path, metavar="ФАЙЛ", help="куда сохранить профиль (по умолчанию в папку profiles)"
+    )
     monitor_cli.add_commands(commands, add_cache_dir)
     return parser
 
@@ -253,6 +262,31 @@ def run_show(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     return 0
 
 
+def run_templates(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
+    templates = load_templates()
+    if not args.name:
+        for template in templates:
+            print(f"{template.name}: {', '.join(template.keywords[:3])}… · ОКПД2 {', '.join(template.okpd2)}")
+        return 0
+    needle = args.name.casefold()
+    found = [template for template in templates if template.name.casefold().startswith(needle)]
+    if len(found) != 1:
+        parser.error(f"шаблон «{args.name}» не найден или неоднозначен; список: python -m zkparser templates")
+    if not args.region:
+        parser.error("укажите регион профиля: --region 72")
+    try:
+        regions = tuple(dict.fromkeys(resolve_region(value) for value in args.region))
+    except ValueError as error:
+        parser.error(str(error))
+    profile = from_template(found[0], regions)
+    path = args.out or profiles_dir() / f"{found[0].name}.toml"
+    if path.exists():
+        parser.error(f"файл {path} уже есть — укажите другой: --out")
+    save_profile(profile, path)
+    print(f"Профиль «{profile.name}» сохранён: {path}")
+    return 0
+
+
 def run_regions() -> int:
     for code, name in sorted(REGIONS.items(), key=lambda item: item[1]):
         print(f"{code[:2]}  {name}")
@@ -268,6 +302,8 @@ def main(argv: list[str] | None = None) -> int:
     monitor_cli.protect_logs(load_telegram_settings().token)
     if args.command in ("monitor", "telegram", "schedule"):
         return monitor_cli.run(args, parser)
+    if args.command == "templates":
+        return run_templates(args, parser)
     if args.command == "regions":
         return run_regions()
     if args.command == "show":

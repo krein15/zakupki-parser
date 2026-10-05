@@ -78,6 +78,8 @@ python -m zkparser show 0167200003426008053
 [docs/example-profile.toml](docs/example-profile.toml), шаблоны — [zkparser/templates](zkparser/templates).
 
 ```bash
+python -m zkparser templates                                   # шаблоны ниш
+python -m zkparser templates канц --region 72                  # профиль из шаблона → profiles/
 python -m zkparser match docs/example-profile.toml --date 2026-10-02
 ```
 
