@@ -1,0 +1,424 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<ns7:epNotificationEZK2020 xmlns="http://zakupki.gov.ru/oos/EPtypes/1" xmlns:ns6="http://zakupki.gov.ru/oos/types/1" xmlns:ns5="http://zakupki.gov.ru/oos/KOTypes/1" xmlns:ns7="http://zakupki.gov.ru/oos/printform/1" xmlns:ns2="http://zakupki.gov.ru/oos/base/1" xmlns:ns4="http://zakupki.gov.ru/oos/CPtypes/1" xmlns:ns3="http://zakupki.gov.ru/oos/common/1" schemeVersion="16.2">
+    <id>43793110</id>
+    <externalId>35115602</externalId>
+    <versionNumber>1</versionNumber>
+    <commonInfo>
+        <purchaseNumber>0367300047426000193</purchaseNumber>
+        <docNumber>№0367300047426000193</docNumber>
+        <plannedPublishDate>2026-08-17+05:00</plannedPublishDate>
+        <publishDTInEIS>2026-08-17T17:36:59.728+05:00</publishDTInEIS>
+        <href>https://zakupki.gov.ru/epz/order/notice/zk20/view/common-info.html?regNumber=0367300047426000193</href>
+        <placingWay>
+            <ns2:code>ZKP20</ns2:code>
+            <ns2:name>Запрос котировок в электронной форме</ns2:name>
+        </placingWay>
+        <ETP>
+            <ns2:code>ETP_MMVB</ns2:code>
+            <ns2:name>Электронная торговая площадка «Фабрикант»</ns2:name>
+            <ns2:url>https://www.fabrikant.ru</ns2:url>
+        </ETP>
+        <contractConclusionOnSt83Ch2>true</contractConclusionOnSt83Ch2>
+        <purchaseObjectInfo>Предоставление (с целью продления) и обслуживанию простой (неисключительной) лицензии на право использования программы для ЭВМ «Контур.Экстерн» для нужд Администрации города Тобольска.</purchaseObjectInfo>
+    </commonInfo>
+    <purchaseResponsibleInfo>
+        <responsibleOrgInfo>
+            <regNum>03673000474</regNum>
+            <consRegistryNum>713D0104</consRegistryNum>
+            <fullName>МУНИЦИПАЛЬНОЕ КАЗЕННОЕ УЧРЕЖДЕНИЕ Г. ТОБОЛЬСКА "УПРАВЛЕНИЕ АДМИНИСТРАТИВНО-ХОЗЯЙСТВЕННОГО ОБСЛУЖИВАНИЯ"</fullName>
+            <shortName>МКУ Г. ТОБОЛЬСКА "УАХО"</shortName>
+            <postAddress>626150, Тюменская область, город Тобольск, Российская Федерация, 626150, Тюменская обл, Тобольск г, 4 мкр, Д. 22 СТР. 1</postAddress>
+            <factAddress>626150, , 626150, область Тюменская, город Тобольск, микрорайон 4, дом 22</factAddress>
+            <INN>7206050015</INN>
+            <KPP>720601001</KPP>
+        </responsibleOrgInfo>
+        <responsibleRole>AI</responsibleRole>
+        <responsibleInfo>
+            <orgPostAddress>626150, Тюменская область, город Тобольск, Российская Федерация, 626150, Тюменская обл, Тобольск г, 4 мкр, Д. 22 СТР. 1</orgPostAddress>
+            <orgFactAddress>626150, , 626150, область Тюменская, город Тобольск, микрорайон 4, дом 22</orgFactAddress>
+            <contactPersonInfo>
+                <ns3:lastName>Иванов</ns3:lastName>
+                <ns3:firstName>Иван</ns3:firstName>
+                <ns3:middleName>Иванович</ns3:middleName>
+            </contactPersonInfo>
+            <contactEMail>contact@example.org</contactEMail>
+            <contactPhone>7-000-0000000</contactPhone>
+            <addInfo>Контактные данные удалены</addInfo>
+        </responsibleInfo>
+    </purchaseResponsibleInfo>
+    <printFormInfo>
+        <ns3:url>https://zakupki.gov.ru/epz/order/notice/printForm/view.html?regNumber=0367300047426000193</ns3:url>
+    </printFormInfo>
+    <attachmentsInfo>
+        <ns3:attachmentInfo>
+            <ns3:publishedContentId>01A00FB8CA267BF2AE6620035614B609</ns3:publishedContentId>
+            <ns3:fileName>ЭЗК-101-26 Приложение N 3 Обоснование НМЦК.xlsx</ns3:fileName>
+            <ns3:fileSize>66936</ns3:fileSize>
+            <ns3:docDescription>Обоснование начальной (максимальной) цены контракта</ns3:docDescription>
+            <ns3:docDate>2026-08-17T15:36:09+03:00</ns3:docDate>
+            <ns3:url>https://zakupki.gov.ru/44fz/filestore/public/1.0/download/priz/file.html?uid=01A00FB8CA267BF2AE6620035614B609</ns3:url>
+            <ns3:docKindInfo>
+                <ns2:code>MRJ</ns2:code>
+                <ns2:name>Обоснование начальной (максимальной) цены контракта</ns2:name>
+            </ns3:docKindInfo>
+        </ns3:attachmentInfo>
+        <ns3:attachmentInfo>
+            <ns3:publishedContentId>01A00FB8CB157DE0A2415E8E987D1192</ns3:publishedContentId>
+            <ns3:fileName>ЭЗК-101-26 Приложение N 2 Проект контракта.docx</ns3:fileName>
+            <ns3:fileSize>74528</ns3:fileSize>
+            <ns3:docDescription>Проект контракта</ns3:docDescription>
+            <ns3:docDate>2026-08-17T15:36:09+03:00</ns3:docDate>
+            <ns3:url>https://zakupki.gov.ru/44fz/filestore/public/1.0/download/priz/file.html?uid=01A00FB8CB157DE0A2415E8E987D1192</ns3:url>
+            <ns3:docKindInfo>
+                <ns2:code>CP</ns2:code>
+                <ns2:name>Проект контракта</ns2:name>
+            </ns3:docKindInfo>
+        </ns3:attachmentInfo>
+        <ns3:attachmentInfo>
+            <ns3:publishedContentId>01A00FB8CCAF7E6D8656D698B40E0AE7</ns3:publishedContentId>
+            <ns3:fileName>ЭЗК-101-26 Приложение N 1 Техническое задание.docx</ns3:fileName>
+            <ns3:fileSize>36660</ns3:fileSize>
+            <ns3:docDescription>Описание объекта закупки</ns3:docDescription>
+            <ns3:docDate>2026-08-17T15:36:09+03:00</ns3:docDate>
+            <ns3:url>https://zakupki.gov.ru/44fz/filestore/public/1.0/download/priz/file.html?uid=01A00FB8CCAF7E6D8656D698B40E0AE7</ns3:url>
+            <ns3:docKindInfo>
+                <ns2:code>POD</ns2:code>
+                <ns2:name>Описание объекта закупки</ns2:name>
+            </ns3:docKindInfo>
+        </ns3:attachmentInfo>
+        <ns3:attachmentInfo>
+            <ns3:publishedContentId>01A00FB8C9677CCEB27194908D4472AB</ns3:publishedContentId>
+            <ns3:fileName>ЭЗК-101-26 Приложение N 4 Требования к составу заявки.doc</ns3:fileName>
+            <ns3:fileSize>116736</ns3:fileSize>
+            <ns3:docDescription>Требование к содержанию, составу заявки на участие в закупке</ns3:docDescription>
+            <ns3:docDate>2026-08-17T15:36:09+03:00</ns3:docDate>
+            <ns3:url>https://zakupki.gov.ru/44fz/filestore/public/1.0/download/priz/file.html?uid=01A00FB8C9677CCEB27194908D4472AB</ns3:url>
+            <ns3:docKindInfo>
+                <ns2:code>CAR</ns2:code>
+                <ns2:name>Требование к содержанию, составу заявки на участие в закупке</ns2:name>
+            </ns3:docKindInfo>
+        </ns3:attachmentInfo>
+    </attachmentsInfo>
+    <serviceSigns>
+        <isIncludeKOKS>false</isIncludeKOKS>
+        <isControlP1Ch5St99>true</isControlP1Ch5St99>
+    </serviceSigns>
+    <notificationInfo>
+        <procedureInfo>
+            <collectingInfo>
+                <startDT>2026-08-17T17:36:59+05:00</startDT>
+                <endDT>2026-08-24T09:00:00+05:00</endDT>
+            </collectingInfo>
+            <summarizingDate>2026-08-26+05:00</summarizingDate>
+        </procedureInfo>
+        <contractConditionsInfo>
+            <maxPriceInfo>
+                <maxPrice>29900.00</maxPrice>
+                <currency>
+                    <ns2:code>RUB</ns2:code>
+                    <ns2:name>РОССИЙСКИЙ РУБЛЬ</ns2:name>
+                </currency>
+                <interbudgetaryTransfer>false</interbudgetaryTransfer>
+            </maxPriceInfo>
+        </contractConditionsInfo>
+        <customerRequirementsInfo>
+            <customerRequirementInfo>
+                <customer>
+                    <ns2:regNum>01673000008</ns2:regNum>
+                    <ns2:consRegistryNum>71302301</ns2:consRegistryNum>
+                    <ns2:fullName>АДМИНИСТРАЦИЯ ГОРОДА ТОБОЛЬСКА ИСПОЛНИТЕЛЬНО-РАСПОРЯДИТЕЛЬНЫЙ ОРГАН МЕСТНОГО САМОУПРАВЛЕНИЯ</ns2:fullName>
+                </customer>
+                <contractGuarantee>
+                    <amount>1524.90</amount>
+                    <account>
+                        <ns3:bik>017102101</ns3:bik>
+                        <ns3:settlementAccount>03232643717100006700</ns3:settlementAccount>
+                        <ns3:personalAccount>ВС0502800001АДМИ</ns3:personalAccount>
+                        <ns3:creditOrgName>УФК по Тюменской области (Получатель: Департамент финансов Администрации города Тобольска (Администрация города Тобольска, л/с ВС0502800001АДМИ))</ns3:creditOrgName>
+                        <ns3:corrAccountNumber>40102810945370000060</ns3:corrAccountNumber>
+                    </account>
+                    <procedureInfo>Обеспечение исполнение контракта предоставляется в порядке, определенном ст.96 Федерального закона №44-ФЗ, с учетом положений ст.37 Федерального закона №44-ФЗ. Обеспечение исполнения контракта может обеспечиваться предоставлением независимой гарантии, соответствующей требованиям ст. 45 Федерального закона №44-ФЗ, или внесением денежных средств на указанный заказчиком счет, на котором в соответствии с законодательством Российской Федерации учитываются операции со средствами, поступающими заказчику. Способ обеспечения исполнения контракта определяется участником закупки, с которым заключается контракт, самостоятельно. При этом срок действия независимой гарантии должен превышать предусмотренный контрактом срок исполнения обязательств, которые должны быть обеспечены такой независимой гарантией, не менее чем на один месяц, в том числе в случае его изменения в соответствии со ст.95 Федерального закона №44-ФЗ. Контракт заключается после предоставления участником закупки с которым заключается контракт обеспечения исполнения контракта. 
+В реквизите "Назначение платежа" платежного поручения рекомендуется указать идентификационный код закупки, который отделяется знаком "//". 
+Реквизиты заказчика: Администрация города Тобольска (ИНН 7206006802 КПП 720601001)</procedureInfo>
+                    <part>5.1</part>
+                </contractGuarantee>
+                <contractConditionsInfo>
+                    <maxPriceInfo>
+                        <maxPrice>29900.00</maxPrice>
+                    </maxPriceInfo>
+                    <IKZInfo>
+                        <purchaseCode>263720600680272060100100380010000242</purchaseCode>
+                        <publishYear>2026</publishYear>
+                        <OKPD2Info>
+                            <ns3:undefined>0000</ns3:undefined>
+                        </OKPD2Info>
+                        <KVRInfo>
+                            <ns3:KVR>
+                                <ns2:code>242</ns2:code>
+                                <ns2:name>Закупка товаров, работ и услуг в сфере информационно-коммуникационных технологий</ns2:name>
+                            </ns3:KVR>
+                        </KVRInfo>
+                        <customerCode>37206006802720601001</customerCode>
+                        <purchaseNumber>0038</purchaseNumber>
+                        <purchaseOrderNumber>001</purchaseOrderNumber>
+                    </IKZInfo>
+                    <tenderPlan2020Info>
+                        <ns3:plan2020Number>202601673000008001</ns3:plan2020Number>
+                        <ns3:position2020Number>202601673000008001000008</ns3:position2020Number>
+                    </tenderPlan2020Info>
+                    <contractExecutionPaymentPlan>
+                        <contractExecutionTermsInfo>
+                            <ns3:notRelativeTermsInfo>
+                                <ns3:isFromConclusionDate>true</ns3:isFromConclusionDate>
+                                <ns3:endDate>2026-11-30+03:00</ns3:endDate>
+                            </ns3:notRelativeTermsInfo>
+                        </contractExecutionTermsInfo>
+                        <financingSourcesInfo>
+                            <budgetFinancingsInfo>
+                                <budgetInfo>
+                                    <ns2:code>67030316</ns2:code>
+                                    <ns2:name>бюджет города Тобольска</ns2:name>
+                                </budgetInfo>
+                                <budgetLevelInfo>
+                                    <ns2:code>30</ns2:code>
+                                    <ns2:name>местный бюджет</ns2:name>
+                                </budgetLevelInfo>
+                                <OKTMOInfo>
+                                    <ns2:code>71710000</ns2:code>
+                                    <ns2:name>Муниципальные образования Тюменской области / Городские округа Тюменской области/ / город Тобольск</ns2:name>
+                                </OKTMOInfo>
+                            </budgetFinancingsInfo>
+                            <currentYear>2026</currentYear>
+                            <financeInfo>
+                                <total>29900.00</total>
+                                <currentYear>29900.00</currentYear>
+                                <firstYear>0.00</firstYear>
+                                <secondYear>0.00</secondYear>
+                                <subsecYears>0.00</subsecYears>
+                            </financeInfo>
+                        </financingSourcesInfo>
+                        <stagesInfo>
+                            <stageInfo>
+                                <sid>21578844</sid>
+                                <externalSid>144fba8d-689f-45fc-b97e-aebf1696944b</externalSid>
+                                <termsInfo>
+                                    <ns3:notRelativeTermsInfo>
+                                        <ns3:isFromConclusionDate>true</ns3:isFromConclusionDate>
+                                        <ns3:endDate>2026-11-30+03:00</ns3:endDate>
+                                    </ns3:notRelativeTermsInfo>
+                                </termsInfo>
+                                <budgetFinancingsInfo>
+                                    <budgetFinancingInfo>
+                                        <KBK>02801049900070100242</KBK>
+                                        <paymentYearInfo>
+                                            <total>29900.00</total>
+                                            <currentYear>29900.00</currentYear>
+                                            <firstYear>0.00</firstYear>
+                                            <secondYear>0.00</secondYear>
+                                            <subsecYears>0.00</subsecYears>
+                                        </paymentYearInfo>
+                                    </budgetFinancingInfo>
+                                </budgetFinancingsInfo>
+                            </stageInfo>
+                        </stagesInfo>
+                    </contractExecutionPaymentPlan>
+                    <deliveryPlacesInfo>
+                        <byGARInfo>
+                            <ns3:sid>61317974</ns3:sid>
+                            <ns3:externalSid>d91ff7fa-01fb-415a-bf92-6cd410251aad</ns3:externalSid>
+                            <ns3:countryInfo>
+                                <ns2:countryCode>643</ns2:countryCode>
+                                <ns2:countryFullName>Российская Федерация</ns2:countryFullName>
+                            </ns3:countryInfo>
+                            <ns3:GARInfo>
+                                <ns3:GARGuid>af7c31b0-8cf2-46da-a28f-c9f501af3adf</ns3:GARGuid>
+                                <ns3:GARAddress>обл. Тюменская, г.о. город Тобольск, г. Тобольск, ул. Аптекарская, д. 3</ns3:GARAddress>
+                            </ns3:GARInfo>
+                        </byGARInfo>
+                    </deliveryPlacesInfo>
+                    <isOneSideRejectionSt95>true</isOneSideRejectionSt95>
+                    <isExecutionStagesTerms>false</isExecutionStagesTerms>
+                </contractConditionsInfo>
+                <addInfo>Контактные данные удалены</addInfo>
+            </customerRequirementInfo>
+        </customerRequirementsInfo>
+        <purchaseObjectsInfo>
+            <notDrugPurchaseObjectsInfo>
+                <ns3:purchaseObject>
+                    <ns3:sid>220887682</ns3:sid>
+                    <ns3:externalSid>46782807-c5f4-4f67-a6ac-3d04356c147d</ns3:externalSid>
+                    <ns3:KTRU>
+                        <ns2:code>58.29.11.000-00000003</ns2:code>
+                        <ns2:name>Программное обеспечение</ns2:name>
+                        <ns2:versionId>221237</ns2:versionId>
+                        <ns2:versionNumber>4</ns2:versionNumber>
+                        <ns3:characteristics>
+                            <ns3:characteristicsUsingReferenceInfo>
+                                <ns3:sid>322501206</ns3:sid>
+                                <ns3:externalSid>ad58a7fc-e54e-4c11-8c7a-d4a1125b4c3b</ns3:externalSid>
+                                <ns3:code>1038b7ec-9</ns3:code>
+                                <ns3:name>Вид лицензии</ns3:name>
+                                <ns3:type>1</ns3:type>
+                                <ns3:kind>2</ns3:kind>
+                                <ns3:values>
+                                    <ns3:value>
+                                        <ns3:sid>416150980</ns3:sid>
+                                        <ns3:qualityDescription>Простая (неисключительная)</ns3:qualityDescription>
+                                    </ns3:value>
+                                </ns3:values>
+                                <ns3:characteristicsFillingInstruction>
+                                    <ns2:code>6</ns2:code>
+                                    <ns2:name>Значение характеристики не может изменяться участником закупки</ns2:name>
+                                </ns3:characteristicsFillingInstruction>
+                            </ns3:characteristicsUsingReferenceInfo>
+                            <ns3:characteristicsUsingReferenceInfo>
+                                <ns3:sid>322501207</ns3:sid>
+                                <ns3:externalSid>66fb85d8-21c0-4202-bce7-6ae546634853</ns3:externalSid>
+                                <ns3:code>44d29c4b-3</ns3:code>
+                                <ns3:name>Способ предоставления</ns3:name>
+                                <ns3:type>1</ns3:type>
+                                <ns3:kind>3</ns3:kind>
+                                <ns3:values>
+                                    <ns3:value>
+                                        <ns3:sid>416150981</ns3:sid>
+                                        <ns3:qualityDescription>Копия электронного экземпляра</ns3:qualityDescription>
+                                    </ns3:value>
+                                </ns3:values>
+                                <ns3:characteristicsFillingInstruction>
+                                    <ns2:code>6</ns2:code>
+                                    <ns2:name>Значение характеристики не может изменяться участником закупки</ns2:name>
+                                </ns3:characteristicsFillingInstruction>
+                            </ns3:characteristicsUsingReferenceInfo>
+                            <ns3:characteristicsUsingReferenceInfo>
+                                <ns3:sid>322501208</ns3:sid>
+                                <ns3:externalSid>fa23e8d4-e810-45d2-bf85-d1e7ade15e23</ns3:externalSid>
+                                <ns3:code>a8ba7b78-9</ns3:code>
+                                <ns3:name>Класс программ для электронных вычислительных машин и баз данных</ns3:name>
+                                <ns3:type>1</ns3:type>
+                                <ns3:kind>3</ns3:kind>
+                                <ns3:values>
+                                    <ns3:value>
+                                        <ns3:sid>416150982</ns3:sid>
+                                        <ns3:qualityDescription>(05.13) Средства интеллектуальной обработки информации и интеллектуального анализа бизнес-процессов</ns3:qualityDescription>
+                                    </ns3:value>
+                                    <ns3:value>
+                                        <ns3:sid>416150983</ns3:sid>
+                                        <ns3:qualityDescription>(09.17) Программное обеспечение для функционирования системы юридически значимого электронного документооборота</ns3:qualityDescription>
+                                    </ns3:value>
+                                </ns3:values>
+                                <ns3:characteristicsFillingInstruction>
+                                    <ns2:code>6</ns2:code>
+                                    <ns2:name>Значение характеристики не может изменяться участником закупки</ns2:name>
+                                </ns3:characteristicsFillingInstruction>
+                            </ns3:characteristicsUsingReferenceInfo>
+                        </ns3:characteristics>
+                        <ns3:OKPD2>
+                            <ns2:OKPDCode>58.29.11.000</ns2:OKPDCode>
+                            <ns2:OKPDName>Системы операционные на электронном носителе</ns2:OKPDName>
+                        </ns3:OKPD2>
+                    </ns3:KTRU>
+                    <ns3:name>Программное обеспечение</ns3:name>
+                    <ns3:OKEI>
+                        <ns2:code>796</ns2:code>
+                        <ns2:nationalCode>шт</ns2:nationalCode>
+                        <ns2:name>Штука</ns2:name>
+                    </ns3:OKEI>
+                    <ns3:customerQuantities>
+                        <ns3:customerQuantity>
+                            <ns3:customer>
+                                <ns2:regNum>01673000008</ns2:regNum>
+                                <ns2:consRegistryNum>71302301</ns2:consRegistryNum>
+                                <ns2:fullName>АДМИНИСТРАЦИЯ ГОРОДА ТОБОЛЬСКА ИСПОЛНИТЕЛЬНО-РАСПОРЯДИТЕЛЬНЫЙ ОРГАН МЕСТНОГО САМОУПРАВЛЕНИЯ</ns2:fullName>
+                            </ns3:customer>
+                            <ns3:quantity>1</ns3:quantity>
+                        </ns3:customerQuantity>
+                    </ns3:customerQuantities>
+                    <ns3:price>22911.88</ns3:price>
+                    <ns3:volumeSpecifyingMethod>QF</ns3:volumeSpecifyingMethod>
+                    <ns3:quantity>
+                        <ns3:value>1.00000000000</ns3:value>
+                    </ns3:quantity>
+                    <ns3:sum>22911.88</ns3:sum>
+                    <ns3:type>SERVICE</ns3:type>
+                    <ns3:hierarchyType>ND</ns3:hierarchyType>
+                    <ns3:restrictionsInfo>
+                        <ns3:isProhibitionForeignPurchaseObjects>true</ns3:isProhibitionForeignPurchaseObjects>
+                    </ns3:restrictionsInfo>
+                </ns3:purchaseObject>
+                <ns3:purchaseObject>
+                    <ns3:sid>220887683</ns3:sid>
+                    <ns3:externalSid>756312c0-cca1-40df-ba30-4a5ad4f78593</ns3:externalSid>
+                    <ns3:OKPD2>
+                        <ns2:OKPDCode>62.03.12.130</ns2:OKPDCode>
+                        <ns2:OKPDName>Услуги по сопровождению компьютерных систем</ns2:OKPDName>
+                        <ns3:characteristics>
+                            <ns3:characteristicsUsingTextForm>
+                                <ns3:sid>322501209</ns3:sid>
+                                <ns3:externalSid>feae5f16-2914-4827-b279-5a1972ec9896</ns3:externalSid>
+                                <ns3:name>Услуги по сопровождению программы для ЭВМ «Контур. Экстерн» (техническая поддержка в виде абонентского обслуживания) для ЮЛ на общей системе налогообложения</ns3:name>
+                                <ns3:type>1</ns3:type>
+                                <ns3:characteristicsFillingInstruction>
+                                    <ns2:code>6</ns2:code>
+                                    <ns2:name>Значение характеристики не может изменяться участником закупки</ns2:name>
+                                </ns3:characteristicsFillingInstruction>
+                                <ns3:values>
+                                    <ns3:value>
+                                        <ns3:sid>416150984</ns3:sid>
+                                        <ns3:externalSid>1e461033-1f89-42c2-983c-163a69ab85b6</ns3:externalSid>
+                                        <ns3:qualityDescription>В соответствии с условиями контракта и Технического задания (описание объекта закупки).</ns3:qualityDescription>
+                                    </ns3:value>
+                                </ns3:values>
+                            </ns3:characteristicsUsingTextForm>
+                        </ns3:characteristics>
+                    </ns3:OKPD2>
+                    <ns3:name>Услуги по сопровождению программы для ЭВМ «Контур. Экстерн» (техническая поддержка в виде абонентского обслуживания) для ЮЛ на общей системе налогообложения</ns3:name>
+                    <ns3:OKEI>
+                        <ns2:code>796</ns2:code>
+                        <ns2:nationalCode>шт</ns2:nationalCode>
+                        <ns2:name>Штука</ns2:name>
+                    </ns3:OKEI>
+                    <ns3:customerQuantities>
+                        <ns3:customerQuantity>
+                            <ns3:customer>
+                                <ns2:regNum>01673000008</ns2:regNum>
+                                <ns2:consRegistryNum>71302301</ns2:consRegistryNum>
+                                <ns2:fullName>АДМИНИСТРАЦИЯ ГОРОДА ТОБОЛЬСКА ИСПОЛНИТЕЛЬНО-РАСПОРЯДИТЕЛЬНЫЙ ОРГАН МЕСТНОГО САМОУПРАВЛЕНИЯ</ns2:fullName>
+                            </ns3:customer>
+                            <ns3:quantity>1</ns3:quantity>
+                        </ns3:customerQuantity>
+                    </ns3:customerQuantities>
+                    <ns3:price>6988.12</ns3:price>
+                    <ns3:volumeSpecifyingMethod>QF</ns3:volumeSpecifyingMethod>
+                    <ns3:quantity>
+                        <ns3:value>1.00000000000</ns3:value>
+                    </ns3:quantity>
+                    <ns3:sum>6988.12</ns3:sum>
+                    <ns3:type>SERVICE</ns3:type>
+                    <ns3:hierarchyType>ND</ns3:hierarchyType>
+                    <ns3:restrictionsInfo>
+                        <ns3:isProhibitionForeignPurchaseObjects>true</ns3:isProhibitionForeignPurchaseObjects>
+                    </ns3:restrictionsInfo>
+                </ns3:purchaseObject>
+                <ns3:totalSum>29900.00</ns3:totalSum>
+                <quantityUndefined>false</quantityUndefined>
+            </notDrugPurchaseObjectsInfo>
+        </purchaseObjectsInfo>
+        <requirementsInfo>
+            <requirementInfo>
+                <ns3:preferenseRequirementInfo>
+                    <ns2:shortName>ET44</ns2:shortName>
+                    <ns2:name>Единые требования к участникам закупок в соответствии с ч. 1 ст. 31 Закона № 44-ФЗ</ns2:name>
+                </ns3:preferenseRequirementInfo>
+            </requirementInfo>
+            <requirementInfo>
+                <ns3:preferenseRequirementInfo>
+                    <ns2:shortName>TR442</ns2:shortName>
+                    <ns2:name>Требования к участникам закупок в соответствии с ч. 1.1 ст. 31 Закона № 44-ФЗ</ns2:name>
+                </ns3:preferenseRequirementInfo>
+            </requirementInfo>
+        </requirementsInfo>
+    </notificationInfo>
+    <printFormFieldsInfo>
+        <is449Features>false</is449Features>
+    </printFormFieldsInfo>
+</ns7:epNotificationEZK2020>

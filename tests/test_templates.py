@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -17,7 +18,7 @@ CODE = re.compile(r"\d{2}(\.\d*)*")
 
 
 def test_templates_are_there():
-    assert len(TEMPLATES) == 11
+    assert len(TEMPLATES) == 12
     assert "Канцтовары и бумага" in TEMPLATES
     for template in TEMPLATES.values():
         assert template.keywords, template.name
@@ -51,6 +52,7 @@ FIXTURE_NICHES = {
     "auction_ktru": "Топливо и ГСМ",  # diesel fuel and petrol
     "drugs": "Лекарственные препараты",
     "joint": "Продукты питания",  # tomato paste
+    "it_support": "IT-услуги и разработка ПО",  # support of the "Парус-Бюджет" software
 }
 
 
@@ -67,3 +69,13 @@ def test_storage_services_fit_no_template():
     matched = [name for name, template in TEMPLATES.items()
                if Matcher(from_template(template, ("72000000000",))).evaluate(notice).matched]
     assert matched == []
+
+
+def test_licence_resale_is_not_an_it_service():
+    """A licence renewal carries an IT service code (62.03); only the minus words keep it out of the IT niche."""
+    notice = parse_notice((FIXTURES / "notice_licence.xml").read_bytes())
+    profile = from_template(TEMPLATES["IT-услуги и разработка ПО"], ("72000000000",))
+    assert Matcher(replace(profile, minus=())).evaluate(notice).matched
+    verdict = Matcher(profile).evaluate(notice)
+    assert not verdict.matched
+    assert verdict.reasons[0].startswith("минус-слово")
