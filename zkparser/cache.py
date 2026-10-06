@@ -8,10 +8,14 @@ picked up with the next update on a later day.
 from __future__ import annotations
 
 import sqlite3
+import time
 from datetime import date, datetime
 from pathlib import Path
 
 from .website.search import SearchHit
+
+REPLACE_ATTEMPTS = 10
+REPLACE_PAUSE = 0.2  # seconds between attempts to rename a fresh download into place
 
 
 class NoticeCache:
@@ -55,7 +59,7 @@ class NoticeCache:
         path = self.path(hit.reg_number)
         temporary = path.with_suffix(".part")
         temporary.write_bytes(xml)
-        temporary.replace(path)
+        _replace(temporary, path)
         with self._db:
             self._db.execute(
                 "INSERT OR REPLACE INTO notices VALUES (?, ?, ?)",
@@ -70,3 +74,16 @@ class NoticeCache:
     def load(self, reg_number: str) -> bytes | None:
         path = self.path(reg_number)
         return path.read_bytes() if path.exists() else None
+
+
+def _replace(source: Path, target: Path) -> None:
+    """Rename over the old copy. Windows refuses while another process holds either file — an antivirus checking
+    the fresh download, a search indexer — so the rename is retried for a moment before giving up."""
+    for attempt in range(REPLACE_ATTEMPTS):
+        try:
+            source.replace(target)
+            return
+        except PermissionError:
+            if attempt == REPLACE_ATTEMPTS - 1:
+                raise
+            time.sleep(REPLACE_PAUSE)

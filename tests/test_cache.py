@@ -61,3 +61,24 @@ def test_hit_without_update_date_trusts_the_copy(tmp_path):
 def test_rejects_numbers_that_are_not_numbers(tmp_path, number):
     with NoticeCache(tmp_path) as cache, pytest.raises(ValueError):
         cache.path(number)
+
+
+def test_a_file_held_by_another_process_is_renamed_on_a_later_attempt(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from zkparser import cache as caching
+
+    real_replace, refusals = Path.replace, []
+
+    def busy_twice(self, target):
+        if len(refusals) < 2:
+            refusals.append(self)
+            raise PermissionError(32, "файл занят другим процессом")
+        return real_replace(self, target)
+
+    monkeypatch.setattr(Path, "replace", busy_twice)
+    monkeypatch.setattr(caching, "REPLACE_PAUSE", 0)
+    with NoticeCache(tmp_path) as store:
+        store.store(SearchHit("0167200003426008053", ""), b"<?xml version='1.0'?><n/>")
+        assert store.load("0167200003426008053") == b"<?xml version='1.0'?><n/>"
+    assert len(refusals) == 2
