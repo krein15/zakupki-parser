@@ -12,7 +12,9 @@
 
 [Пример отчёта](docs/example/example-report.xlsx) — 14 закупок канцтоваров в Тюменской области за сентябрь 2026.
 
-![Окно программы: найденные закупки и почему они подошли](docs/screenshots/app-results.png)
+![Выгрузка открытых закупок по бюджету: от нажатия до карточек](docs/screenshots/demo-export.gif)
+
+[Скачать программу для Windows](https://github.com/krein15/zakupki-parser/releases/latest) — Python не нужен.
 
 ## Окно
 
@@ -39,9 +41,9 @@ python app.py
   по щелчку на название открывается закупка в ЕИС.
 - **Мониторинг** — бот и чат Telegram, проверки по расписанию (включить, выключить, проверить сейчас), журнал.
 
-| Профиль | Мониторинг |
-|---|---|
-| ![Профиль](docs/screenshots/app-light.png) | ![Мониторинг](docs/screenshots/app-monitoring.png) |
+| Профиль | Результаты | Мониторинг |
+|---|---|---|
+| ![Профиль](docs/screenshots/app-light.png) | ![Результаты](docs/screenshots/app-results.png) | ![Мониторинг](docs/screenshots/app-monitoring.png) |
 
 Тёмная тема переключается в шапке:
 

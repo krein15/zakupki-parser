@@ -69,7 +69,9 @@ def main() -> None:
     app = App()
     if tab == "Мониторинг":
         app.bot_status.configure(text="Бот @tenders_demo_bot · чат по умолчанию задан")
-        app.schedule_status.configure(text="Проверки по расписанию включены. Следующая: 05.10.2026 10:00.")
+        app.schedule_status.configure(text="Проверки по расписанию включены. Следующая: 07.10.2026 10:00.\n"
+                                           "Бот: слушает кнопки, последняя связь 06.10 19:31\n"
+                                           "За 7 дней прислано 14: ✅ беру 3 · ❌ не моё 1 · без отметки 10")
         for var in app.monitored_vars.values():
             var.set(True)
     if tab == "По бюджету":  # the same example as in the README, whatever the window remembers
@@ -78,6 +80,10 @@ def main() -> None:
         set_entry(app.export_price_from, "1000000")
         set_entry(app.export_price_to, "5000000")
         set_entry(app.export_words, "")
+        app.export_filter.set(window.ALL_NOTICES)
+        app.export_details.deselect()
+    app.period.set("Неделя")  # not the custom dates the window may remember
+    app._refresh_period()
     choice = "Светлая" if appearance == "light" else "Тёмная"
     app.appearance.set(choice)
     app._set_appearance(choice)
