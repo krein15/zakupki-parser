@@ -36,6 +36,7 @@ class Preferences:
     export_price_to: str = ""
     export_words: str = ""
     export_details: bool = False
+    export_filter: str = ""  # "Профиль: …" or "Шаблон: …"; empty — every open notice
 
     @staticmethod
     def default_path() -> Path:

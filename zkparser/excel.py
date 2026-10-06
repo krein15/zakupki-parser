@@ -8,6 +8,9 @@
 The export of open notices (export.py) has the same "Закупки" and "Позиции" sheets without the matching, and
 "Выгрузка" with what was exported and how many notices the site still listed after their deadline.
 
+The audit of a keyword set (audit.py) opens with "Итоги" — the headline a client reads first, the numbers, the noisy
+words and what is missing — followed by "Пропущено", "Мусор", "Совпало" and "Слова".
+
 Times are the customer's local time, as the notice gives them; "Часовой пояс" shows the offset from Moscow the way
 the EIS site does (МСК+2). Text from notices never becomes a formula.
 """
@@ -28,7 +31,8 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.worksheet.worksheet import Worksheet
 
-from .display import price_range, regions_count
+from .audit import AuditResult, AuditRow
+from .display import money, plural, price_range, regions_count
 from .export import ExportResult, OpenNotice
 from .models import Notice
 from .pipeline import Found, ProfileResult
@@ -38,6 +42,7 @@ from .regions import REGIONS
 HEADER_FILL = PatternFill("solid", fgColor="2B2D42")
 HEADER_FONT = Font(bold=True, color="FFFFFF")
 TITLE_FONT = Font(bold=True, size=16, color="2B2D42")
+HEADLINE_FONT = Font(bold=True, size=14, color="B91C1C")
 SECTION_FONT = Font(bold=True, size=12, color="2B2D42")
 MUTED_FONT = Font(color="6B7280")
 LINK_FONT = Font(color="0563C1", underline="single")
@@ -130,6 +135,24 @@ DETAILED_COLUMNS = [
 ]
 
 
+AUDIT_COLUMNS = [
+    Column("№ закупки", 22),
+    Column("Название", 56, wrap=True),
+    Column("Начальная цена", 17, MONEY),
+    Column("Подача заявок до", 17, DATETIME),
+    Column("Этап", 18, wrap=True),
+    Column("Заказчик", 40, wrap=True),
+    Column("Регион", 22, wrap=True),
+]
+WORD_COLUMNS = [
+    Column("Ваше слово", 34, wrap=True),
+    Column("Нашло закупок", 14),
+    Column("Из них подходят", 15),
+    Column("Мусор", 10),
+    Column("Доля мусора", 12, "0%"),
+]
+
+
 def build_file_name(profile: Profile, generated_at: datetime) -> str:
     return f"{_file_subject(profile)}_{generated_at:%Y-%m-%d_%H-%M-%S}.xlsx"
 
@@ -143,9 +166,15 @@ def export_file_name(result: ExportResult, generated_at: datetime) -> str:
     """"Открытые закупки — Тюменская область, 1 млн – 5 млн ₽_2026-10-05_14-30-00.xlsx"."""
     regions = result.query.regions
     subject = REGIONS.get(regions[0], regions[0]) if len(regions) == 1 else regions_count(len(regions))
+    if result.query.profile is not None:
+        subject = f"{result.query.profile.name[:40]} — {subject}"
     prices = price_range(result.query.price_from, result.query.price_to, short=True)
     name = f"Открытые закупки — {subject}" + (f", {prices}" if prices else "")
     return f"{_safe(name)}_{generated_at:%Y-%m-%d_%H-%M-%S}.xlsx"
+
+
+def audit_file_name(result: AuditResult, generated_at: datetime) -> str:
+    return f"Аудит слов — {_safe(result.reference.name)[:50]}_{generated_at:%Y-%m-%d_%H-%M-%S}.xlsx"
 
 
 def _file_subject(profile: Profile) -> str:
@@ -182,24 +211,159 @@ def export_open_notices(path: Path, result: ExportResult, generated_at: datetime
     workbook = Workbook()
     notices = workbook.active
     notices.title = "Закупки"
-    detailed = result.query.details
+    detailed = result.query.detailed
+    profiled = result.query.profile is not None
     row = _detailed_row if detailed else _open_row
+    columns = DETAILED_COLUMNS if detailed else OPEN_COLUMNS
+    rows = [row(item, result.today) for item in result.notices]
+    if profiled:  # why each notice fits, right after its title
+        columns = [*columns[:2], Column("Почему подошла", 44, wrap=True), *columns[2:]]
+        rows = [[*values[:2], _why(item.verdict), *values[2:]]
+                for values, item in zip(rows, result.notices, strict=True)]
     _write_table(
         notices,
         "Notices",
-        DETAILED_COLUMNS if detailed else OPEN_COLUMNS,
-        [row(item, result.today) for item in result.notices],
+        columns,
+        rows,
         links=[item.hit.url for item in result.notices],
-        empty="Открытых закупок нет",
+        empty="Подходящих открытых закупок нет" if profiled else "Открытых закупок нет",
     )
     if detailed:
         _write_positions(workbook.create_sheet("Позиции"),
-                         [(item.notice, set()) for item in result.notices if item.notice], matching=False)
+                         [(item.notice, set(item.verdict.positions) if item.verdict else set())
+                          for item in result.notices if item.notice], matching=profiled)
     _write_export(workbook.create_sheet("Выгрузка"), result, generated_at)
     workbook.active = 0
     path.parent.mkdir(parents=True, exist_ok=True)
     workbook.save(path)
     return path
+
+
+def export_audit(path: Path, result: AuditResult, generated_at: datetime) -> Path:
+    workbook = Workbook()
+    now = generated_at.astimezone()
+    _write_audit_summary(workbook.active, result, generated_at)
+    sheets = (
+        ("Пропущено", "Missed", result.missed, "Почему подходит", "reference",
+         "Пропущенных нет: ваш набор нашёл всё, что нашёл эталон"),
+        ("Мусор", "Junk", result.junk, "Какое ваше слово сработало", "client", "Мусора нет"),
+        ("Совпало", "Both", result.both, "Ваши слова", "client", "Совпадений нет"),
+    )
+    for title, name, rows, why, side, empty in sheets:
+        columns = [*AUDIT_COLUMNS, Column(why, 48, wrap=True)]
+        if side == "client" and title == "Совпало":
+            columns.append(Column("Эталон", 48, wrap=True))
+        values = [_audit_row(row, now, side, both=title == "Совпало") for row in rows]
+        _write_table(workbook.create_sheet(title), name, columns, values,
+                     links=[row.found.notice.url for row in rows], empty=empty)
+    words = [[stat.word, stat.found, stat.relevant, stat.junk, stat.junk / stat.found if stat.found else None]
+             for stat in result.word_stats()]
+    _write_table(workbook.create_sheet("Слова"), "Words", WORD_COLUMNS, words)
+    workbook.active = 0
+    path.parent.mkdir(parents=True, exist_ok=True)
+    workbook.save(path)
+    return path
+
+
+def _audit_row(row: AuditRow, now: datetime, side: str, *, both: bool) -> list[Any]:
+    found = row.found
+    notice = found.notice
+    customers = notice.customers
+    customer = customers[0].customer.name if len(customers) == 1 else f"совместная закупка, {len(customers)} заказч."
+    verdict = row.reference if side == "reference" else row.client
+    values = [
+        notice.reg_number,
+        notice.title,
+        notice.max_price,
+        _local(notice.applications_end),
+        found.stage(now),
+        customer,
+        _regions(found.regions),
+        _why(verdict),
+    ]
+    if both:
+        values.append(_why(row.reference))
+    return values
+
+
+def _why(verdict: Any) -> str:
+    if verdict is None:
+        return ""
+    return ", ".join(verdict.matched_by) or "\n".join(verdict.reasons)
+
+
+def _write_audit_summary(sheet: Worksheet, result: AuditResult, generated_at: datetime) -> None:
+    sheet.title = "Итоги"
+    sheet.sheet_view.showGridLines = False
+    sheet.column_dimensions["A"].width = 44
+    sheet.column_dimensions["B"].width = 30
+    sheet.column_dimensions["C"].width = 30
+    period = f"{result.start:%d.%m.%Y}" if result.start == result.end else f"{result.start:%d.%m}–{result.end:%d.%m.%Y}"
+    sheet["A1"] = f"Аудит набора ключевых слов · {result.reference.name}"
+    sheet["A1"].font = TITLE_FONT
+    sheet["A2"] = (f"{_regions(result.reference.regions)} · закупки, размещённые {period}, на любом этапе · "
+                   f"сформировано {generated_at:%d.%m.%Y в %H:%M} по данным zakupki.gov.ru")
+    sheet["A2"].font = MUTED_FONT
+    sheet["A4"] = headline(result)
+    sheet["A4"].font = HEADLINE_FONT
+
+    row = _section(sheet, 6, "Цифры")
+    row = _pairs(sheet, row, [
+        ("Проверено закупок", result.checked),
+        ("Нашёл ваш набор", result.found),
+        ("— из них подходят", f"{len(result.both)}{_share(result.precision, 'точность')}"),
+        ("— мусор", len(result.junk)),
+        ("Подходящих всего (по эталону)", result.relevant),
+        ("Пропущено вашим набором", f"{len(result.missed)} на {money(result.missed_sum())}"
+                                    f"{_share(result.recall, 'полнота')}"),
+    ])
+
+    noisy = [stat for stat in result.word_stats() if stat.junk]
+    if noisy:
+        row = _section(sheet, row + 1, "Какие слова тянут мусор")
+        row = _pairs(sheet, row, [
+            (stat.word, f"{stat.junk} из {stat.found} — мусор" + ("" if stat.relevant else ": уберите или уточните"))
+            for stat in noisy[:8]
+        ])
+    hints = result.hints()
+    if hints:
+        row = _section(sheet, row + 1, "Чего не хватает: чем эталон нашёл пропущенное")
+        row = _pairs(sheet, row, [
+            (label, f"{plural(count, 'закупка', 'закупки', 'закупок')} на {money(total)}")
+            for label, count, total in hints[:8]
+        ])
+    if result.error:
+        row = _pairs(sheet, row + 1, [("Внимание", f"скачивание остановлено: {result.error}")])
+
+    row = _section(sheet, row + 1, "Как читать")
+    for note in (
+        "Ваш набор и эталон проверяли одни и те же закупки — все, что регионы разместили за период. Слова ищутся в "
+        "названии и в каждой позиции, со словоформами.",
+        "«Пропущено» — подходящие закупки, которых ваш набор не нашёл; «Мусор» — найденные им, но не подходящие; "
+        "у каждой строки указано, почему.",
+        "Эталон — словарь ниши: слова и коды ОКПД2. Он тоже может ошибаться — спорные строки стоит посмотреть.",
+        "Номер закупки — ссылка на её страницу в ЕИС.",
+    ):
+        sheet.cell(row=row, column=1, value=note)
+        row += 1
+
+
+def headline(result: AuditResult) -> str:
+    """The sentence a client reads first: "Из 140 найденных подходят 18; ещё 9 подходящих на 12 млн ₽ вы не увидели"."""
+    found = plural(result.found, "закупки, найденной", "закупок, найденных", "закупок, найденных")
+    text = f"Из {found} вашими словами, подходят {len(result.both)}."
+    if result.found == 1:
+        text = f"Из 1 закупки, найденной вашими словами, {'подходит 1' if result.both else 'не подходит ни одна'}."
+    if result.missed:
+        missed = plural(len(result.missed), "подходящую закупку", "подходящие закупки", "подходящих закупок")
+        text += f" Ещё {missed} на {money(result.missed_sum())} ваш набор пропустил."
+    else:
+        text += " Пропущенных подходящих закупок нет."
+    return text
+
+
+def _share(value: float | None, word: str) -> str:
+    return f" ({word} {round(100 * value)}%)" if value is not None else ""
 
 
 def _write_positions(sheet: Worksheet, notices: list[tuple[Notice, set[int]]], *, matching: bool) -> None:
@@ -450,15 +614,20 @@ def _write_export(sheet: Worksheet, result: ExportResult, generated_at: datetime
             ("Начальная цена", price_range(query.price_from, query.price_to) or "любая"),
             ("Слова (поиск ЕИС)", query.text or "—"),
             ("Размещены", f"с {result.since:%d.%m.%Y} — за {(result.today - result.since).days} дней"),
-            ("Подробности", "из извещений: заказчики, ИНН, позиции" if query.details else "нет — по выдаче поиска"),
+            ("Подробности", "из извещений: заказчики, ИНН, позиции" if query.detailed else "нет — по выдаче поиска"),
+            *([("Профиль", f"«{query.profile.name}»: слова и коды отбора")] if query.profile else []),
         ],
     )
     row = _section(sheet, row + 1, "Итоги")
     pairs: list[tuple[str, Any]] = [
         ("На сайте с этапом «Подача заявок»", result.listed),
         ("Из них срок подачи уже прошёл", result.closed),
-        ("Открыты — в выгрузке", len(result.notices)),
     ]
+    if query.profile is not None:
+        pairs += [("Открыты", len(result.notices) + result.unmatched),
+                  ("Подходят профилю — в выгрузке", len(result.notices))]
+    else:
+        pairs.append(("Открыты — в выгрузке", len(result.notices)))
     if len(query.regions) > 1:
         pairs += [(REGIONS.get(code, code), f"открыто {count.open} из {count.listed}")
                   for code, count in result.regions.items()]
@@ -474,7 +643,10 @@ def _write_export(sheet: Worksheet, result: ExportResult, generated_at: datetime
         "подачи заявок: в выгрузке только закупки, по которым заявки ещё принимаются.",
         "«Подача заявок до» — последний день по времени заказчика; «Осталось дней» — 0, если срок истекает сегодня.",
     ]
-    if query.details:
+    if query.profile is not None:
+        notes.append("«Почему подошла» — слова и коды профиля, найденные в названии или позициях; подошедшие позиции "
+                     "выделены на листе «Позиции».")
+    if query.detailed:
         notes += [
             "«Часовой пояс» — разница с Москвой, как на сайте ЕИС.",
             "Если количество не определено, начальная цена — предел контракта, а в позициях указаны цены за единицу.",

@@ -8,6 +8,10 @@ The task is described in full as XML (``schtasks /Create /XML``), which the shor
 
 Hours are given in Moscow time, as the EIS shows them, and turned into the computer's local time. Monitoring runs on
 demand: ``schedule on`` enables the task, ``schedule off`` disables it and keeps its settings.
+
+A second task, "Бот", keeps the Telegram bot listening to the buttons (bot.py) while monitoring is on. It has no time
+limit and is triggered every five minutes with "IgnoreNew": a running bot is left alone, a fallen one is back within
+five minutes. It is switched on and off together with monitoring.
 """
 
 from __future__ import annotations
@@ -29,6 +33,9 @@ TASK_PATH = TASK_FOLDER + TASK_NAME
 MOSCOW = timezone(timedelta(hours=3))
 PROJECT_DIR = Path(__file__).resolve().parents[1]
 TIME_LIMIT = "PT3H"  # a long catch-up after a week off may take a while; the next start is skipped meanwhile
+BOT_TASK_NAME = "Бот"
+BOT_TASK_PATH = TASK_FOLDER + BOT_TASK_NAME
+BOT_RESTART = "PT5M"  # how soon Task Scheduler brings a fallen bot back
 NEVER_RAN = 267011  # SCHED_S_TASK_HAS_NOT_RUN
 
 Runner = Callable[..., subprocess.CompletedProcess]
@@ -119,6 +126,51 @@ def task_xml(
 """
 
 
+def bot_task_xml(now: datetime, program: tuple[Path, list[str], Path] | None = None) -> str:
+    command, prefix, workdir = program or launcher()
+    arguments = " ".join([*prefix, "bot"])
+    return f"""<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>Zakupki Parser: Telegram-бот принимает отметки «Беру / Не моё». Работает, пока включён мониторинг; \
+если процесс упал, задача поднимает его в течение пяти минут.</Description>
+  </RegistrationInfo>
+  <Triggers>
+    <TimeTrigger>
+      <StartBoundary>{now.replace(tzinfo=None, microsecond=0):%Y-%m-%dT%H:%M:%S}</StartBoundary>
+      <Enabled>true</Enabled>
+      <Repetition>
+        <Interval>{BOT_RESTART}</Interval>
+        <StopAtDurationEnd>false</StopAtDurationEnd>
+      </Repetition>
+    </TimeTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
+    <Enabled>true</Enabled>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>{escape(str(command))}</Command>
+      <Arguments>{escape(arguments)}</Arguments>
+      <WorkingDirectory>{escape(str(workdir))}</WorkingDirectory>
+    </Exec>
+  </Actions>
+</Task>
+"""
+
+
 def launcher() -> tuple[Path, list[str], Path]:
     """What the task starts: the built program itself, or pythonw with the package from the project folder."""
     if getattr(sys, "frozen", False):
@@ -134,31 +186,66 @@ def windowless_python() -> Path:
 
 
 def create(
-    profiles: list[Path], start: time, end: time, every_minutes: int, *, run: Runner = subprocess.run
+    profiles: list[Path],
+    start: time,
+    end: time,
+    every_minutes: int,
+    *,
+    with_bot: bool = False,
+    run: Runner = subprocess.run,
 ) -> None:
-    """Create or replace the task; it starts enabled."""
+    """Create or replace the task (and the bot's, when there is a bot); they start enabled."""
     definition = app_data_dir() / "monitoring-task.xml"
     definition.write_text(task_xml(profiles, start, end, every_minutes, datetime.now().astimezone()), encoding="utf-16")
     _check(_run(run, ["schtasks", "/Create", "/F", "/TN", TASK_PATH, "/XML", str(definition)]), "создать задачу")
+    if with_bot:
+        create_bot(run=run)
+
+
+def create_bot(*, run: Runner = subprocess.run) -> None:
+    """Create or replace the bot's task and start the bot right away, not five minutes later."""
+    definition = app_data_dir() / "bot-task.xml"
+    definition.write_text(bot_task_xml(datetime.now().astimezone()), encoding="utf-16")
+    _check(_run(run, ["schtasks", "/Create", "/F", "/TN", BOT_TASK_PATH, "/XML", str(definition)]),
+           "создать задачу бота")
+    start_bot(run=run)
+
+
+def start_bot(*, run: Runner = subprocess.run) -> None:
+    _check(_run(run, ["schtasks", "/Run", "/TN", BOT_TASK_PATH]), "запустить бота")
 
 
 def set_enabled(enabled: bool, *, run: Runner = subprocess.run) -> None:
+    """Monitoring and its bot together. Switched off, the running bot is stopped too."""
     if not status(run=run).exists:
         raise SchedulerError("Задача мониторинга ещё не создана: python -m zkparser schedule on <профили>")
     switch = "/ENABLE" if enabled else "/DISABLE"
     _check(_run(run, ["schtasks", "/Change", "/TN", TASK_PATH, switch]), "изменить задачу")
+    if bot_status(run=run).exists:
+        _check(_run(run, ["schtasks", "/Change", "/TN", BOT_TASK_PATH, switch]), "изменить задачу бота")
+        if enabled:
+            start_bot(run=run)
+        else:
+            _run(run, ["schtasks", "/End", "/TN", BOT_TASK_PATH])  # "not running" is fine too
 
 
 def remove(*, run: Runner = subprocess.run) -> None:
+    if bot_status(run=run).exists:
+        _run(run, ["schtasks", "/End", "/TN", BOT_TASK_PATH])
+        _check(_run(run, ["schtasks", "/Delete", "/F", "/TN", BOT_TASK_PATH]), "удалить задачу бота")
     if status(run=run).exists:
         _check(_run(run, ["schtasks", "/Delete", "/F", "/TN", TASK_PATH]), "удалить задачу")
 
 
-def status(*, run: Runner = subprocess.run) -> TaskStatus:
+def bot_status(*, run: Runner = subprocess.run) -> TaskStatus:
+    return status(run=run, name=BOT_TASK_NAME)
+
+
+def status(*, run: Runner = subprocess.run, name: str = TASK_NAME) -> TaskStatus:
     """Read the task through PowerShell: its answer does not depend on the language of Windows."""
     script = (
         "[Console]::OutputEncoding = [Text.Encoding]::UTF8;"
-        f"$t = Get-ScheduledTask -TaskPath '{TASK_FOLDER}' -TaskName '{TASK_NAME}' -ErrorAction SilentlyContinue;"
+        f"$t = Get-ScheduledTask -TaskPath '{TASK_FOLDER}' -TaskName '{name}' -ErrorAction SilentlyContinue;"
         "function f($d) { if ($d) { $d.ToString('dd.MM.yyyy HH:mm') } else { '' } };"
         "if ($t) { $i = $t | Get-ScheduledTaskInfo;"
         " [pscustomobject]@{state=\"$($t.State)\"; next=(f $i.NextRunTime);"

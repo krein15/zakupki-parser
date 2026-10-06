@@ -3,6 +3,7 @@
 * ``fetch`` searches the site and keeps the XML of every notice found in the local cache.
 * ``match`` picks the notices that fit one or more profiles (TOML files) and says why each one fits.
 * ``export`` lists the notices of regions in a price range that still take applications, no keywords needed.
+* ``audit`` runs a client's keyword set against a reference profile: found, junk, missed.
 * ``show`` prints a notice as parsed from its XML (downloading it if it is not cached yet).
 * ``regions`` lists the regions ``--region`` accepts; ``templates`` lists niche templates and makes profiles of them.
 * ``monitor``, ``telegram`` and ``schedule`` run the checks for new notices, see monitor_cli.py.
@@ -14,19 +15,29 @@ import argparse
 import logging
 import sys
 import textwrap
-from datetime import date, datetime
+from dataclasses import replace
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from . import monitor_cli
+from .audit import parse_keywords, run_audit
 from .cache import NoticeCache
 from .config import load_telegram_settings
 from .display import days_left, format_match, format_notice, money, price_range, regions_count
-from .excel import build_file_name, export_file_name, export_open_notices, export_profile
+from .excel import (
+    audit_file_name,
+    build_file_name,
+    export_audit,
+    export_file_name,
+    export_open_notices,
+    export_profile,
+    headline,
+)
 from .export import LOOKBACK_DAYS, ExportQuery, ExportResult, export_open
 from .fetch import CACHED, STOPPED, FetchReport, fetch_notices
 from .notice_xml import NoticeFormatError, parse_notice
 from .pipeline import ProfileResult, run_profiles
-from .profiles import ProfileError, from_template, load_profile, load_templates, save_profile
+from .profiles import ProfileError, Template, from_template, load_profile, load_templates, save_profile
 from .regions import REGIONS, resolve_region
 from .settings import default_cache_dir, default_output_dir, profiles_dir
 from .website.client import SiteClient, SiteError
@@ -85,9 +96,32 @@ def build_parser() -> argparse.ArgumentParser:
         "--details", action="store_true",
         help="скачать каждое извещение: настоящий заказчик, ИНН, позиции (дольше — запрос на закупку)",
     )
+    niche = export.add_mutually_exclusive_group()
+    niche.add_argument("--template", metavar="ШАБЛОН", help="только закупки ниши: шаблон (название или его начало)")
+    niche.add_argument("--profile", type=Path, metavar="ПРОФИЛЬ", help="только закупки, подходящие профилю .toml")
     export.add_argument("--out", type=Path, metavar="ПАПКА", help="куда сохранить Excel")
     export.add_argument("--no-excel", action="store_true", help="только вывод в консоль, без Excel")
     add_cache_dir(export)
+
+    audit = commands.add_parser(
+        "audit", help="аудит набора ключевых слов за неделю: что найдено, что мусор, что пропущено"
+    )
+    audit.add_argument(
+        "words", type=Path, metavar="СЛОВА.txt",
+        help="слова клиента: по одному на строку или через запятую, минус-слова с «-»",
+    )
+    reference = audit.add_mutually_exclusive_group(required=True)
+    reference.add_argument("--template", metavar="ШАБЛОН", help="эталон — шаблон ниши (название или его начало)")
+    reference.add_argument("--profile", type=Path, metavar="ПРОФИЛЬ", help="эталон — свой профиль .toml")
+    audit.add_argument(
+        "-r", "--region", action="append", default=[], metavar="РЕГИОН",
+        help="регион; можно несколько раз (у профиля по умолчанию — его регионы)",
+    )
+    audit.add_argument("--days", type=int, default=7, metavar="ДНЕЙ", help="за сколько последних дней (по умолчанию 7)")
+    audit.add_argument("--price-from", type=int, metavar="РУБ", help="начальная цена от")
+    audit.add_argument("--price-to", type=int, metavar="РУБ", help="начальная цена до")
+    audit.add_argument("--out", type=Path, metavar="ПАПКА", help="куда сохранить Excel")
+    add_cache_dir(audit)
 
     show = commands.add_parser("show", help="показать разобранное извещение")
     show.add_argument("number", help="номер закупки, например 0167200003426008040")
@@ -272,13 +306,21 @@ def run_export(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int
         parser.error(str(error))
     if args.price_from is not None and args.price_to is not None and args.price_from > args.price_to:
         parser.error("цена «от» больше цены «до»")
-    query = ExportQuery(regions, args.price_from, args.price_to, args.query.strip(), args.details)
+    try:
+        profile = load_profile(args.profile) if args.profile else None
+    except ProfileError as error:
+        parser.error(str(error))
+    if args.template:
+        profile = from_template(find_template(args.template, parser))
+    query = ExportQuery(regions, args.price_from, args.price_to, args.query.strip(), args.details, profile)
     client = SiteClient()
     now = datetime.now().astimezone()
     names = ", ".join(REGIONS[code] for code in regions) if len(regions) <= 3 else regions_count(len(regions))
     conditions = [names, price_range(query.price_from, query.price_to) or "любая цена"]
     if query.text:
         conditions.append(f"«{query.text}»")
+    if profile is not None:
+        conditions.append(f"профиль «{profile.name}»")
     print(f"Открытые закупки: {' · '.join(conditions)} · размещены за {LOOKBACK_DAYS} дней")
     with NoticeCache(args.cache_dir or default_cache_dir()) as cache:
         try:
@@ -292,7 +334,11 @@ def run_export(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int
     for code, count in result.regions.items():
         cut = " — сайт отдал не всё (больше 5 000), сузьте цену" if count.truncated else ""
         print(f"{REGIONS[code]}: с этапом «Подача заявок» {count.listed}, из них открыто {count.open}{cut}")
-    print(f"Открыто {len(result.notices)}, срок подачи уже прошёл у {result.closed} из {result.listed}.\n")
+    open_count = len(result.notices) + result.unmatched
+    print(f"Открыто {open_count}, срок подачи уже прошёл у {result.closed} из {result.listed}.")
+    if profile is not None:
+        print(f"Подходят профилю «{profile.name}»: {len(result.notices)} из {open_count}.")
+    print()
     print_open(result)
     for reg_number, reason in result.broken:
         print(f"Не удалось разобрать {reg_number}: {reason}")
@@ -321,8 +367,71 @@ def print_open(result: ExportResult) -> None:
         left = f" ({days_left(days)})" if days is not None else ""
         title = hit.title if len(hit.title) <= 90 else hit.title[:89] + "…"
         print(f"  {hit.reg_number} · {money(hit.price)} · {deadline}{left}\n    {title}")
+        if item.verdict:
+            print(f"    Почему: {', '.join(item.verdict.matched_by)}")
     if len(result.notices) > MAX_PRINTED:
         print(f"  …и ещё {len(result.notices) - MAX_PRINTED} — в отчёте Excel")
+
+
+def run_audit_command(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
+    try:
+        regions = tuple(dict.fromkeys(resolve_region(value) for value in args.region))
+        keywords = parse_keywords(args.words.read_text(encoding="utf-8-sig"), args.words.name)
+        reference = load_profile(args.profile) if args.profile else from_template(find_template(args.template, parser))
+    except (ValueError, OSError) as error:  # ProfileError is a ValueError
+        parser.error(str(error))
+    regions = regions or reference.regions
+    if not regions:
+        parser.error("укажите регионы аудита: --region 72")
+    if args.days < 1:
+        parser.error("--days — число дней, от 1")
+    changes: dict = {"regions": regions}
+    if args.price_from is not None:
+        changes["price_from"] = args.price_from
+    if args.price_to is not None:
+        changes["price_to"] = args.price_to
+    reference = replace(reference, **changes)
+    end = date.today()
+    start = end - timedelta(days=args.days - 1)
+    names = ", ".join(REGIONS[code] for code in regions) if len(regions) <= 3 else regions_count(len(regions))
+    print(f"Аудит: {len(keywords.keywords)} слов и {len(keywords.minus)} минус-слов против «{reference.name}» · "
+          f"{names} · {format_period(start, end)}")
+    client = SiteClient()
+    with NoticeCache(args.cache_dir or default_cache_dir()) as cache:
+        try:
+            result = run_audit(client, cache, keywords, reference, start, end, progress=print_download,
+                               region_done=print_region)
+        except ProfileError as error:
+            parser.error(str(error))
+        except KeyboardInterrupt:
+            print("\nОстановлено. Скачанное сохранено в кэше.")
+            return 130
+    print(f"\n{headline(result)}")
+    print(f"Проверено {result.checked}; ваш набор нашёл {result.found}: подходят {len(result.both)}, "
+          f"мусор {len(result.junk)}; пропущено {len(result.missed)} на {money(result.missed_sum())}.")
+    noisy = [stat for stat in result.word_stats() if stat.junk][:5]
+    if noisy:
+        print("Больше всего мусора: " + "; ".join(f"{stat.word} — {stat.junk} из {stat.found}" for stat in noisy))
+    hints = result.hints()[:5]
+    if hints:
+        print("Пропущенное нашлось по: " + "; ".join(f"{label} — {count}" for label, count, _ in hints))
+    generated_at = datetime.now().replace(microsecond=0)
+    path = export_audit((args.out or default_output_dir()) / audit_file_name(result, generated_at), result,
+                        generated_at)
+    print(f"\nОтчёт: {path}")
+    print(f"Запросов к сайту {client.stats.requests}, просьб подождать (429) {client.stats.throttled}.")
+    if result.error:
+        print(f"Скачивание остановлено: {result.error}. Аудит — по тому, что успело скачаться.")
+    return 1 if result.error else 0
+
+
+def find_template(name: str, parser: argparse.ArgumentParser) -> Template:
+    """A template by its name or the start of it, case aside."""
+    needle = name.casefold()
+    found = [template for template in load_templates() if template.name.casefold().startswith(needle)]
+    if len(found) != 1:
+        parser.error(f"шаблон «{name}» не найден или неоднозначен; список: python -m zkparser templates")
+    return found[0]
 
 
 def run_show(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
@@ -352,18 +461,15 @@ def run_templates(args: argparse.Namespace, parser: argparse.ArgumentParser) -> 
         for template in templates:
             print(f"{template.name}: {', '.join(template.keywords[:3])}… · ОКПД2 {', '.join(template.okpd2)}")
         return 0
-    needle = args.name.casefold()
-    found = [template for template in templates if template.name.casefold().startswith(needle)]
-    if len(found) != 1:
-        parser.error(f"шаблон «{args.name}» не найден или неоднозначен; список: python -m zkparser templates")
+    template = find_template(args.name, parser)
     if not args.region:
         parser.error("укажите регион профиля: --region 72")
     try:
         regions = tuple(dict.fromkeys(resolve_region(value) for value in args.region))
     except ValueError as error:
         parser.error(str(error))
-    profile = from_template(found[0], regions)
-    path = args.out or profiles_dir() / f"{found[0].name}.toml"
+    profile = from_template(template, regions)
+    path = args.out or profiles_dir() / f"{template.name}.toml"
     if path.exists():
         parser.error(f"файл {path} уже есть — укажите другой: --out")
     save_profile(profile, path)
@@ -384,7 +490,7 @@ def main(argv: list[str] | None = None) -> int:
     for noisy in ("urllib3", "requests", "pymorphy3"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
     monitor_cli.protect_logs(load_telegram_settings().token)
-    if args.command in ("monitor", "telegram", "schedule"):
+    if args.command in ("monitor", "bot", "telegram", "schedule"):
         return monitor_cli.run(args, parser)
     if args.command == "templates":
         return run_templates(args, parser)
@@ -396,6 +502,8 @@ def main(argv: list[str] | None = None) -> int:
         return run_match(args, parser)
     if args.command == "export":
         return run_export(args, parser)
+    if args.command == "audit":
+        return run_audit_command(args, parser)
     return run_fetch(args, parser)
 
 

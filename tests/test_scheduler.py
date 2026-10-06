@@ -87,11 +87,40 @@ def test_create_reports_a_refusal(tmp_path, monkeypatch):
         scheduler.create([tmp_path / "p.toml"], time(8), time(20), 60, run=FakeRunner(returncode=1))
 
 
-@pytest.mark.parametrize(("enabled", "switch"), [(True, "/ENABLE"), (False, "/DISABLE")])
-def test_switching_on_and_off(enabled, switch):
+@pytest.mark.parametrize(("enabled", "switch", "bot"), [(True, "/ENABLE", "/Run"), (False, "/DISABLE", "/End")])
+def test_switching_on_and_off_takes_the_bot_along(enabled, switch, bot):
     runner = FakeRunner({"state": "Ready", "next": "", "last": "", "result": 267011})
     scheduler.set_enabled(enabled, run=runner)
-    assert runner.calls[-1] == ["schtasks", "/Change", "/TN", scheduler.TASK_PATH, switch]
+    schtasks = [call for call in runner.calls if call[0] == "schtasks"]
+    assert schtasks == [
+        ["schtasks", "/Change", "/TN", scheduler.TASK_PATH, switch],
+        ["schtasks", "/Change", "/TN", scheduler.BOT_TASK_PATH, switch],
+        ["schtasks", bot, "/TN", scheduler.BOT_TASK_PATH],
+    ]
+
+
+def test_bot_task_restarts_a_fallen_bot_and_never_times_out():
+    program = (Path(r"C:\Python\pythonw.exe"), ["-m", "zkparser"], scheduler.PROJECT_DIR)
+    text = scheduler.bot_task_xml(datetime(2026, 10, 6, 12, 0, tzinfo=UTC5), program)
+    root = ET.fromstring(text.encode("utf-16"))
+    find = lambda path: root.find(path, NS).text  # noqa: E731
+    assert find("t:Triggers/t:TimeTrigger/t:StartBoundary") == "2026-10-06T12:00:00"
+    assert find("t:Triggers/t:TimeTrigger/t:Repetition/t:Interval") == "PT5M"
+    assert root.find("t:Triggers/t:TimeTrigger/t:Repetition/t:Duration", NS) is None  # repeats indefinitely
+    assert find("t:Settings/t:MultipleInstancesPolicy") == "IgnoreNew"  # a running bot is left alone
+    assert find("t:Settings/t:ExecutionTimeLimit") == "PT0S"
+    assert find("t:Actions/t:Exec/t:Arguments") == "-m zkparser bot"
+
+
+def test_create_with_the_bot_registers_and_starts_it(tmp_path, monkeypatch):
+    monkeypatch.setattr(scheduler, "app_data_dir", lambda: tmp_path)
+    runner = FakeRunner()
+    scheduler.create([tmp_path / "p.toml"], time(8), time(20), 60, with_bot=True, run=runner)
+    assert [call[:5] for call in runner.calls] == [
+        ["schtasks", "/Create", "/F", "/TN", scheduler.TASK_PATH],
+        ["schtasks", "/Create", "/F", "/TN", scheduler.BOT_TASK_PATH],
+        ["schtasks", "/Run", "/TN", scheduler.BOT_TASK_PATH],
+    ]
 
 
 def test_switching_a_missing_task_explains_how_to_create_it():
@@ -118,7 +147,8 @@ def test_remove_only_an_existing_task():
     assert all(call[0] == "powershell" for call in runner.calls)
     runner = FakeRunner({"state": "Ready", "result": 0})
     scheduler.remove(run=runner)
-    assert runner.calls[-1] == ["schtasks", "/Delete", "/F", "/TN", scheduler.TASK_PATH]
+    deleted = [call[-1] for call in runner.calls if call[:2] == ["schtasks", "/Delete"]]
+    assert deleted == [scheduler.BOT_TASK_PATH, scheduler.TASK_PATH]
 
 
 def test_built_program_starts_itself(monkeypatch, tmp_path):

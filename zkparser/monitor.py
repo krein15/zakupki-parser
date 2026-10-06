@@ -5,11 +5,16 @@ in full. The first run of a day starts from that day (at most CATCH_UP_DAYS back
 a break picks up what appeared meanwhile; later runs of the same day keep that start, so the day's report keeps the
 catch-up too. A notice counts as reported only after Telegram accepts it, so a failed send is retried by the next
 run; a notice whose application deadline has passed is not sent any more.
+
+Every notice goes out as a card with "Беру / Не моё" buttons; the message ids are kept, so the bot (bot.py) can tell
+which notice a press belongs to. The same database keeps the presses — the precision of the profile — and the health
+of the service: the bot's heartbeat and the open incidents of the failure protocol.
 """
 
 from __future__ import annotations
 
 import html
+import json
 import logging
 import sqlite3
 from dataclasses import dataclass, field
@@ -21,7 +26,7 @@ from .excel import daily_file_name, export_profile
 from .fetch import Cancel, Progress
 from .pipeline import Found, ProfileResult, RegionDone, RunResult, run_profiles
 from .profiles import Profile
-from .telegram import TelegramBot, TelegramError, notice_message
+from .telegram import SKIP, TAKE, TelegramBot, TelegramError, feedback_buttons, notice_message
 from .website.search import Client
 
 log = logging.getLogger("zkparser.monitor")
@@ -30,11 +35,33 @@ CATCH_UP_DAYS = 7
 MAX_MESSAGES = 10  # per profile and run; the rest go into one summary with the Excel report attached
 
 
+@dataclass(frozen=True)
+class FeedbackStats:
+    chat: str
+    profile: str
+    sent: int  # cards sent
+    taken: int  # pressed "Беру"
+    skipped: int  # pressed "Не моё"
+
+
+@dataclass(frozen=True)
+class Incident:
+    since: datetime
+    reason: str
+
+
 class MonitorState:
     def __init__(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        self._db = sqlite3.connect(path)
+        # The bot and a monitoring run share the file: wait for the other's write instead of failing at once.
+        self._db = sqlite3.connect(path, timeout=30)
         with self._db:
+            self._db.execute(
+                "CREATE TABLE IF NOT EXISTS messages (chat TEXT NOT NULL, message_id INTEGER NOT NULL,"
+                " profile TEXT NOT NULL, reg_number TEXT NOT NULL, sent_at TEXT NOT NULL, verdict TEXT,"
+                " verdict_at TEXT, PRIMARY KEY (chat, message_id))"
+            )
+            self._db.execute("CREATE TABLE IF NOT EXISTS health (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
             self._db.execute(
                 "CREATE TABLE IF NOT EXISTS seen (profile TEXT NOT NULL, reg_number TEXT NOT NULL,"
                 " first_seen TEXT NOT NULL, reported_at TEXT, PRIMARY KEY (profile, reg_number))"
@@ -93,6 +120,89 @@ class MonitorState:
                 "UPDATE seen SET reported_at = ? WHERE profile = ? AND reg_number = ?",
                 [(_now(), profile, number) for number in reg_numbers],
             )
+
+    # Cards and the presses of their buttons.
+
+    def record_message(self, chat: str, message_id: int, profile: str, reg_number: str) -> None:
+        with self._db:
+            self._db.execute(
+                "INSERT OR REPLACE INTO messages (chat, message_id, profile, reg_number, sent_at)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (chat, message_id, profile, reg_number, _now()),
+            )
+
+    def record_feedback(self, chat: str, message_id: int, reg_number: str, verdict: str, at: datetime) -> str:
+        """Keep the latest press under a card; return its profile ("" for a card sent before buttons were kept)."""
+        with self._db:
+            cursor = self._db.execute(
+                "UPDATE messages SET verdict = ?, verdict_at = ? WHERE chat = ? AND message_id = ?",
+                (verdict, _stamp(at), chat, message_id),
+            )
+            if not cursor.rowcount:
+                self._db.execute(
+                    "INSERT INTO messages (chat, message_id, profile, reg_number, sent_at, verdict, verdict_at)"
+                    " VALUES (?, ?, '', ?, ?, ?, ?)",
+                    (chat, message_id, reg_number, _stamp(at), verdict, _stamp(at)),
+                )
+        row = self._db.execute(
+            "SELECT profile FROM messages WHERE chat = ? AND message_id = ?", (chat, message_id)
+        ).fetchone()
+        return row[0] if row else ""
+
+    def stats(self, since: datetime, chat: str | None = None) -> list[FeedbackStats]:
+        """Cards sent since the moment and how they were marked, by chat and profile."""
+        query = (
+            "SELECT chat, profile, COUNT(*), SUM(verdict = ?), SUM(verdict = ?) FROM messages WHERE sent_at >= ?"
+            + (" AND chat = ?" if chat is not None else "")
+            + " GROUP BY chat, profile ORDER BY profile, chat"
+        )
+        params: list[object] = [TAKE, SKIP, _stamp(since)] + ([chat] if chat is not None else [])
+        return [FeedbackStats(row[0], row[1], row[2], row[3] or 0, row[4] or 0)
+                for row in self._db.execute(query, params)]
+
+    # Health: the bot's heartbeat, incidents of the failure protocol, small flags.
+
+    def beat(self, at: datetime) -> None:
+        self._put("bot_heartbeat", _stamp(at))
+
+    def heartbeat(self) -> datetime | None:
+        value = self._get("bot_heartbeat")
+        return datetime.fromisoformat(value).astimezone() if value else None
+
+    def incident(self, key: str) -> Incident | None:
+        value = self._get(f"incident:{key}")
+        if not value:
+            return None
+        data = json.loads(value)
+        return Incident(datetime.fromisoformat(data["since"]).astimezone(), data["reason"])
+
+    def open_incident(self, key: str, reason: str, at: datetime) -> bool:
+        """Start an incident; False if it is already open, so the owner hears about a failure once."""
+        if self.incident(key):
+            return False
+        self._put(f"incident:{key}", json.dumps({"since": _stamp(at), "reason": reason}, ensure_ascii=False))
+        return True
+
+    def close_incident(self, key: str) -> Incident | None:
+        incident = self.incident(key)
+        if incident:
+            with self._db:
+                self._db.execute("DELETE FROM health WHERE key = ?", (f"incident:{key}",))
+        return incident
+
+    def flag(self, key: str) -> str:
+        return self._get(f"flag:{key}")
+
+    def set_flag(self, key: str, value: str) -> None:
+        self._put(f"flag:{key}", value)
+
+    def _get(self, key: str) -> str:
+        row = self._db.execute("SELECT value FROM health WHERE key = ?", (key,)).fetchone()
+        return row[0] if row else ""
+
+    def _put(self, key: str, value: str) -> None:
+        with self._db:
+            self._db.execute("INSERT OR REPLACE INTO health (key, value) VALUES (?, ?)", (key, value))
 
 
 @dataclass
@@ -177,8 +287,12 @@ def _report(
     fresh = [item for item in pending if item not in expired]
     try:
         for item in fresh[:MAX_MESSAGES]:
-            bot.send_message(chat, notice_message(name, item))
-            state.mark_reported(name, [item.notice.reg_number])
+            number = item.notice.reg_number
+            message_id = bot.send_message(chat, notice_message(name, item, now),
+                                          feedback_buttons(number, item.notice.url))
+            state.mark_reported(name, [number])
+            if message_id:
+                state.record_message(chat, message_id, name, number)
             outcome.sent += 1
         rest = fresh[MAX_MESSAGES:]
         if rest:
@@ -218,3 +332,8 @@ def _escape(text: str) -> str:
 
 def _now() -> str:
     return datetime.now().isoformat(timespec="seconds")
+
+
+def _stamp(moment: datetime) -> str:
+    """The computer's local time without the offset, like _now(): the stamps stay comparable as text."""
+    return moment.astimezone().replace(tzinfo=None).isoformat(timespec="seconds")

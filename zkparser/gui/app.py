@@ -14,7 +14,7 @@ import queue
 import subprocess
 import threading
 import webbrowser
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from tkinter import filedialog, messagebox
@@ -30,7 +30,7 @@ from ..excel import build_file_name, export_file_name, export_open_notices, expo
 from ..export import LOOKBACK_DAYS, ExportQuery, ExportResult, OpenNotice, export_open
 from ..fetch import STOPPED, FetchReport
 from ..monitor import MonitorResult, MonitorState, monitor
-from ..monitor_cli import TEST_MESSAGE, parse_time
+from ..monitor_cli import TEST_MESSAGE, bot_line, parse_time, state_path
 from ..pipeline import Found, RunResult, run_profiles
 from ..profiles import Profile, ProfileError, from_template, load_profile, load_templates, parse_profile, save_profile
 from ..regions import REGIONS
@@ -63,6 +63,8 @@ NEW_PROFILE = "— новый профиль —"
 NEW_MENU = "Новый профиль…"
 EMPTY_TEMPLATE = "Пустой"
 MAX_RESULT_CARDS = 60
+ALL_NOTICES = "Все закупки"
+PROFILE_FILTER, TEMPLATE_FILTER = "Профиль: ", "Шаблон: "
 INTERVALS = ["30", "60", "120"]
 ENV_TEMPLATE = (
     "# Настройки Zakupki Parser. Файл не попадает в git: держите в нём токен бота.\n"
@@ -98,6 +100,7 @@ class App(ctk.CTk):
         self.regions: list[str] = []
         self.export_regions: list[str] = [code for code in self.prefs.export_regions if code in REGIONS]
         self.last_report: Path | None = None
+        self._filters_loaded = False
         self._closing = False
 
         self.title(f"{APP_NAME} {__version__}")
@@ -258,9 +261,9 @@ class App(ctk.CTk):
 
     def _build_export_tab(self, tab: ctk.CTkBaseClass) -> None:
         card = SectionCard(tab, "Открытые закупки по бюджету",
-                           "Все закупки выбранных регионов, по которым ещё принимаются заявки, — без ключевых слов "
-                           "и профиля. Сайт ЕИС годами не меняет этап «Подача заявок», поэтому программа сама сверяет "
-                           "срок подачи.")
+                           "Закупки выбранных регионов, по которым ещё принимаются заявки: все или только вашей ниши. "
+                           "Сайт ЕИС годами не меняет этап «Подача заявок», поэтому программа сама сверяет срок "
+                           "подачи.")
         card.pack(fill="x")
         grid = ctk.CTkFrame(card.body, fg_color="transparent")
         grid.pack(fill="x")
@@ -287,6 +290,12 @@ class App(ctk.CTk):
         self.export_price_to.pack(side="left")
         field("Начальная цена", prices)
 
+        self.export_filter = ctk.CTkOptionMenu(
+            grid, values=[ALL_NOTICES], height=34, font=theme.font(13), dropdown_font=theme.font(13),
+            fg_color=theme.INPUT_BG, button_color=theme.NEUTRAL_BUTTON, button_hover_color=theme.NEUTRAL_BUTTON_HOVER,
+            text_color=theme.TEXT, dynamic_resizing=False)
+        self.export_filter.set(ALL_NOTICES)
+        field("Ниша", self.export_filter)
         self.export_words = entry(grid, "необязательно, например: бумага")
         field("Слова", self.export_words)
         self.export_details = ctk.CTkSwitch(grid, text="заказчик, ИНН и позиции из извещений — дольше",
@@ -298,9 +307,9 @@ class App(ctk.CTk):
                                            hover_color=theme.ACCENT_HOVER, command=self._start_export)
         self.export_button.pack(anchor="w", pady=(12, 0))
         note = ctk.CTkLabel(card.body, font=theme.font(12), text_color=theme.TEXT_MUTED, anchor="w", justify="left",
-                            text=f"Ищутся закупки, размещённые за последние {LOOKBACK_DAYS} дней. Без подробностей — "
-                                 "один запрос к сайту на 50 закупок; с подробностями — ещё по запросу на каждую, "
-                                 "зато настоящий заказчик вместо уполномоченного органа.", wraplength=500)
+                            text=f"Закупки, размещённые за {LOOKBACK_DAYS} дней. Без подробностей — запрос к сайту "
+                                 "на 50 закупок; с подробностями или нишей — ещё по запросу на каждую (потом из кэша).",
+                            wraplength=500)
         note.pack(fill="x", pady=(10, 0))
         wrap_to_width(card, [note])
 
@@ -448,6 +457,7 @@ class App(ctk.CTk):
         self.profile_files = {path.stem: path for path in sorted(folder.glob("*.toml"))} if folder.exists() else {}
         self.profile_menu.configure(values=[*self.profile_files, NEW_PROFILE])
         self._build_monitored_list()
+        self._refresh_export_filters()
         choice = select if select in self.profile_files else next(iter(self.profile_files), "")
         if choice:
             self.profile_menu.set(choice)
@@ -662,6 +672,23 @@ class App(ctk.CTk):
     def _show_export_regions(self) -> None:
         _show_region_names(self.export_regions_label, self.export_regions)
 
+    def _refresh_export_filters(self) -> None:
+        """Every open notice, or the ones of a niche: a saved profile or a template."""
+        values = [ALL_NOTICES, *(PROFILE_FILTER + name for name in self.profile_files),
+                  *(TEMPLATE_FILTER + name for name in self.templates)]
+        self.export_filter.configure(values=values)
+        wanted = self.export_filter.get() if self._filters_loaded else self.prefs.export_filter
+        self._filters_loaded = True  # from now on the menu keeps what the user picked
+        self.export_filter.set(wanted if wanted in values else ALL_NOTICES)
+
+    def _export_profile(self) -> Profile | None:
+        choice = self.export_filter.get()
+        if choice.startswith(PROFILE_FILTER) and choice.removeprefix(PROFILE_FILTER) in self.profile_files:
+            return load_profile(self.profile_files[choice.removeprefix(PROFILE_FILTER)])
+        if choice.startswith(TEMPLATE_FILTER) and choice.removeprefix(TEMPLATE_FILTER) in self.templates:
+            return from_template(self.templates[choice.removeprefix(TEMPLATE_FILTER)])
+        return None
+
     def _export_query(self) -> ExportQuery:
         if not self.export_regions:
             raise ValueError("Выберите хотя бы один регион")
@@ -669,15 +696,15 @@ class App(ctk.CTk):
         if price_from is not None and price_to is not None and price_from > price_to:
             raise ValueError("Цена «от» больше цены «до»")
         return ExportQuery(tuple(self.export_regions), price_from, price_to, self.export_words.get().strip(),
-                           bool(self.export_details.get()))
+                           bool(self.export_details.get()), self._export_profile())
 
     def _start_export(self) -> None:
         if self._busy():
             return
         try:
             query = self._export_query()
-        except ValueError as error:
-            self._warn(str(error))
+        except ValueError as error:  # ProfileError too
+            self._warn(without_path(error))
             return
         out_dir = self._output_dir()
         self._begin(f"Открытые закупки: {_export_title(query)}")
@@ -686,7 +713,7 @@ class App(ctk.CTk):
         def work() -> None:
             client = SiteClient()
             # With details the downloads take the second half of the progress bar.
-            share = 0.5 if query.details else 1.0
+            share = 0.5 if query.detailed else 1.0
 
             def listing(region: str, collected: int, total: int) -> None:
                 done = query.regions.index(region) + collected / max(total, 1)
@@ -735,9 +762,11 @@ class App(ctk.CTk):
     def _show_export(self, result: ExportResult) -> None:
         for child in self.results_list.winfo_children():
             child.destroy()
+        niche = f", подходят профилю — {len(result.notices)} из {len(result.notices) + result.unmatched}" \
+            if result.query.profile else ""
         self.results_header.configure(
             text=f"Открытые закупки, {_export_title(result.query)}: {len(result.notices)} "
-                 f"(срок подачи прошёл у {result.closed} из {result.listed})")
+                 f"(срок подачи прошёл у {result.closed} из {result.listed}{niche})")
         several = len(result.query.regions) > 1
         for item in result.notices[:MAX_RESULT_CARDS]:
             self._open_card(item, result.today, several).pack(fill="x", pady=(0, 10), padx=(0, 6))
@@ -777,8 +806,14 @@ class App(ctk.CTk):
             parts.append(", ".join(REGIONS.get(code, code) for code in item.regions))
         meta = ctk.CTkLabel(card, text=" · ".join(part for part in parts if part), font=theme.font(12),
                             text_color=theme.TEXT_MUTED, anchor="w", justify="left", wraplength=500)
-        meta.pack(fill="x", padx=14, pady=(0, 10))
-        wrap_to_width(card, [title, meta])
+        meta.pack(fill="x", padx=14, pady=(0, 4 if item.verdict else 10))
+        labels = [title, meta]
+        if item.verdict:
+            why = ctk.CTkLabel(card, text="Почему: " + ", ".join(item.verdict.matched_by), font=theme.font(12),
+                               text_color=theme.TEXT, anchor="w", justify="left", wraplength=500)
+            why.pack(fill="x", padx=14, pady=(0, 10))
+            labels.append(why)
+        wrap_to_width(card, labels)
         return card
 
     def _finish_search(self, result: RunResult, path: Path | None, start: date, end: date, requests: int) -> None:
@@ -845,6 +880,7 @@ class App(ctk.CTk):
                 bot_text += f" · чат по умолчанию: {settings.chat or 'не задан'}"
             try:
                 schedule_text = _schedule_text(scheduler.status())
+                schedule_text += "\n" + bot_line(scheduler.bot_status()) + _feedback_line()
             except SchedulerError as error:
                 schedule_text = str(error)
             self.events.put(("monitoring_status", (bot_text, schedule_text)))
@@ -913,7 +949,7 @@ class App(ctk.CTk):
         self.prefs.schedule_every = every
 
         def work() -> None:
-            scheduler.create(paths, start, end, every)
+            scheduler.create(paths, start, end, every, with_bot=bool(load_telegram_settings().token))
             self.events.put(("log", ("success", f"Проверки включены: с {start:%H:%M} до {end:%H:%M} по Москве, "
                                                 f"каждые {every} мин.")))
 
@@ -1142,6 +1178,7 @@ class App(ctk.CTk):
         self.prefs.export_price_to = self.export_price_to.get().strip()
         self.prefs.export_words = self.export_words.get().strip()
         self.prefs.export_details = bool(self.export_details.get())
+        self.prefs.export_filter = self.export_filter.get()
         try:
             self.prefs.save()
         except OSError:
@@ -1157,6 +1194,8 @@ def _export_title(query: ExportQuery) -> str:
     regions = [REGIONS.get(code, code) for code in query.regions]
     parts = [", ".join(regions) if len(regions) <= 2 else regions_count(len(regions))]
     parts.append(price_range(query.price_from, query.price_to, short=True) or "любая цена")
+    if query.profile is not None:
+        parts.append(f"«{query.profile.name}»")
     if query.text:
         parts.append(f"«{query.text}»")
     return " · ".join(parts)
@@ -1166,6 +1205,17 @@ def _region_line(region: str, report: FetchReport) -> str:
     failed = f", ошибок {len(report.failed)}" if report.failed else ""
     return (f"{REGIONS.get(region, region)}: найдено {report.found}, скачано {report.downloaded}, "
             f"из кэша {report.cached}{failed}")
+
+
+def _feedback_line() -> str:
+    """The marks of the past week, the precision of the profiles in a line."""
+    with MonitorState(state_path()) as state:
+        rows = state.stats(datetime.now().astimezone() - timedelta(days=7))
+    sent = sum(row.sent for row in rows)
+    if not sent:
+        return ""
+    taken, skipped = sum(row.taken for row in rows), sum(row.skipped for row in rows)
+    return f"\nЗа 7 дней прислано {sent}: ✅ беру {taken} · ❌ не моё {skipped} · без отметки {sent - taken - skipped}"
 
 
 def _schedule_text(status: scheduler.TaskStatus) -> str:

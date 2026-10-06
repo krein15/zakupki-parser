@@ -25,12 +25,15 @@ class FakeBot:
     def __init__(self, fail: bool = False):
         self.fail = fail
         self.messages: list[tuple[str, str]] = []
+        self.buttons: list[dict | None] = []
         self.documents: list[tuple[str, Path, str]] = []
 
-    def send_message(self, chat, text):
+    def send_message(self, chat, text, buttons=None):
         if self.fail:
             raise TelegramError("Telegram недоступен")
         self.messages.append((chat, text))
+        self.buttons.append(buttons)
+        return 100 + len(self.messages)  # the message id Telegram gives
 
     def send_document(self, chat, path, caption=""):
         self.documents.append((chat, path, caption))
@@ -200,3 +203,36 @@ def test_daily_report_is_rewritten_and_survives_an_open_file(stores, tmp_path, m
     monkeypatch.setattr(monitoring, "export_profile", locked_once)
     second = check(stores, [profile()], out_dir=out).outcomes[0].report
     assert second.name == "ГСМ_мониторинг_2026-10-04 10-00.xlsx"
+
+
+def test_cards_go_out_with_buttons_and_are_remembered_for_the_presses(stores):
+    bot = FakeBot()
+    check(stores, [profile()], bot=bot)
+    (buttons,) = bot.buttons
+    assert buttons["inline_keyboard"][0][0]["callback_data"] == f"take:{FUEL}"
+    assert bot.messages[0][1].startswith("🟢 <b>Приобретение горюче-смазочных материалов</b>")
+    _, state = stores
+    (row,) = state.stats(NOW - timedelta(days=1))
+    assert (row.chat, row.profile, row.sent, row.taken) == ("42", "ГСМ", 1, 0)
+    assert state.record_feedback("42", 101, FUEL, "take", NOW) == "ГСМ"
+    assert state.stats(NOW - timedelta(days=1), chat="7") == []
+
+
+def test_incident_opens_once_and_closes(tmp_path):
+    with MonitorState(tmp_path / "s.sqlite3") as state:
+        assert state.open_incident("checks", "ЕИС не отвечает", NOW)
+        assert not state.open_incident("checks", "другая причина", NOW)
+        assert state.incident("checks").reason == "ЕИС не отвечает"
+        closed = state.close_incident("checks")
+        assert (closed.reason, closed.since) == ("ЕИС не отвечает", NOW)
+        assert state.close_incident("checks") is None
+
+
+def test_heartbeat_and_flags_survive_a_reopen(tmp_path):
+    with MonitorState(tmp_path / "s.sqlite3") as state:
+        assert state.heartbeat() is None
+        state.beat(NOW)
+        state.set_flag("weekly", "2026-W41")
+    with MonitorState(tmp_path / "s.sqlite3") as state:
+        assert state.heartbeat() == NOW
+        assert state.flag("weekly") == "2026-W41"

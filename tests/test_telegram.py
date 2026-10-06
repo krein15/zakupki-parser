@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import replace
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 import requests
@@ -13,7 +13,15 @@ from conftest import FIXTURES
 from zkparser.matching import Verdict
 from zkparser.notice_xml import parse_notice
 from zkparser.pipeline import Found
-from zkparser.telegram import MESSAGE_LIMIT, SEND_INTERVAL, SecretFilter, TelegramBot, TelegramError, notice_message
+from zkparser.telegram import (
+    MESSAGE_LIMIT,
+    SEND_INTERVAL,
+    SecretFilter,
+    TelegramBot,
+    TelegramError,
+    feedback_buttons,
+    notice_message,
+)
 from zkparser.website.search import SearchHit
 
 TOKEN = "1234567890:AAEabcdefghijklmnopqrstuvwxyz012345"
@@ -34,7 +42,7 @@ class FakeSession:
         self.calls = []
 
     def post(self, url, json=None, data=None, files=None, timeout=None):
-        self.calls.append({"url": url, "json": json, "data": data, "files": files})
+        self.calls.append({"url": url, "json": json, "data": data, "files": files, "timeout": timeout})
         answer = self.answers.pop(0)
         if isinstance(answer, Exception):
             raise answer
@@ -69,13 +77,13 @@ def test_repr_hides_the_token():
 
 def test_username_and_chats():
     updates = [
-        {"message": {"chat": {"id": 42, "type": "private", "first_name": "Николай"}}},
-        {"message": {"chat": {"id": 42, "type": "private", "first_name": "Николай"}}},
+        {"message": {"chat": {"id": 42, "type": "private", "first_name": "Иван"}}},
+        {"message": {"chat": {"id": 42, "type": "private", "first_name": "Иван"}}},
         {"my_chat_member": {"chat": {"id": -100123, "type": "group", "title": "Тендеры"}}},
     ]
-    bot, session, _ = make_bot(ok({"username": "zakupkirus1_bot"}), ok(updates))
-    assert bot.username() == "zakupkirus1_bot"
-    assert bot.chats() == [(42, "private", "Николай"), (-100123, "group", "Тендеры")]
+    bot, session, _ = make_bot(ok({"username": "tenders_demo_bot"}), ok(updates))
+    assert bot.username() == "tenders_demo_bot"
+    assert bot.chats() == [(42, "private", "Иван"), (-100123, "group", "Тендеры")]
     assert session.calls[0]["url"] == f"https://api.telegram.org/bot{TOKEN}/getMe"
 
 
@@ -139,16 +147,87 @@ def test_secret_filter_cleans_log_records(caplog):
     assert caplog.text.count("***") == 2
 
 
-def test_notice_message_escapes_everything_from_the_notice():
-    notice = parse_notice((FIXTURES / "notice_drugs.xml").read_bytes())
-    notice = replace(notice, title="Препараты <script>alert(1)</script> & прочее")
+TYUMEN_NOON = datetime(2026, 10, 6, 12, 0, tzinfo=timezone(timedelta(hours=5)))
+
+
+def card(fixture: str, matched_by=("«томатн*»",), positions=(1,), now=TYUMEN_NOON, **changes) -> str:
+    notice = replace(parse_notice((FIXTURES / f"notice_{fixture}.xml").read_bytes()), **changes)
     found = Found(notice, SearchHit(notice.reg_number, notice.url, published=date(2026, 9, 30)),
-                  Verdict(True, ("название: «препарат*»",), (1,)))
-    text = notice_message("Лекарства <тест>", found)
-    assert text.startswith("<b>Лекарства &lt;тест&gt;</b> · новая закупка")
-    assert "&lt;script&gt;alert(1)&lt;/script&gt; &amp; прочее</a>" in text
-    assert f'<a href="{notice.url}">' in text
-    assert "233 984,40 ₽ · заявки до 08.10.2026 08:00 (МСК+2)" in text
-    assert "Заказчик: ДЕПАРТАМЕНТ ЗДРАВООХРАНЕНИЯ ТЮМЕНСКОЙ ОБЛАСТИ" in text
-    assert "Почему: название: «препарат*»" in text
-    assert "№ 0167200003426008040 · Электронный аукцион" in text
+                  Verdict(True, ("название: «томатн*»",), positions, matched_by))
+    return notice_message("Продукты <клиент>", found, now)
+
+
+def test_card_says_what_how_much_until_when_for_whom_and_why():
+    lines = card("joint", matched_by=("«томатн*»", "ОКПД2 10.39.17.112")).split("\n")
+    assert lines == [
+        "🟡 <b>поставка продуктов питания (томатная паста)</b>",  # two days left
+        "💰 390 592 ₽ · ⏳ до 08.10 08:00 МСК+2 (2 дн.)",
+        "🏛 совместная закупка, 4 заказчика",
+        "📦 Томатная паста — 2 872 кг",
+        "🎯 «томатн*», ОКПД2 10.39.17.112",
+        "Электронный аукцион · № 0167200003426008053 · Продукты &lt;клиент&gt;",
+    ]
+
+
+def test_card_escapes_everything_from_the_notice():
+    text = card("drugs", title="Препараты <script>alert(1)</script> & прочее")
+    assert "<b>Препараты &lt;script&gt;alert(1)&lt;/script&gt; &amp; прочее</b>" in text
+    assert "🏛 ДЕПАРТАМЕНТ ЗДРАВООХРАНЕНИЯ ТЮМЕНСКОЙ ОБЛАСТИ" in text
+    assert "<script>" not in text
+
+
+def test_card_lists_matching_positions_first_and_counts_the_rest():
+    text = card("auction_ktru", matched_by=("«бензин*»",), positions=(2, 3))
+    assert "📦 Бензин автомобильный (розничная реализация) — 23 000 л\n" in text
+    assert "   +2 позиции" in text
+
+
+@pytest.mark.parametrize(("hours", "signal", "left"), [(-48, "🟢", "(4 дн.)"), (42, "🔴", "(сегодня)")])
+def test_card_signals_the_time_left(hours, signal, left):
+    text = card("joint", now=TYUMEN_NOON + timedelta(hours=hours))
+    assert text.startswith(signal)
+    assert left in text
+
+
+def test_card_without_a_fixed_quantity_shows_no_quantity():
+    text = card("quotation")
+    assert "📦 Услуги хранения" in text
+    assert " — " not in text.split("📦")[1].split("\n")[0]
+
+
+def test_feedback_buttons():
+    url = "https://zakupki.gov.ru/epz/order/notice/ea20/view/common-info.html?regNumber=1"
+    (row,) = feedback_buttons("1", url)["inline_keyboard"]
+    assert row == [
+        {"text": "✅ Беру", "callback_data": "take:1"},
+        {"text": "❌ Не моё", "callback_data": "skip:1"},
+        {"text": "Открыть в ЕИС", "url": url},
+    ]
+    (chosen,) = feedback_buttons("1", url, "skip")["inline_keyboard"]
+    assert [button["text"] for button in chosen] == ["✅ Беру", "✔ Не моё", "Открыть в ЕИС"]
+
+
+def test_send_message_with_buttons_returns_its_id():
+    bot, session, _ = make_bot(ok({"message_id": 77}))
+    buttons = feedback_buttons("1", "")
+    assert bot.send_message("42", "текст", buttons) == 77
+    assert session.calls[0]["json"]["reply_markup"] == buttons
+
+
+def test_long_polling_waits_longer_than_telegram_holds_the_request():
+    bot, session, _ = make_bot(ok([{"update_id": 5}]))
+    assert bot.updates(5, timeout=50) == [{"update_id": 5}]
+    call = session.calls[0]
+    assert call["url"].endswith("/getUpdates")
+    assert call["json"] == {"timeout": 50, "allowed_updates": ["message", "callback_query"], "offset": 5}
+    assert call["timeout"] > 50
+
+
+def test_answer_and_edit_buttons():
+    bot, session, _ = make_bot(ok(), ok())
+    bot.answer_callback("cb1", "Отмечено")
+    bot.edit_buttons("42", 77, feedback_buttons("1", "", "take"))
+    first, second = session.calls
+    assert first["json"] == {"callback_query_id": "cb1", "text": "Отмечено"}
+    assert second["url"].endswith("/editMessageReplyMarkup")
+    assert second["json"]["message_id"] == 77

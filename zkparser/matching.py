@@ -110,6 +110,7 @@ class Verdict:
     matched: bool
     reasons: tuple[str, ...]  # why it matched; for a rejected notice, why it was rejected
     positions: tuple[int, ...] = ()  # numbers (from 1) of the positions that matched
+    matched_by: tuple[str, ...] = ()  # the words and codes that matched, each once: «бумага офисн*», ОКПД2 17.12.14
 
 
 class Matcher:
@@ -136,11 +137,13 @@ class Matcher:
 
         reasons = []
         title_terms = [term for term in self._keywords if term.found_in(title)]
+        matched_by = [_quoted([term]) for term in title_terms]
         if title_terms:
             reasons.append(f"название: {_quoted(title_terms)}")
         positions = []
         for number, position in enumerate(notice.positions, 1):
             why = self._position_reasons(position)
+            matched_by += [item for item in why if item not in matched_by]
             if why:
                 positions.append(number)
                 if len(positions) <= MAX_POSITION_REASONS:
@@ -149,7 +152,7 @@ class Matcher:
             reasons.append(f"и ещё позиций: {len(positions) - MAX_POSITION_REASONS}")
         if not reasons:
             return Verdict(False, ("нет ключевых слов и кодов профиля",))
-        return Verdict(True, tuple(reasons), tuple(positions))
+        return Verdict(True, tuple(reasons), tuple(positions), tuple(matched_by))
 
     def _filters(self, notice: Notice) -> str:
         """Why the notice fails the profile's hard filters, or an empty string."""

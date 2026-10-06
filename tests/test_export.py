@@ -14,6 +14,7 @@ from zkparser.display import days_left, price_range, regions_count, short_money
 from zkparser.excel import DETAILED_COLUMNS, OPEN_COLUMNS, export_file_name, export_open_notices
 from zkparser.export import LOOKBACK_DAYS, ExportQuery, export_open
 from zkparser.fetch import STOPPED
+from zkparser.profiles import from_template, load_templates
 from zkparser.website.notice import NOTICE_XML_PATH
 from zkparser.website.search import SEARCH_PATH
 
@@ -251,3 +252,34 @@ class StatsSite:
 
     def get(self, path, params=None):
         return self.site.get(path, params)
+
+
+FUEL_PROFILE = from_template(next(t for t in load_templates() if t.name == "Топливо и ГСМ"))
+
+
+def test_a_profile_keeps_only_the_open_notices_of_its_niche(tmp_path):
+    site = OpenSite({TYUMEN: TYUMEN_RESULTS})
+    result = run(site, tmp_path, ExportQuery((TYUMEN,), profile=FUEL_PROFILE))
+    assert sorted(site.downloads()) == sorted([DRUGS, JOINT, FUEL, AUDIT])  # a profile needs the details
+    assert [item.hit.reg_number for item in result.notices] == [FUEL]
+    assert "«топливо»" in result.notices[0].verdict.matched_by
+    assert (result.closed, result.unmatched) == (4, 1)  # the audit contest is open but not fuel
+
+    workbook = load_workbook(export_open_notices(tmp_path / "niche.xlsx", result, GENERATED))
+    header = [c.value for c in workbook["Закупки"][1]]
+    assert header[:3] == ["№ закупки", "Название", "Почему подошла"]
+    assert "«топливо»" in workbook["Закупки"]["C2"].value
+    assert [c.value for c in workbook["Позиции"][1]][3] == "Подошла"
+    summary = {r[0].value: r[1].value for r in workbook["Выгрузка"].iter_rows() if r[0].value}
+    assert (summary["Открыты"], summary["Подходят профилю — в выгрузке"]) == (2, 1)
+    assert export_file_name(result, GENERATED).startswith("Открытые закупки — Топливо и ГСМ — Тюменская область_")
+
+
+def test_export_command_with_a_template(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(cli, "SiteClient", lambda: StatsSite(OpenSite({TYUMEN: TYUMEN_RESULTS})))
+    code = cli.main(["export", "-r", "72", "--template", "топливо", "--no-excel", "--cache-dir", str(tmp_path)])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "профиль «Топливо и ГСМ»" in out
+    assert "Подходят профилю «Топливо и ГСМ»:" in out
+    assert "Почему: «горюче-смазочн*»" in out

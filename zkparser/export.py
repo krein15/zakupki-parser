@@ -11,20 +11,23 @@ days, 701 in 180, 14 116 with no window).
 
 The search shows the organization that placed the notice, often an authorized body rather than the customer. With
 ``details`` the XML of every open notice is downloaded (one request each, cached) for the real customers with their
-INNs, the exact deadline with its time zone and the positions.
+INNs, the exact deadline with its time zone and the positions. With a ``profile`` the details are downloaded too and
+only the notices that fit the profile stay: the open notices of a niche, with the reason each one fits.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 
 from .cache import NoticeCache
 from .fetch import STOPPED, Cancel, FetchReport, Progress, download_notices
+from .matching import Matcher, Verdict
 from .models import Notice
 from .notice_xml import NoticeFormatError, parse_notice
 from .pipeline import NO_DEADLINE
+from .profiles import Profile
 from .website.client import SiteError
 from .website.search import Client, SearchHit, SearchQuery, Stage, search
 
@@ -40,6 +43,11 @@ class ExportQuery:
     price_to: int | None = None
     text: str = ""  # optional words for the site's search, with word forms
     details: bool = False  # download every notice's XML: customers, INNs, positions
+    profile: Profile | None = None  # keep only the notices that fit it (implies details)
+
+    @property
+    def detailed(self) -> bool:
+        return self.details or self.profile is not None
 
 
 @dataclass(frozen=True)
@@ -47,6 +55,7 @@ class OpenNotice:
     hit: SearchHit
     regions: tuple[str, ...]  # a joint purchase can come up in several regions
     notice: Notice | None = None  # with details only
+    verdict: Verdict | None = None  # why it fits the profile, when there is one
 
     @property
     def deadline_day(self) -> date | None:
@@ -76,6 +85,7 @@ class ExportResult:
     regions: dict[str, RegionCount] = field(default_factory=dict)
     listed: int = 0  # distinct notices the search gave
     closed: int = 0  # of them past the deadline, though the site still says "Подача заявок"
+    unmatched: int = 0  # open, but not fitting the profile
     downloads: FetchReport | None = None  # with details
     broken: list[tuple[str, str]] = field(default_factory=list)  # notices whose XML could not be parsed
     error: str = ""  # why the run stopped early; what was collected is still exported
@@ -130,9 +140,18 @@ def export_open(
         OpenNotice(hit, tuple(regions)) for hit, regions in found.values()
         if hit.deadline is None or hit.deadline >= today
     ]
-    if query.details and candidates and not result.error:
+    if query.detailed and candidates and not result.error:
         candidates = _with_details(client, cache, candidates, now, result, progress, cancel)
     result.closed = result.listed - len(candidates)
+    if query.profile is not None:
+        matcher = Matcher(query.profile)
+        fitting = []
+        for item in candidates:
+            verdict = matcher.evaluate(item.notice) if item.notice else None
+            if verdict and verdict.matched:
+                fitting.append(replace(item, verdict=verdict))
+        result.unmatched = len(candidates) - len(fitting)
+        candidates = fitting
     result.notices = sorted(candidates, key=_order)
     return result
 
