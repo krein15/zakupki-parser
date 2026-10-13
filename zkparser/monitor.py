@@ -310,7 +310,9 @@ def _report(
 
 def _deadline_passed(item: Found, now: datetime) -> bool:
     deadline = item.notice.applications_end
-    return deadline is not None and deadline <= now  # both carry their offsets
+    if deadline is None:  # a notice known from the search results only has the day
+        return item.hit.deadline is not None and item.hit.deadline < now.date()
+    return deadline <= now  # both carry their offsets
 
 
 def _save_report(

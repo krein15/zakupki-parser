@@ -34,7 +34,7 @@ from .excel import (
     headline,
 )
 from .export import LOOKBACK_DAYS, ExportQuery, ExportResult, export_open
-from .fetch import CACHED, STOPPED, FetchReport, fetch_notices
+from .fetch import CACHED, STOPPED, FetchReport, fetch_notices, problems
 from .notice_xml import NoticeFormatError, parse_notice
 from .pipeline import ProfileResult, run_profiles
 from .profiles import ProfileError, Template, from_template, load_profile, load_templates, save_profile
@@ -240,8 +240,8 @@ def print_download(number: int, total: int, hit: SearchHit, status: str) -> None
 
 
 def print_region(region: str, report: FetchReport) -> None:
-    failed = f", ошибок {len(report.failed)}" if report.failed else ""
-    print(f"{REGIONS[region]}: найдено {report.found}, скачано {report.downloaded}, из кэша {report.cached}{failed}")
+    print(f"{REGIONS[region]}: найдено {report.found}, скачано {report.downloaded}, из кэша {report.cached}"
+          f"{problems(report)}")
 
 
 def write_reports(results: list[ProfileResult], start: date, end: date, out_dir: Path) -> list[Path]:

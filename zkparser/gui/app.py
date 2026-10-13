@@ -28,7 +28,7 @@ from ..config import CHAT_KEY, TOKEN_KEY, load_telegram_settings, primary_env_fi
 from ..display import days_left, moment, money, price_range, regions_count
 from ..excel import build_file_name, export_file_name, export_open_notices, export_profile, moscow_offset
 from ..export import LOOKBACK_DAYS, ExportQuery, ExportResult, OpenNotice, export_open
-from ..fetch import STOPPED, FetchReport
+from ..fetch import STOPPED, FetchReport, problems
 from ..monitor import MonitorResult, MonitorState, monitor
 from ..monitor_cli import TEST_MESSAGE, bot_line, parse_time, state_path
 from ..pipeline import Found, RunResult, run_profiles
@@ -648,7 +648,8 @@ class App(ctk.CTk):
         title.pack(fill="x", padx=14, pady=(4, 0))
         title.bind("<Button-1>", lambda _: webbrowser.open(notice.url))
         customers = notice.customers
-        customer = (f"{customers[0].customer.name}, ИНН {customers[0].customer.inn}" if len(customers) == 1
+        customer = (f"{customers[0].customer.name}, ИНН {customers[0].customer.inn or 'не указан'}"
+                    if len(customers) == 1
                     else f"Совместная закупка, заказчиков: {len(customers)}")
         meta = ctk.CTkLabel(card, text=f"№ {notice.reg_number} · {notice.placing_way} · {customer}",
                             font=theme.font(12), text_color=theme.TEXT_MUTED, anchor="w", justify="left",
@@ -1202,9 +1203,8 @@ def _export_title(query: ExportQuery) -> str:
 
 
 def _region_line(region: str, report: FetchReport) -> str:
-    failed = f", ошибок {len(report.failed)}" if report.failed else ""
     return (f"{REGIONS.get(region, region)}: найдено {report.found}, скачано {report.downloaded}, "
-            f"из кэша {report.cached}{failed}")
+            f"из кэша {report.cached}{problems(report)}")
 
 
 def _feedback_line() -> str:

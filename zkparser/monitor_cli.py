@@ -20,7 +20,7 @@ from . import scheduler
 from .bot import Listener, report_check, report_delivery, watch_bot
 from .cache import NoticeCache
 from .config import CHAT_KEY, TelegramSettings, load_telegram_settings, primary_env_file, save_env_value
-from .fetch import STOPPED, FetchReport
+from .fetch import STOPPED, FetchReport, problems
 from .monitor import MonitorResult, MonitorState, monitor
 from .profiles import ProfileError, load_profile
 from .regions import REGIONS
@@ -236,8 +236,7 @@ def _single_instance(path: Path) -> IO[str] | None:
 def _log_region(region: str, report: FetchReport) -> None:
     log.info(
         "%s: найдено %d, скачано %d, из кэша %d%s",
-        REGIONS[region], report.found, report.downloaded, report.cached,
-        f", ошибок {len(report.failed)}" if report.failed else "",
+        REGIONS[region], report.found, report.downloaded, report.cached, problems(report),
     )
 
 

@@ -186,6 +186,9 @@ def notice_message(profile_name: str, found: Found, now: datetime) -> str:
     if notice.applications_end:
         end = notice.applications_end
         deadline = f"до {end:%d.%m %H:%M} {moscow_offset(end)} ({'сегодня' if days == 0 else f'{days} дн.'})"
+    elif found.hit.deadline:  # known from the search results only: the day, without the time
+        days = (found.hit.deadline - now.date()).days
+        deadline = f"до {found.hit.deadline:%d.%m} ({'сегодня' if days == 0 else f'{days} дн.'})"
     else:
         deadline = "срок подачи не указан"
     customers = notice.customers
@@ -202,6 +205,8 @@ def notice_message(profile_name: str, found: Found, now: datetime) -> str:
     positions = _positions(notice, found.verdict.positions)
     if positions:
         lines.append("📦 " + "\n   ".join(positions))
+    elif found.search_only:
+        lines.append("⚠️ Извещение не скачалось с сайта: проверено только название, позиции — по ссылке")
     lines += [
         f"🎯 {_e(_cut(matched, REASONS_LIMIT))}",
         f"{_e(notice.placing_way)} · № {_e(notice.reg_number)} · {_e(profile_name)}",

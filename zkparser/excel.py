@@ -35,7 +35,7 @@ from .audit import AuditResult, AuditRow
 from .display import money, plural, price_range, regions_count
 from .export import ExportResult, OpenNotice
 from .models import Notice
-from .pipeline import Found, ProfileResult
+from .pipeline import SEARCH_ONLY, Found, ProfileResult
 from .profiles import Profile
 from .regions import REGIONS
 
@@ -432,6 +432,8 @@ def _notice_row(found: Found, now: datetime) -> list[Any]:
 
 def _notes(notice: Notice) -> str:
     notes = []
+    if notice.document_type == SEARCH_ONLY:
+        notes.append("извещение не скачалось с сайта: проверено только название из поиска, позиций и ИНН нет")
     if len(notice.customers) > 1:
         notes.append(f"совместная закупка, заказчиков: {len(notice.customers)}")
     if notice.quantity_undefined:

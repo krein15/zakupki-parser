@@ -1,5 +1,10 @@
 """One run over several profiles: every region is fetched once, every notice parsed once and checked against each
-profile. One download serves any number of niches or clients."""
+profile. One download serves any number of niches or clients.
+
+A notice whose XML never came through is still checked — by what the search results show: its title, price and the
+organization that placed it. Positions and codes are unknown then, so only the words of the title can match, and the
+reports say so (SEARCH_ONLY).
+"""
 
 from __future__ import annotations
 
@@ -10,12 +15,13 @@ from datetime import UTC, date, datetime
 from .cache import NoticeCache
 from .fetch import Cancel, FetchReport, Progress, fetch_notices
 from .matching import Matcher, Verdict
-from .models import Notice
+from .models import CustomerPart, Notice, Organization
 from .notice_xml import NoticeFormatError, parse_notice
 from .profiles import Profile
 from .website.search import Client, SearchHit, SearchQuery, Stage
 
 APPLICATIONS_STAGE = "Подача заявок"  # how the search results name Stage.APPLICATIONS
+SEARCH_ONLY = "search"  # Notice.document_type of a notice known only from the search results
 # The site keeps "Подача заявок" for years after the deadline (in Tyumen 749 of 855 such notices had closed, the
 # oldest in 2014), so a notice past its deadline is shown as closed whatever the site says.
 CLOSED_STAGE = "Приём заявок окончен"
@@ -33,6 +39,22 @@ class Found:
 
     def stage(self, now: datetime) -> str:
         return actual_stage(self.hit, now, self.notice.applications_end)
+
+    @property
+    def search_only(self) -> bool:
+        """The XML did not come through: only the title was checked, positions are unknown."""
+        return self.notice.document_type == SEARCH_ONLY
+
+
+def search_only_notice(hit: SearchHit) -> Notice:
+    """What the search results tell about a notice whose XML could not be downloaded."""
+    organization = Organization(name=hit.organization)
+    return Notice(
+        reg_number=hit.reg_number, version=0, document_type=SEARCH_ONLY, url=hit.url, title=hit.title,
+        placing_way=hit.placing_way, placing_way_code="", etp="", published=None, applications_start=None,
+        applications_end=None, max_price=hit.price, currency="RUB", placer=organization, placer_role="",
+        customers=(CustomerPart(organization),), positions=(),
+    )
 
 
 def actual_stage(hit: SearchHit, now: datetime, deadline: datetime | None = None) -> str:
@@ -93,13 +115,16 @@ def run_profiles(
 
     for reg_number, (hit, regions) in found.items():
         xml = cache.load(reg_number)
-        if xml is None:  # the download failed and there is no older copy
-            continue
-        try:
-            notice = parse_notice(xml)
-        except NoticeFormatError as error:
-            result.broken.append((reg_number, str(error)))
-            continue
+        if xml is None:  # the download failed and there is no older copy: check what the search showed
+            if not hit.title:
+                continue
+            notice = search_only_notice(hit)
+        else:
+            try:
+                notice = parse_notice(xml)
+            except NoticeFormatError as error:
+                result.broken.append((reg_number, str(error)))
+                continue
         for profile_result, matcher in zip(result.profiles, matchers, strict=True):
             profile = profile_result.profile
             if regions.isdisjoint(profile.regions):

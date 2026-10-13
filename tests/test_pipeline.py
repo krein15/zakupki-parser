@@ -11,7 +11,9 @@ from conftest import NOTICES, RegionSite
 from zkparser.cache import NoticeCache
 from zkparser.pipeline import APPLICATIONS_STAGE, CLOSED_STAGE, actual_stage, run_profiles
 from zkparser.profiles import Profile
-from zkparser.website.search import SearchHit
+from zkparser.telegram import notice_message
+from zkparser.website.client import SiteError
+from zkparser.website.search import SEARCH_PATH, SearchHit
 
 DAY = date(2026, 9, 30)
 BEFORE_DEADLINES = datetime(2026, 10, 1, tzinfo=UTC)  # every fixture still takes applications: the order is by date
@@ -114,3 +116,40 @@ def test_closed_notices_go_after_open_ones(tmp_path):
 def test_actual_stage(stage, deadline, exact, expected):
     hit = SearchHit("1", "", stage=stage, deadline=deadline)
     assert actual_stage(hit, datetime(2026, 10, 8, 12, 0, tzinfo=UTC), exact) == expected
+
+
+
+class UndownloadableSite(RegionSite):
+    """The search shows the notice with its title, but its XML never comes through (a huge road contract)."""
+
+    NUMBER = "0818500000826004035"
+
+    def get(self, path, params=None):
+        self.calls.append((path, params))
+        if path == SEARCH_PATH:
+            block = (
+                '<div class="search-registry-entry-block"><div class="registry-entry__header-mid__number">'
+                f'<a href="/epz/order/notice/ea20/view/common-info.html?regNumber={self.NUMBER}">№</a></div>'
+                '<div class="registry-entry__header-mid__title">Подача заявок</div>'
+                '<div class="registry-entry__body-block"><div class="registry-entry__body-title">Объект закупки</div>'
+                '<div class="registry-entry__body-value">Поставка дизельного топлива</div></div>'
+                '<div class="price-block__value">5 000 000,00 ₽</div>'
+                '<div class="data-block__title">Окончание подачи заявок</div>'
+                '<div class="data-block__value">20.10.2026</div></div>'
+            )
+            return f'<div class="search-results__total">1</div>{block}'.encode()
+        raise SiteError("Сайт ЕИС не отвечает: обрыв")
+
+
+def test_a_notice_that_never_downloads_is_checked_by_its_search_title(tmp_path):
+    with NoticeCache(tmp_path) as cache:
+        result = run_profiles(UndownloadableSite({}), cache, [profile("ГСМ", keywords=("топливо",))], DAY, DAY,
+                              now=BEFORE_DEADLINES)
+    (found,) = result.profiles[0].matches
+    assert found.search_only
+    assert (found.notice.title, found.notice.max_price, found.notice.positions) == (
+        "Поставка дизельного топлива", 5000000, ())
+    assert found.verdict.reasons == ("название: «топливо»",)
+    card = notice_message("ГСМ", found, datetime(2026, 10, 13, 12, 0, tzinfo=UTC))
+    assert "⏳ до 20.10 (7 дн.)" in card
+    assert "⚠️ Извещение не скачалось с сайта: проверено только название" in card
