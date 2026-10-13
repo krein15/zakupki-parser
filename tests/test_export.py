@@ -226,7 +226,17 @@ def test_price_range():
     assert price_range(1_000_000, 5_000_000, short=True) == "1 млн – 5 млн ₽"
 
 
+class Frozen(datetime):
+    """The command asks datetime.now(); the fixtures' deadlines must not run out as the calendar goes on."""
+
+    @classmethod
+    def now(cls, tz=None):
+        moment = datetime(2026, 10, 6, 12, 0, tzinfo=timezone(timedelta(hours=5)))
+        return moment if tz is None else moment.astimezone(tz)
+
+
 def test_export_command(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(cli, "datetime", Frozen)
     site = OpenSite({TYUMEN: TYUMEN_RESULTS})
     monkeypatch.setattr(cli, "SiteClient", lambda: StatsSite(site))
     code = cli.main(["export", "-r", "72", "--price-from", "100000", "--price-to", "5000000",
@@ -276,6 +286,7 @@ def test_a_profile_keeps_only_the_open_notices_of_its_niche(tmp_path):
 
 
 def test_export_command_with_a_template(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(cli, "datetime", Frozen)
     monkeypatch.setattr(cli, "SiteClient", lambda: StatsSite(OpenSite({TYUMEN: TYUMEN_RESULTS})))
     code = cli.main(["export", "-r", "72", "--template", "топливо", "--no-excel", "--cache-dir", str(tmp_path)])
     out = capsys.readouterr().out

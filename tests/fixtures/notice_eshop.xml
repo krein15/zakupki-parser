@@ -1,0 +1,292 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<ns7:epNotificationEZT2020 xmlns="http://zakupki.gov.ru/oos/EPtypes/1" xmlns:ns6="http://zakupki.gov.ru/oos/CPtypes/1" xmlns:ns5="http://zakupki.gov.ru/oos/KOTypes/1" xmlns:ns7="http://zakupki.gov.ru/oos/printform/1" xmlns:ns2="http://zakupki.gov.ru/oos/base/1" xmlns:ns4="http://zakupki.gov.ru/oos/types/1" xmlns:ns3="http://zakupki.gov.ru/oos/common/1" schemeVersion="15.3">
+    <id>41466872</id>
+    <versionNumber>1</versionNumber>
+    <commonInfo>
+        <purchaseNumber>0104100001925000001</purchaseNumber>
+        <docNumber>№0104100001925000001</docNumber>
+        <plannedPublishDate>2025-12-09+03:00</plannedPublishDate>
+        <publishDTInEIS>2025-12-10T10:08:19.083+03:00</publishDTInEIS>
+        <href>https://zakupki.gov.ru/epz/order/notice/ezt20/view/common-info.html?regNumber=0104100001925000001</href>
+        <notPublishedOnEIS>true</notPublishedOnEIS>
+        <placingWay>
+            <ns2:code>EZTP20</ns2:code>
+            <ns2:name>Закупка, осуществляемая в соответствии с частью 12 статьи 93 Закона № 44-ФЗ</ns2:name>
+        </placingWay>
+        <ETP>
+            <ns2:code>ETP_SBAST</ns2:code>
+            <ns2:name>АО «Сбербанк-АСТ»</ns2:name>
+            <ns2:url>http://www.sberbank-ast.ru</ns2:url>
+        </ETP>
+        <contractConclusionOnSt83Ch2>true</contractConclusionOnSt83Ch2>
+        <useProgramRights>false</useProgramRights>
+    </commonInfo>
+    <purchaseResponsibleInfo>
+        <responsibleOrgInfo>
+            <regNum>01041000019</regNum>
+            <consRegistryNum>00146899</consRegistryNum>
+            <fullName>УПРАВЛЕНИЕ ФЕДЕРАЛЬНОЙ АНТИМОНОПОЛЬНОЙ СЛУЖБЫ ПО КАБАРДИНО-БАЛКАРСКОЙ РЕСПУБЛИКЕ</fullName>
+            <shortName>КАБАРДИНО-БАЛКАРСКОЕ УФАС РОССИИ</shortName>
+            <postAddress>Российская Федерация, 360001, Кабардино-Балкарская Респ, Нальчик г, Тарчокова, Д.18</postAddress>
+            <factAddress>Российская Федерация, 360001, Кабардино-Балкарская Респ, Нальчик г, Тарчокова, Д.18</factAddress>
+            <INN>0711027218</INN>
+            <KPP>072501001</KPP>
+        </responsibleOrgInfo>
+        <responsibleRole>CU</responsibleRole>
+        <responsibleInfo>
+            <orgPostAddress>Российская Федерация, 360001, Кабардино-Балкарская Респ, Нальчик г, Тарчокова, Д.18</orgPostAddress>
+            <orgFactAddress>Российская Федерация, 360001, Кабардино-Балкарская Респ, Нальчик г, Тарчокова, Д.18</orgFactAddress>
+            <contactPersonInfo>
+                <ns3:lastName>Иванов</ns3:lastName>
+                <ns3:firstName>Иван</ns3:firstName>
+                <ns3:middleName>Иванович</ns3:middleName>
+            </contactPersonInfo>
+            <contactEMail>contact@example.org</contactEMail>
+            <contactPhone>7-000-0000000</contactPhone>
+        </responsibleInfo>
+    </purchaseResponsibleInfo>
+    <printFormInfo>
+        <ns3:url>https://zakupki.gov.ru/epz/order/notice/printForm/view.html?regNumber=0104100001925000001</ns3:url>
+    </printFormInfo>
+    <attachmentsInfo>
+        <ns3:attachmentInfo>
+            <ns3:publishedContentId>A7306C2209DC4D54867C3A86C2DDF621</ns3:publishedContentId>
+            <ns3:fileName>Обоснование цены контракта Ш для документов - 2025.12.04 (1).xls</ns3:fileName>
+            <ns3:fileSize>43520</ns3:fileSize>
+            <ns3:docDescription>Обоснование цены контракта Ш для документов - 2025.12.04 (1)</ns3:docDescription>
+            <ns3:docDate>2025-12-09T16:27:10+03:00</ns3:docDate>
+            <ns3:url>https://zakupki.gov.ru/44fz/filestore/public/1.0/download/priz/file.html?uid=A7306C2209DC4D54867C3A86C2DDF621</ns3:url>
+            <ns3:docKindInfo>
+                <ns2:code>PR</ns2:code>
+                <ns2:name>Обоснование цены контракта</ns2:name>
+            </ns3:docKindInfo>
+        </ns3:attachmentInfo>
+        <ns3:attachmentInfo>
+            <ns3:publishedContentId>BF62EF5637F14A38B1F525DD271A5335</ns3:publishedContentId>
+            <ns3:fileName>ГК_шкаф для документов.docx</ns3:fileName>
+            <ns3:fileSize>30663</ns3:fileSize>
+            <ns3:docDescription>ГК_шкаф для документов</ns3:docDescription>
+            <ns3:docDate>2025-12-09T16:44:08+03:00</ns3:docDate>
+            <ns3:url>https://zakupki.gov.ru/44fz/filestore/public/1.0/download/priz/file.html?uid=BF62EF5637F14A38B1F525DD271A5335</ns3:url>
+            <ns3:docKindInfo>
+                <ns2:code>CP</ns2:code>
+                <ns2:name>Проект контракта</ns2:name>
+            </ns3:docKindInfo>
+        </ns3:attachmentInfo>
+    </attachmentsInfo>
+    <notificationInfo>
+        <contractConditionsInfo>
+            <maxPriceInfo>
+                <maxPrice>110451.5</maxPrice>
+                <currency>
+                    <ns2:code>RUB</ns2:code>
+                    <ns2:name>РОССИЙСКИЙ РУБЛЬ</ns2:name>
+                </currency>
+            </maxPriceInfo>
+            <deliveryPlaceInfo>
+                <sid>56913665</sid>
+                <OKTMO>
+                    <ns2:code>83701000001</ns2:code>
+                    <ns2:name>Муниципальные образования Кабардино-Балкарской Республики / Городские округа Кабардино-Балкарской Республики/ / Нальчик / г Нальчик</ns2:name>
+                </OKTMO>
+                <GARInfo>
+                    <ns3:GARGuid>adc8f549-7b15-4864-9050-c490d696c3ba</ns3:GARGuid>
+                    <ns3:GARAddress>Респ Кабардино-Балкарская, г.о. Нальчик, г Нальчик, ул Тарчокова, д. 18</ns3:GARAddress>
+                </GARInfo>
+            </deliveryPlaceInfo>
+        </contractConditionsInfo>
+        <customerRequirementsInfo>
+            <customerRequirementInfo>
+                <customer>
+                    <ns2:regNum>01041000019</ns2:regNum>
+                    <ns2:consRegistryNum>00146899</ns2:consRegistryNum>
+                    <ns2:fullName>УПРАВЛЕНИЕ ФЕДЕРАЛЬНОЙ АНТИМОНОПОЛЬНОЙ СЛУЖБЫ ПО КАБАРДИНО-БАЛКАРСКОЙ РЕСПУБЛИКЕ</ns2:fullName>
+                </customer>
+                <contractConditionsInfo>
+                    <maxPriceInfo>
+                        <maxPrice>110451.5</maxPrice>
+                    </maxPriceInfo>
+                    <IKZInfo>
+                        <purchaseCode>251071102721807250100100080010000244</purchaseCode>
+                        <publishYear>2025</publishYear>
+                        <OKPD2Info>
+                            <ns3:undefined>0000</ns3:undefined>
+                        </OKPD2Info>
+                        <KVRInfo>
+                            <ns3:KVR>
+                                <ns2:code>244</ns2:code>
+                                <ns2:name>Прочая закупка товаров, работ и услуг</ns2:name>
+                            </ns3:KVR>
+                        </KVRInfo>
+                        <customerCode>10711027218072501001</customerCode>
+                        <purchaseNumber>0008</purchaseNumber>
+                        <purchaseOrderNumber>001</purchaseOrderNumber>
+                    </IKZInfo>
+                    <tenderPlan2020Info>
+                        <ns3:plan2020Number>202501041000019001</ns3:plan2020Number>
+                        <ns3:position2020Number>202501041000019001000010</ns3:position2020Number>
+                    </tenderPlan2020Info>
+                    <contractExecutionPaymentPlan>
+                        <contractExecutionTermsInfo>
+                            <ns3:relativeTermsInfo>
+                                <ns3:start>0</ns3:start>
+                                <ns3:startDayType>calendar</ns3:startDayType>
+                                <ns3:term>10</ns3:term>
+                                <ns3:termDayType>calendar</ns3:termDayType>
+                            </ns3:relativeTermsInfo>
+                        </contractExecutionTermsInfo>
+                        <financingSourcesInfo>
+                            <budgetFinancingsInfo>
+                                <budgetInfo>
+                                    <ns2:code>99010001</ns2:code>
+                                    <ns2:name>Федеральный бюджет</ns2:name>
+                                </budgetInfo>
+                                <budgetLevelInfo>
+                                    <ns2:code>10</ns2:code>
+                                    <ns2:name>федеральный бюджет</ns2:name>
+                                </budgetLevelInfo>
+                                <OKTMOInfo>
+                                    <ns2:code>00000001</ns2:code>
+                                </OKTMOInfo>
+                            </budgetFinancingsInfo>
+                            <currentYear>2025</currentYear>
+                            <financeInfo>
+                                <total>110451.5</total>
+                                <currentYear>110451.5</currentYear>
+                                <firstYear>0</firstYear>
+                                <secondYear>0</secondYear>
+                                <subsecYears>0</subsecYears>
+                            </financeInfo>
+                        </financingSourcesInfo>
+                        <stagesInfo>
+                            <stageInfo>
+                                <sid>18248903</sid>
+                                <termsInfo>
+                                    <ns3:relativeTermsInfo>
+                                        <ns3:start>0</ns3:start>
+                                        <ns3:startDayType>calendar</ns3:startDayType>
+                                        <ns3:term>10</ns3:term>
+                                        <ns3:termDayType>calendar</ns3:termDayType>
+                                    </ns3:relativeTermsInfo>
+                                </termsInfo>
+                                <budgetFinancingsInfo>
+                                    <budgetFinancingInfo>
+                                        <KBK>16104011540590020244</KBK>
+                                        <paymentYearInfo>
+                                            <total>110451.5</total>
+                                            <currentYear>110451.5</currentYear>
+                                            <firstYear>0</firstYear>
+                                            <secondYear>0</secondYear>
+                                            <subsecYears>0</subsecYears>
+                                        </paymentYearInfo>
+                                    </budgetFinancingInfo>
+                                </budgetFinancingsInfo>
+                            </stageInfo>
+                        </stagesInfo>
+                    </contractExecutionPaymentPlan>
+                    <deliveryTime>10</deliveryTime>
+                    <isOneSideRejectionSt95>true</isOneSideRejectionSt95>
+                </contractConditionsInfo>
+            </customerRequirementInfo>
+        </customerRequirementsInfo>
+        <purchaseObjectsInfo>
+            <ns3:purchaseObject>
+                <ns3:sid>199849846</ns3:sid>
+                <ns3:KTRU>
+                    <ns2:code>31.01.12.139-00000001</ns2:code>
+                    <ns2:name>Шкаф деревянный для документов</ns2:name>
+                    <ns2:versionId>152952</ns2:versionId>
+                    <ns2:versionNumber>4</ns2:versionNumber>
+                    <ns3:characteristics>
+                        <ns3:characteristicsUsingReferenceInfo>
+                            <ns3:sid>262523017</ns3:sid>
+                            <ns3:code>c202afa0-b</ns3:code>
+                            <ns3:name>Наличие выдвижных ящиков</ns3:name>
+                            <ns3:type>1</ns3:type>
+                            <ns3:kind>2</ns3:kind>
+                            <ns3:values>
+                                <ns3:value>
+                                    <ns3:sid>336508348</ns3:sid>
+                                    <ns3:qualityDescription>Нет</ns3:qualityDescription>
+                                </ns3:value>
+                            </ns3:values>
+                        </ns3:characteristicsUsingReferenceInfo>
+                        <ns3:characteristicsUsingReferenceInfo>
+                            <ns3:sid>262523018</ns3:sid>
+                            <ns3:code>66d040b5-c</ns3:code>
+                            <ns3:name>Наличие остекления</ns3:name>
+                            <ns3:type>1</ns3:type>
+                            <ns3:kind>2</ns3:kind>
+                            <ns3:values>
+                                <ns3:value>
+                                    <ns3:sid>336508349</ns3:sid>
+                                    <ns3:qualityDescription>Да</ns3:qualityDescription>
+                                </ns3:value>
+                            </ns3:values>
+                        </ns3:characteristicsUsingReferenceInfo>
+                        <ns3:characteristicsUsingReferenceInfo>
+                            <ns3:sid>262523019</ns3:sid>
+                            <ns3:code>cb7e3a45-0</ns3:code>
+                            <ns3:name>Тип фасада</ns3:name>
+                            <ns3:type>1</ns3:type>
+                            <ns3:kind>2</ns3:kind>
+                            <ns3:values>
+                                <ns3:value>
+                                    <ns3:sid>336508350</ns3:sid>
+                                    <ns3:qualityDescription>Закрытый</ns3:qualityDescription>
+                                </ns3:value>
+                            </ns3:values>
+                        </ns3:characteristicsUsingReferenceInfo>
+                    </ns3:characteristics>
+                    <ns3:OKPD2>
+                        <ns2:OKPDCode>31.01.12.139</ns2:OKPDCode>
+                        <ns2:OKPDName>Шкафы деревянные прочие</ns2:OKPDName>
+                    </ns3:OKPD2>
+                </ns3:KTRU>
+                <ns3:name>Шкаф деревянный для документов</ns3:name>
+                <ns3:OKEI>
+                    <ns2:code>796</ns2:code>
+                    <ns2:nationalCode>шт</ns2:nationalCode>
+                    <ns2:name>Штука</ns2:name>
+                </ns3:OKEI>
+                <ns3:price>22090.3</ns3:price>
+                <ns3:quantity>
+                    <ns3:value>5</ns3:value>
+                </ns3:quantity>
+                <ns3:sum>110451.5</ns3:sum>
+            </ns3:purchaseObject>
+            <ns3:totalSum>110451.5</ns3:totalSum>
+            <type>PRODUCT</type>
+        </purchaseObjectsInfo>
+        <preferensesInfo>
+            <preferenseInfo>
+                <ns3:preferenseRequirementInfo>
+                    <ns2:shortName>IN44</ns2:shortName>
+                    <ns2:name>Организациям инвалидов в соответствии со ст. 29 Закона № 44-ФЗ</ns2:name>
+                </ns3:preferenseRequirementInfo>
+                <ns3:prefValue>15.0</ns3:prefValue>
+            </preferenseInfo>
+        </preferensesInfo>
+        <requirementsInfo>
+            <requirementInfo>
+                <ns3:preferenseRequirementInfo>
+                    <ns2:shortName>ET44</ns2:shortName>
+                    <ns2:name>Единые требования к участникам закупок в соответствии с ч. 1 ст. 31 Закона № 44-ФЗ</ns2:name>
+                </ns3:preferenseRequirementInfo>
+            </requirementInfo>
+            <requirementInfo>
+                <ns3:preferenseRequirementInfo>
+                    <ns2:shortName>TR442</ns2:shortName>
+                    <ns2:name>Требования к участникам закупок в соответствии с ч. 1.1 ст. 31 Закона № 44-ФЗ</ns2:name>
+                </ns3:preferenseRequirementInfo>
+            </requirementInfo>
+        </requirementsInfo>
+    </notificationInfo>
+    <printFormFieldsInfo>
+        <is449Features>false</is449Features>
+    </printFormFieldsInfo>
+    <serviceSigns>
+        <isIncludeKOKS>false</isIncludeKOKS>
+        <isControlP1Ch5St99>true</isControlP1Ch5St99>
+    </serviceSigns>
+</ns7:epNotificationEZT2020>

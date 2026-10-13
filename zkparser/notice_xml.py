@@ -7,6 +7,10 @@ The customer block has no INN: it is taken from the customer code inside the pur
 ``[level][INN, 10 digits][KPP, 9 digits]``. A notice without an ИКЗ (e.g. a mandatory audit contest) gets the INN
 from the placing organization when that organization is the customer itself.
 
+A purchase through an electronic shop (ч. 12 ст. 93, epNotificationEZT2020) has no title, no application period and
+keeps its positions straight in purchaseObjectsInfo; even the site shows such a purchase without a name. The title is
+made of its position names, so the matching and the reports still see what is bought.
+
 The XML comes from outside, so it is parsed without DTDs, entity expansion or network access.
 """
 
@@ -17,10 +21,12 @@ from decimal import Decimal, InvalidOperation
 
 from lxml import etree
 
+from .display import plural
 from .models import CustomerPart, Notice, Organization, Position
 
 PARSER = etree.XMLParser(resolve_entities=False, no_network=True, load_dtd=False, remove_comments=True)
 ROOT_PREFIX = "epNotification"
+TITLE_POSITIONS = 3  # a notice without a title is named after its first positions
 
 
 class NoticeFormatError(ValueError):
@@ -53,12 +59,13 @@ def parse_notice(xml: bytes) -> Notice:
         inn=_text(org, "INN"),
         kpp=_text(org, "KPP"),
     )
+    positions = _positions(info)
     return Notice(
         reg_number=reg_number,
         version=int(_text(notice, "versionNumber") or 1),
         document_type=notice.tag,
         url=_text(common, "href"),
-        title=_text(common, "purchaseObjectInfo"),
+        title=_text(common, "purchaseObjectInfo") or _title_from(positions),
         placing_way=_text(common, "placingWay/name"),
         placing_way_code=_text(common, "placingWay/code"),
         etp=_text(common, "ETP/name"),
@@ -73,12 +80,23 @@ def parse_notice(xml: bytes) -> Notice:
             _customer_part(part, placer)
             for part in _findall(info, "customerRequirementsInfo/customerRequirementInfo")
         ),
-        positions=_positions(info),
+        positions=positions,
         quantity_undefined=any(
-            _text(info, f"purchaseObjectsInfo/{kind}/quantityUndefined") == "true"
-            for kind in ("notDrugPurchaseObjectsInfo", "drugPurchaseObjectsInfo")
+            _text(info, path) == "true"
+            for path in ("purchaseObjectsInfo/notDrugPurchaseObjectsInfo/quantityUndefined",
+                         "purchaseObjectsInfo/drugPurchaseObjectsInfo/quantityUndefined",
+                         "purchaseObjectsInfo/quantityUndefined", "drugPurchaseObjectsInfo/quantityUndefined")
         ),
     )
+
+
+def _title_from(positions: tuple[Position, ...]) -> str:
+    """"Шкаф для документов; Стол письменный; Стул и ещё 2 позиции"."""
+    names = list(dict.fromkeys(position.name for position in positions if position.name))
+    title = "; ".join(names[:TITLE_POSITIONS])
+    if len(names) > TITLE_POSITIONS:
+        title += " и ещё " + plural(len(names) - TITLE_POSITIONS, "позиция", "позиции", "позиций")
+    return title
 
 
 def split_customer_code(code: str) -> tuple[str, str]:
@@ -109,11 +127,16 @@ def _customer_part(part: etree._Element, placer: Organization) -> CustomerPart:
 
 
 def _positions(info: etree._Element | None) -> tuple[Position, ...]:
-    objects = info.find("purchaseObjectsInfo") if info is not None else None
-    if objects is None:
+    if info is None:
         return ()
+    objects = info.find("purchaseObjectsInfo")
     positions = []
-    for item in objects.iterfind("notDrugPurchaseObjectsInfo/purchaseObject"):
+    # An auction or a quotation nests its goods and services in notDrugPurchaseObjectsInfo and its drugs in
+    # purchaseObjectsInfo; an e-shop purchase keeps goods straight in purchaseObjectsInfo and drugs in notificationInfo.
+    goods = [*_findall(objects, "notDrugPurchaseObjectsInfo/purchaseObject"), *_findall(objects, "purchaseObject")]
+    drugs = [*_findall(objects, "drugPurchaseObjectsInfo/drugPurchaseObjectInfo"),
+             *_findall(info, "drugPurchaseObjectsInfo/drugPurchaseObjectInfo")]
+    for item in goods:
         ktru = item.find("KTRU")
         okpd2 = item.find("OKPD2")
         if okpd2 is None and ktru is not None:
@@ -131,7 +154,7 @@ def _positions(info: etree._Element | None) -> tuple[Position, ...]:
                 total=_decimal(item, "sum"),
             )
         )
-    for item in objects.iterfind("drugPurchaseObjectsInfo/drugPurchaseObjectInfo"):
+    for item in drugs:
         # A drug is described through a reference (or interchangeable variants); its codes sit deep inside.
         okpd2 = item.find(".//OKPD2")
         ktru = item.find(".//KTRU")

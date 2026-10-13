@@ -143,3 +143,30 @@ def test_entities_are_not_expanded():
 )
 def test_split_customer_code(code, inn_kpp):
     assert split_customer_code(code) == inn_kpp
+
+
+def test_an_e_shop_purchase_is_named_after_its_positions():
+    """ч. 12 ст. 93: no title and no application period; goods straight in purchaseObjectsInfo."""
+    notice = parse_notice((FIXTURES / "notice_eshop.xml").read_bytes())
+    assert notice.document_type == "epNotificationEZT2020"
+    assert notice.title == "Шкаф деревянный для документов"
+    assert notice.applications_end is None
+    (position,) = notice.positions
+    assert (position.name, position.okpd2_code, position.quantity, position.unit) == (
+        "Шкаф деревянный для документов", "31.01.12.139", 5, "Штука")
+    assert notice.customers[0].customer.inn == "0711027218"
+
+
+def test_an_e_shop_drug_purchase_keeps_its_drugs_in_the_notification():
+    notice = parse_notice((FIXTURES / "notice_eshop_drug.xml").read_bytes())
+    (position,) = notice.positions
+    assert position.is_drug and position.okpd2_code == "21.20.10.134"
+    assert notice.title.startswith("КАЛИЯ ХЛОРИД")
+
+
+def test_a_title_made_of_many_positions_counts_the_rest():
+    from zkparser.models import Position
+    from zkparser.notice_xml import _title_from
+
+    positions = tuple(Position(name=name) for name in ("Стол", "Стул", "Стол", "Шкаф", "Тумба", "Полка"))
+    assert _title_from(positions) == "Стол; Стул; Шкаф и ещё 2 позиции"

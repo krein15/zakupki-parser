@@ -31,6 +31,8 @@ from zkparser.profiles import Profile, from_template, load_templates, save_profi
 from zkparser.website.search import SearchHit  # noqa: E402
 
 FIXTURES = ROOT / "tests" / "fixtures"
+DEMO_NOTICES = [FIXTURES / f"notice_{name}.xml"
+                for name in ("auction_ktru", "audit_contest", "drugs", "joint", "quotation")]
 DEMO_STAGES = ["Подача заявок", "Подача заявок", "Работа комиссии", "Подача заявок", "Подача заявок"]
 
 
@@ -39,7 +41,7 @@ def demo_results() -> RunResult:
                       keywords=("томатн* паст*", "лекарственн* препарат*", "топливо"), okpd2=("21.20", "10.39"))
     matcher = Matcher(profile)
     matches = []
-    for path, stage in zip(sorted(FIXTURES.glob("notice_*.xml")), DEMO_STAGES, strict=False):
+    for path, stage in zip(DEMO_NOTICES, DEMO_STAGES, strict=True):
         notice = parse_notice(path.read_bytes())
         verdict = matcher.evaluate(notice)
         if verdict.matched:

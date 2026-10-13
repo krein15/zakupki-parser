@@ -14,6 +14,7 @@ from zkparser.profiles import Profile
 from zkparser.website.search import SearchHit
 
 DAY = date(2026, 9, 30)
+BEFORE_DEADLINES = datetime(2026, 10, 1, tzinfo=UTC)  # every fixture still takes applications: the order is by date
 TYUMEN, KHMAO = "72000000000", "86000000000"
 
 
@@ -23,7 +24,7 @@ def profile(name: str, regions=(TYUMEN,), **rules) -> Profile:
 
 def run(site, profiles, tmp_path):
     with NoticeCache(tmp_path) as cache:
-        return run_profiles(site, cache, profiles, DAY, DAY)
+        return run_profiles(site, cache, profiles, DAY, DAY, now=BEFORE_DEADLINES)
 
 
 def test_one_search_serves_every_profile(tmp_path):
