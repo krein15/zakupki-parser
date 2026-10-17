@@ -296,6 +296,14 @@ ruff check .
 Тесты работают без интернета: поиск проверяется на сохранённых страницах ЕИС, разбор — на настоящих извещениях,
 в которых данные контактного лица заменены заглушками (`tools/anonymize_notice.py`).
 
+## Автор
+
+Николай Бондаренко
+
+- Telegram: [@krein1](https://t.me/krein1)
+- Почта: [kreinwork1@gmail.com](mailto:kreinwork1@gmail.com)
+- Сайт: [kreinstudio.ru](https://kreinstudio.ru/)
+
 ## Лицензия
 
 [MIT](LICENSE)
