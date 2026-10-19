@@ -65,6 +65,7 @@ def test_saved_profile_reads_back_the_same(tmp_path):
             "regions": ["72", "86"],
             "keywords": ["канцеляр* товар*", '"бумага для офисной техники"', "ёлка\\ель"],
             "minus": ["ремонт*"],
+            "strong": ["заправк* картридж*"],
             "okpd2": ["17.23"],
             "customer_inn": ["7202161807"],
             "price_from": 10000,

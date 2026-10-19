@@ -7,6 +7,10 @@ quotes ("ручка шариковая") must stand as written.
 
 The title and every position (its name and KTRU name) are checked separately. A minus word in the title rejects the
 notice; a minus word in a position drops only that position. OKPD2 and KTRU codes match by prefix.
+
+A strong word is a keyword that outweighs the minus words where it stands itself: "доработк* программн*" in the
+title keeps "Доработка программного обеспечения и продление лицензии", rejected by "лицензи*" otherwise; in a position
+it keeps that position. A minus word in the title still rejects a notice whose strong word is only in a position.
 """
 
 from __future__ import annotations
@@ -117,6 +121,7 @@ class Matcher:
     def __init__(self, profile: Profile, morphology: Morphology | None = None) -> None:
         self.profile = profile
         self._morphology = morphology or default_morphology()
+        self._strong = [compile_term(term, self._morphology, profile) for term in profile.strong]
         self._keywords = [compile_term(term, self._morphology, profile) for term in profile.keywords]
         self._minus = [compile_term(term, self._morphology, profile) for term in profile.minus]
 
@@ -127,19 +132,22 @@ class Matcher:
             return Verdict(False, (rejection,))
 
         title = tokenize(notice.title, self._morphology)
+        strong = [term for term in self._strong if term.found_in(title)]
         minus = next((term for term in self._minus if term.found_in(title)), None)
-        if minus:
+        if minus and not strong:
             return Verdict(False, (f"минус-слово «{minus.source}» в названии",))
 
-        if not (self._keywords or profile.okpd2 or profile.ktru):  # a profile of customers only
+        if not (self._strong or self._keywords or profile.okpd2 or profile.ktru):  # a profile of customers only
             inns = ", ".join(inn for inn in notice.customer_inns if inn in profile.customer_inn)
             return Verdict(True, (f"заказчик ИНН {inns}",))
 
         reasons = []
-        title_terms = [term for term in self._keywords if term.found_in(title)]
-        matched_by = [_quoted([term]) for term in title_terms]
-        if title_terms:
-            reasons.append(f"название: {_quoted(title_terms)}")
+        # A word can be both strong and a keyword: it is named once.
+        matched_by = _labels(strong + [term for term in self._keywords if term.found_in(title)])
+        if matched_by:
+            reasons.append(f"название: {', '.join(matched_by)}")
+        if minus:
+            reasons.append(f"сильное слово {_quoted(strong[:1])} перевешивает минус-слово «{minus.source}»")
         positions = []
         for number, position in enumerate(notice.positions, 1):
             why = self._position_reasons(position)
@@ -172,9 +180,10 @@ class Matcher:
 
     def _position_reasons(self, position: Position) -> list[str]:
         tokens = tokenize(f"{position.name} {position.ktru_name}", self._morphology)
-        if any(term.found_in(tokens) for term in self._minus):
+        strong = [term for term in self._strong if term.found_in(tokens)]
+        if not strong and any(term.found_in(tokens) for term in self._minus):
             return []
-        why = [_quoted([term]) for term in self._keywords if term.found_in(tokens)]
+        why = _labels(strong + [term for term in self._keywords if term.found_in(tokens)])
         if position.okpd2_code and any(position.okpd2_code.startswith(code) for code in self.profile.okpd2):
             why.append(f"ОКПД2 {position.okpd2_code}")
         if position.ktru_code and any(position.ktru_code.startswith(code) for code in self.profile.ktru):
@@ -184,6 +193,10 @@ class Matcher:
 
 def _quoted(terms: list[Term]) -> str:
     return ", ".join(f"«{term.source.strip(QUOTE_CHARS)}»" for term in terms)
+
+
+def _labels(terms: list[Term]) -> list[str]:
+    return list(dict.fromkeys(_quoted([term]) for term in terms))
 
 
 def _short(name: str) -> str:

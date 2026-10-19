@@ -583,6 +583,7 @@ def _write_profile(sheet: Worksheet, result: ProfileResult, start: date, end: da
             ("Период размещения", period),
             ("Этап", "любой" if profile.all_stages else "подача заявок"),
             ("Ключевые слова", ", ".join(profile.keywords) or "—"),
+            ("Сильные слова", ", ".join(profile.strong) or "—"),
             ("Минус-слова", ", ".join(profile.minus) or "—"),
             ("ОКПД2", ", ".join(profile.okpd2) or "—"),
             ("КТРУ", ", ".join(profile.ktru) or "—"),

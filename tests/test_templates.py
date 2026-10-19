@@ -36,6 +36,7 @@ def test_template_is_a_valid_profile(name):
         "minus": list(template.minus),
         "okpd2": list(template.okpd2),
         "ktru": list(template.ktru),
+        "strong": list(template.strong),
     }
     profile = parse_profile(data, Path("template.toml"))
     Matcher(profile)  # every keyword and minus word compiles
@@ -79,3 +80,14 @@ def test_licence_resale_is_not_an_it_service():
     verdict = Matcher(profile).evaluate(notice)
     assert not verdict.matched
     assert verdict.reasons[0].startswith("минус-слово")
+
+
+def test_development_outweighs_the_licence_in_the_it_template():
+    notice = replace(parse_notice((FIXTURES / "notice_licence.xml").read_bytes()),
+                     title="Доработка программного обеспечения и продление лицензии")
+    verdict = Matcher(from_template(TEMPLATES["IT-услуги и разработка ПО"], ("72000000000",))).evaluate(notice)
+    assert verdict.matched
+    assert verdict.reasons[:2] == (
+        "название: «доработк* программн*»",  # strong and a keyword at once: named once
+        "сильное слово «доработк* программн*» перевешивает минус-слово «лицензи*»",
+    )

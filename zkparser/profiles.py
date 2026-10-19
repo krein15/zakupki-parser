@@ -1,8 +1,9 @@
 """Profiles: what to look for, one TOML file per niche or client.
 
 A profile names its regions and the matching rules: keywords and minus words (word forms are matched, ``*`` ends
-a word prefix, quotes keep a phrase in order), OKPD2/KTRU code prefixes, customer INNs to include or exclude and the
-price range. See docs/example-profile.toml; ready-made starters for common niches are in templates/.
+a word prefix, quotes keep a phrase in order), strong words that outweigh the minus words, OKPD2/KTRU code prefixes,
+customer INNs to include or exclude and the price range. See docs/example-profile.toml; ready-made starters for
+common niches are in templates/.
 """
 
 from __future__ import annotations
@@ -15,11 +16,11 @@ from pathlib import Path
 
 from .regions import resolve_region
 
-LIST_FIELDS = ("regions", "keywords", "minus", "okpd2", "ktru", "customer_inn", "exclude_customer_inn")
+LIST_FIELDS = ("regions", "keywords", "strong", "minus", "okpd2", "ktru", "customer_inn", "exclude_customer_inn")
 KNOWN_FIELDS = {"name", "price_from", "price_to", "all_stages", "telegram_chat", *LIST_FIELDS}
 TELEGRAM_CHAT = re.compile(r"-?\d{3,}|@[A-Za-z]\w{3,}")
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
-TEMPLATE_FIELDS = ("keywords", "minus", "okpd2", "ktru")
+TEMPLATE_FIELDS = ("keywords", "minus", "okpd2", "ktru", "strong")
 
 
 class ProfileError(ValueError):
@@ -34,6 +35,7 @@ class Profile:
     minus: tuple[str, ...] = ()
     okpd2: tuple[str, ...] = ()
     ktru: tuple[str, ...] = ()
+    strong: tuple[str, ...] = ()  # keywords that outweigh a minus word standing next to them
     customer_inn: tuple[str, ...] = ()
     exclude_customer_inn: tuple[str, ...] = ()
     price_from: int | None = None
@@ -52,6 +54,7 @@ class Template:
     minus: tuple[str, ...] = ()
     okpd2: tuple[str, ...] = ()
     ktru: tuple[str, ...] = ()
+    strong: tuple[str, ...] = ()
 
 
 def load_templates(folder: Path = TEMPLATES_DIR) -> list[Template]:
@@ -72,6 +75,7 @@ def from_template(template: Template, regions: tuple[str, ...] = ()) -> Profile:
         minus=template.minus,
         okpd2=template.okpd2,
         ktru=template.ktru,
+        strong=template.strong,
     )
 
 
@@ -80,11 +84,12 @@ def dump_profile(profile: Profile) -> str:
     lines = [
         "# Профиль Zakupki Parser: что искать для одной ниши или одного клиента.",
         "# Слова ищутся по словоформам, «*» — начало слова, фраза в кавычках — точный порядок слов.",
+        "# Сильные слова — ключевые, которые перевешивают минус-слово рядом с собой.",
         "",
         f"name = {_string(profile.name)}",
         f"regions = {_strings([code[:2] for code in profile.regions])}",
     ]
-    for name in ("keywords", "minus", "okpd2", "ktru", "customer_inn", "exclude_customer_inn"):
+    for name in ("keywords", "strong", "minus", "okpd2", "ktru", "customer_inn", "exclude_customer_inn"):
         values = getattr(profile, name)
         if values or name in ("keywords", "minus"):
             lines.append(f"{name} = {_strings(values)}")
@@ -148,9 +153,9 @@ def parse_profile(data: dict, path: Path) -> Profile:
         for inn in lists[name]:
             if not (inn.isdigit() and len(inn) in (10, 12)):
                 raise ProfileError(f"{path}: «{inn}» в {name} — ИНН состоит из 10 или 12 цифр")
-    if not (lists["keywords"] or lists["okpd2"] or lists["ktru"] or lists["customer_inn"]):
+    if not (lists["keywords"] or lists["strong"] or lists["okpd2"] or lists["ktru"] or lists["customer_inn"]):
         raise ProfileError(
-            f"{path}: задайте, что искать: keywords, okpd2, ktru или customer_inn — иначе подойдут все закупки"
+            f"{path}: задайте, что искать: keywords, strong, okpd2, ktru или customer_inn — иначе подойдут все закупки"
         )
 
     prices = {}
@@ -174,6 +179,7 @@ def parse_profile(data: dict, path: Path) -> Profile:
         name=str(data.get("name") or path.stem),
         regions=regions,
         keywords=lists["keywords"],
+        strong=lists["strong"],
         minus=lists["minus"],
         okpd2=lists["okpd2"],
         ktru=lists["ktru"],

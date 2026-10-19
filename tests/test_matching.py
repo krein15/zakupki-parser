@@ -138,6 +138,31 @@ def test_minus_word_in_a_position_drops_only_that_position():
     assert result.positions == (2,)
 
 
+STRONG = {"keywords": ("программн* обеспечени*",), "strong": ("доработк* программн*",), "minus": ("лицензи*",)}
+
+
+def test_strong_word_outweighs_a_minus_word_in_the_title():
+    result = verdict(STRONG, "Доработка программного обеспечения и продление лицензии")
+    assert result.matched
+    assert result.reasons == (
+        "название: «доработк* программн*», «программн* обеспечени*»",
+        "сильное слово «доработк* программн*» перевешивает минус-слово «лицензи*»",
+    )
+    assert result.matched_by == ("«доработк* программн*»", "«программн* обеспечени*»")
+    assert not verdict(STRONG, "Продление лицензии на программное обеспечение").matched
+
+
+def test_strong_word_outweighs_a_minus_word_only_where_it_stands():
+    in_position = verdict(STRONG, "Оказание услуг", position("Доработка программного модуля, лицензия"),
+                          position("Лицензия на программное обеспечение"))
+    assert in_position.positions == (1,)
+    assert not verdict(STRONG, "Продление лицензий", position("Доработка программного модуля")).matched
+
+
+def test_strong_words_alone_are_enough_to_search():
+    assert verdict({"strong": ("доработк* программн*",)}, "Доработка программного комплекса учёта").matched
+
+
 def test_many_matching_positions_are_summarised():
     positions = [position(f"Бумага {i}") for i in range(8)]
     result = verdict({"keywords": ("бумага",)}, "Закупка", *positions)
