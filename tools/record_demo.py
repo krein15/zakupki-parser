@@ -49,7 +49,7 @@ def main() -> None:
     set_entry(app.export_words, "")
     app.export_filter.set(window.ALL_NOTICES)
     app.export_details.deselect()
-    app.tabs.set("По бюджету")
+    app.tabs.set("Поиск")
     frames: list[Image.Image] = []
 
     def grab() -> None:

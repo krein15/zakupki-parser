@@ -2,8 +2,9 @@
 
 Usage: python tools/screenshot.py OUTPUT.png [light|dark] [tab name]
 
-The window works on a temporary profiles folder with one profile made from the "Канцтовары и бумага" template, so the
-screenshots do not depend on your own profiles. The "Результаты" tab is filled with the anonymized test notices, so no
+The window works on a temporary profiles folder with two profiles made from the "Канцтовары и бумага" and the IT
+templates, so the screenshots do not depend on your own profiles; the "Профиль" tab shows the IT one, with its strong
+words. The "Результаты" tab is filled with the anonymized test notices, so no
 network is needed. On the "Мониторинг" tab the bot's name and the chat number are replaced: the screenshots go into a
 public repository.
 """
@@ -56,6 +57,9 @@ def demo_profiles() -> Path:
     profile = from_template(template, ("72000000000",))
     save_profile(Profile(**{**profile.__dict__, "name": "Канцтовары — Тюмень", "price_from": 10000}),
                  folder / "Канцтовары — Тюмень.toml")
+    template = next(t for t in load_templates() if t.name.startswith("IT"))
+    profile = from_template(template, ("72000000000", "66000000000"))
+    save_profile(Profile(**{**profile.__dict__, "name": "Разработка ПО — Урал"}), folder / "Разработка ПО — Урал.toml")
     return folder
 
 
@@ -76,7 +80,7 @@ def main() -> None:
                                            "За 7 дней прислано 14: ✅ беру 3 · ❌ не моё 1 · без отметки 10")
         for var in app.monitored_vars.values():
             var.set(True)
-    if tab == "По бюджету":  # the same example as in the README, whatever the window remembers
+    if tab == "Поиск":  # the same example as in the README, whatever the window remembers
         app.export_regions = ["72000000000"]
         app._show_export_regions()
         set_entry(app.export_price_from, "1000000")
@@ -84,21 +88,31 @@ def main() -> None:
         set_entry(app.export_words, "")
         app.export_filter.set(window.ALL_NOTICES)
         app.export_details.deselect()
+    if tab == "Профиль":
+        app.profile_menu.set("Разработка ПО — Урал")
+        app._choose_profile("Разработка ПО — Урал")
     app.period.set("Неделя")  # not the custom dates the window may remember
     app._refresh_period()
+    app.open_report_switch.select()  # as a new window has it
     choice = "Светлая" if appearance == "light" else "Тёмная"
     app.appearance.set(choice)
     app._set_appearance(choice)
-    if tab:
-        app.tabs.set(tab)
-    if tab == "Результаты":
-        app._show_results(demo_results(), date(2026, 9, 30), date(2026, 9, 30))
+
+    def show() -> None:  # a scrollable tab shown before the window is drawn stays blank on the capture
+        if tab:
+            app.tabs.set(tab)
+        if tab == "Результаты":
+            app._show_results(demo_results(), date(2026, 9, 30), date(2026, 9, 30))
+        if tab == "Профиль":  # the words, the strong and the minus words in sight
+            app.update_idletasks()
+            app.profile_page._parent_canvas.yview_moveto(0.24)
 
     def capture() -> None:
         app.update()
         window_capture.save(app, output)
         app.destroy()
 
+    app.after(500, show)
     app.after(2500, capture)
     app.mainloop()
 

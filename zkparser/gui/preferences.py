@@ -25,18 +25,18 @@ class Preferences:
     date_from: str = ""
     date_to: str = ""
     output_dir: str = ""
-    open_report: bool = False
+    open_report: bool = True  # a newcomer expects the report to show up by itself
     appearance: str = "Системная"
     monitored: list[str] = field(default_factory=list)  # profile file names checked by the schedule
     schedule_from: str = "08:00"
     schedule_to: str = "20:00"
     schedule_every: int = 60
-    export_regions: list[str] = field(default_factory=list)  # the "По бюджету" tab
+    export_regions: list[str] = field(default_factory=list)  # the "Поиск" tab
     export_price_from: str = ""
     export_price_to: str = ""
     export_words: str = ""
     export_details: bool = False
-    export_filter: str = ""  # "Профиль: …" or "Шаблон: …"; empty — every open notice
+    export_filter: str = ""  # a template name or "Мой профиль: …"; empty — every open notice
 
     @staticmethod
     def default_path() -> Path:

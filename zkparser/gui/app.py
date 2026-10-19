@@ -1,9 +1,12 @@
-"""Main window: the profile on the left, the search with its log and report on the right.
+"""Main window: what to do on the left, how the work goes — progress, log, report — on the right.
 
-Tabs: "Профиль" (where and for whom), "Слова и коды" (what to look for), "По бюджету" (every open notice of
-regions in a price range, no keywords), "Результаты" (what was found and why), "Мониторинг" (Telegram and the hourly
-schedule). Network work runs in a background thread; the window learns about
-its progress through a queue it polls every 100 ms and never touches widgets from that thread.
+The first tab is all a newcomer needs: "Поиск" asks for a region, a niche and a price and finds the open notices; a
+niche is a ready-made template, so the first search needs no words at all. "Результаты" shows what was found and why.
+"Профиль" holds the fine tuning — words, strong and minus words, codes, rarely needed filters folded away — and runs
+a profile over a period; "Мониторинг" sends new notices of the profiles to Telegram on a schedule.
+
+Network work runs in a background thread; the window learns about its progress through a queue it polls every
+100 ms and never touches widgets from that thread.
 """
 
 from __future__ import annotations
@@ -63,8 +66,18 @@ NEW_PROFILE = "— новый профиль —"
 NEW_MENU = "Новый профиль…"
 EMPTY_TEMPLATE = "Пустой"
 MAX_RESULT_CARDS = 60
+SEARCH_TAB, RESULTS_TAB, PROFILE_TAB, MONITORING_TAB = "Поиск", "Результаты", "Профиль", "Мониторинг"
 ALL_NOTICES = "Все закупки"
-PROFILE_FILTER, TEMPLATE_FILTER = "Профиль: ", "Шаблон: "
+MY_PROFILE = "Мой профиль: "  # a saved profile in the niche menu; templates are listed by their names
+PROFILE_FILTER, TEMPLATE_FILTER = "Профиль: ", "Шаблон: "  # how the niche menu was remembered before 0.9
+MORE = "Дополнительно: только или кроме заказчиков, чат Telegram, этап"
+FIRST_STEPS = (
+    "Как начать:\n"
+    "1. Выберите регион.\n"
+    "2. Выберите нишу — или оставьте «Все закупки».\n"
+    "3. Нажмите «Найти закупки»: отчёт Excel откроется сам.\n\n"
+    "Здесь будет виден ход поиска."
+)
 INTERVALS = ["30", "60", "120"]
 ENV_TEMPLATE = (
     "# Настройки Zakupki Parser. Файл не попадает в git: держите в нём токен бота.\n"
@@ -122,11 +135,11 @@ class App(ctk.CTk):
             segmented_button_unselected_hover_color=theme.NEUTRAL_BUTTON_HOVER,
             segmented_button_fg_color=theme.NEUTRAL_BUTTON, text_color=theme.TEXT)
         self.tabs.grid(row=0, column=0, sticky="nsew", padx=(0, 16))
-        self._build_profile_tab(self.tabs.add("Профиль"))
-        self._build_words_tab(self.tabs.add("Слова и коды"))
-        self._build_export_tab(self.tabs.add("По бюджету"))
-        self._build_results_tab(self.tabs.add("Результаты"))
-        self._build_monitoring_tab(self.tabs.add("Мониторинг"))
+        self._build_search_tab(self.tabs.add(SEARCH_TAB))
+        self._build_results_tab(self.tabs.add(RESULTS_TAB))
+        self._build_profile_tab(self.tabs.add(PROFILE_TAB))
+        self._build_monitoring_tab(self.tabs.add(MONITORING_TAB))
+        self.tabs.set(SEARCH_TAB)
         self._build_run_panel(content)
 
         handler = WindowLogHandler(self.events)
@@ -170,9 +183,77 @@ class App(ctk.CTk):
         self.appearance.pack(side="right")
         self._set_appearance(self.prefs.appearance)
 
-    def _build_profile_tab(self, tab: ctk.CTkBaseClass) -> None:
-        card = SectionCard(tab, "Профиль — что искать для ниши или клиента")
+    def _build_search_tab(self, tab: ctk.CTkBaseClass) -> None:
+        card = SectionCard(tab, "Найти открытые закупки",
+                           "Закупки, по которым ещё принимаются заявки. Сайт ЕИС годами не меняет этап «Подача "
+                           "заявок», поэтому программа сама сверяет срок подачи.")
         card.pack(fill="x")
+        grid = ctk.CTkFrame(card.body, fg_color="transparent")
+        grid.pack(fill="x")
+        grid.grid_columnconfigure(1, weight=1)
+        rows = iter(range(10))
+
+        def field(text: str, widget: ctk.CTkBaseClass, strong: bool = True) -> None:
+            row_number = next(rows)
+            caption = ctk.CTkLabel(grid, text=text, font=theme.font(13, "bold") if strong else theme.font(12),
+                                   text_color=theme.TEXT if strong else theme.TEXT_MUTED, anchor="w")
+            caption.grid(row=row_number, column=0, sticky="w", padx=(0, 14), pady=5)
+            widget.grid(row=row_number, column=1, sticky="ew", pady=5)
+
+        regions_row = ctk.CTkFrame(grid, fg_color="transparent")
+        neutral_button(regions_row, "Выбрать…", self._pick_export_regions, width=100).pack(side="left")
+        self.export_regions_label = ctk.CTkLabel(regions_row, text="", font=theme.font(13), text_color=theme.TEXT,
+                                                 anchor="w", justify="left", wraplength=440)
+        self.export_regions_label.pack(side="left", padx=10, fill="x", expand=True)
+        field("1. Регион", regions_row)
+
+        self.export_filter = ctk.CTkOptionMenu(
+            grid, values=[ALL_NOTICES], height=34, font=theme.font(13), dropdown_font=theme.font(13),
+            fg_color=theme.INPUT_BG, button_color=theme.NEUTRAL_BUTTON, button_hover_color=theme.NEUTRAL_BUTTON_HOVER,
+            text_color=theme.TEXT, dynamic_resizing=False)
+        self.export_filter.set(ALL_NOTICES)
+        field("2. Ниша", self.export_filter)
+        self.export_words = entry(grid, "необязательно, например: бумага")
+        field("    или слово", self.export_words, strong=False)
+
+        prices = ctk.CTkFrame(grid, fg_color="transparent")
+        self.export_price_from = entry(prices, "от, ₽", width=150)
+        self.export_price_from.pack(side="left")
+        label(prices, "—").pack(side="left", padx=8)
+        self.export_price_to = entry(prices, "до, ₽", width=150)
+        self.export_price_to.pack(side="left")
+        label(prices, "необязательно").pack(side="left", padx=10)
+        field("3. Цена", prices)
+
+        self.export_button = ctk.CTkButton(card.body, text="Найти закупки", width=260, height=46, corner_radius=12,
+                                           font=theme.font(17, "bold"), fg_color=theme.ACCENT,
+                                           hover_color=theme.ACCENT_HOVER, command=self._start_export)
+        self.export_button.pack(anchor="w", pady=(14, 0))
+        self.export_details = ctk.CTkSwitch(card.body, text="с позициями и ИНН заказчиков — дольше",
+                                            font=theme.font(12), text_color=theme.TEXT, progress_color=theme.ACCENT)
+        self.export_details.pack(anchor="w", pady=(10, 0))
+        note = ctk.CTkLabel(card.body, font=theme.font(12), text_color=theme.TEXT_MUTED, anchor="w", justify="left",
+                            text=f"Закупки, размещённые за {LOOKBACK_DAYS} дней. «Все закупки» собираются за "
+                                 "минуту-две. Нишу программа проверяет по каждому извещению: в первый раз это дольше, "
+                                 "потом извещения берутся из кэша.",
+                            wraplength=500)
+        note.pack(fill="x", pady=(10, 0))
+        wrap_to_width(card, [note])
+
+        set_entry(self.export_price_from, self.prefs.export_price_from)
+        set_entry(self.export_price_to, self.prefs.export_price_to)
+        set_entry(self.export_words, self.prefs.export_words)
+        if self.prefs.export_details:
+            self.export_details.select()
+        self._show_export_regions()
+
+    def _build_profile_tab(self, tab: ctk.CTkBaseClass) -> None:
+        self.profile_page = page = ctk.CTkScrollableFrame(tab, fg_color="transparent")
+        page.pack(fill="both", expand=True)
+        card = SectionCard(page, "Профиль — регионы, слова и коды одной ниши",
+                           "По профилю приходят новые закупки в Telegram (вкладка «Мониторинг»). Удобнее всего "
+                           "начать с шаблона ниши: меню «Новый профиль…».")
+        card.pack(fill="x", padx=(0, 6))
         row = ctk.CTkFrame(card.body, fg_color="transparent")
         row.pack(fill="x", pady=(0, 12))
         # Buttons are packed from the right first; the list of profiles takes whatever width is left.
@@ -192,27 +273,38 @@ class App(ctk.CTk):
             button_hover_color=theme.NEUTRAL_BUTTON_HOVER, text_color=theme.TEXT, dynamic_resizing=False)
         self.profile_menu.pack(side="left", fill="x", expand=True)
 
-        # Labels on the left of the fields: everything fits without scrolling on a laptop screen.
-        grid = ctk.CTkFrame(card.body, fg_color="transparent")
+        # Labels on the left of the fields, hints under them.
+        hints: list[ctk.CTkLabel] = []
+
+        def form(master: ctk.CTkBaseClass) -> Any:
+            grid = ctk.CTkFrame(master, fg_color="transparent")
+            # One width for the labels of every block: the folded fields line up with the others.
+            grid.grid_columnconfigure(0, minsize=round(170 * ctk.ScalingTracker.get_widget_scaling(grid)))
+            grid.grid_columnconfigure(1, weight=1)
+            rows = iter(range(20))
+
+            def field(text: str, widget: ctk.CTkBaseClass, hint: str = "") -> None:
+                row_number = next(rows)
+                label(grid, text).grid(row=row_number, column=0, sticky="nw", padx=(0, 14), pady=(10, 5))
+                widget.grid(row=row_number, column=1, sticky="ew", pady=5)
+                if hint:
+                    note = ctk.CTkLabel(grid, text=hint, font=theme.font(11), text_color=theme.TEXT_MUTED,
+                                        anchor="w", justify="left", wraplength=420)
+                    note.grid(row=next(rows), column=1, sticky="ew", pady=(0, 4))
+                    hints.append(note)
+
+            return grid, field
+
+        grid, field = form(card.body)
         grid.pack(fill="x")
-        grid.grid_columnconfigure(1, weight=1)
-        rows = iter(range(20))
-
-        def field(text: str, widget: ctk.CTkBaseClass) -> None:
-            row_number = next(rows)
-            label(grid, text).grid(row=row_number, column=0, sticky="w", padx=(0, 14), pady=5)
-            widget.grid(row=row_number, column=1, sticky="ew", pady=5)
-
         self.name = entry(grid, "Например: Канцтовары — Тюмень")
         field("Название", self.name)
-
         regions_row = ctk.CTkFrame(grid, fg_color="transparent")
         neutral_button(regions_row, "Выбрать…", self._pick_regions, width=100).pack(side="left")
         self.regions_label = ctk.CTkLabel(regions_row, text="", font=theme.font(13), text_color=theme.TEXT,
                                           anchor="w", justify="left", wraplength=440)
         self.regions_label.pack(side="left", padx=10, fill="x", expand=True)
         field("Регионы заказчиков", regions_row)
-
         prices = ctk.CTkFrame(grid, fg_color="transparent")
         self.price_from = entry(prices, "от, ₽", width=150)
         self.price_from.pack(side="left")
@@ -221,104 +313,71 @@ class App(ctk.CTk):
         self.price_to.pack(side="left")
         field("Начальная цена", prices)
 
-        self.customer_inn = entry(grid, "ИНН через запятую; пусто — любые")
+        self.keywords = textbox(grid, 90)
+        field("Ключевые слова", self.keywords,
+              "По одному на строку, ищутся словоформы: «картридж» найдёт «картриджей»; «канцеляр*» — начало слова; "
+              "несколько слов — все в названии или в одной позиции; \"фраза в кавычках\" — точный порядок.")
+        self.strong = textbox(grid, 72)
+        field("Сильные слова", self.strong,
+              "Ключевые слова, которые перевешивают минус-слово рядом с собой: \"доработк* программн*\" оставит "
+              "«Доработку программного обеспечения и продление лицензии», хотя «лицензи*» — минус-слово.")
+        self.minus = textbox(grid, 72)
+        field("Минус-слова", self.minus, "В названии отсеивают закупку, в позиции — только позицию.")
+        self.okpd2 = entry(grid, "17.23, 32.99.12")
+        field("ОКПД2", self.okpd2, "Начала кодов через запятую: «17.23» — вся группа.")
+        self.ktru = entry(grid, "нет")
+        field("КТРУ", self.ktru)
+
+        # Rarely needed: folded until opened or until the profile uses one of them.
+        self.more_button = ctk.CTkButton(card.body, text="▸ " + MORE, height=28, anchor="w", font=theme.font(13),
+                                         fg_color="transparent", hover_color=theme.NEUTRAL_BUTTON,
+                                         text_color=theme.ACCENT, command=self._toggle_more)
+        self.more_button.pack(fill="x", pady=(8, 0))
+        self.more, field = form(card.body)
+        self.more_shown = False
+        self.customer_inn = entry(self.more, "ИНН через запятую; пусто — любые")
         field("Только заказчики", self.customer_inn)
-        self.exclude_inn = entry(grid, "ИНН через запятую")
+        self.exclude_inn = entry(self.more, "ИНН через запятую")
         field("Кроме заказчиков", self.exclude_inn)
-        self.telegram_chat = entry(grid, "пусто — чат по умолчанию")
+        self.telegram_chat = entry(self.more, "пусто — чат по умолчанию")
         field("Telegram-чат", self.telegram_chat)
-        self.all_stages = ctk.CTkSwitch(grid, text="любой, а не только подача заявок", font=theme.font(13),
+        self.all_stages = ctk.CTkSwitch(self.more, text="любой, а не только подача заявок", font=theme.font(13),
                                         text_color=theme.TEXT, progress_color=theme.ACCENT)
         field("Этап закупки", self.all_stages)
+        wrap_to_width(card, hints, margin=220)
+
+        run = ctk.CTkFrame(card.body, fg_color="transparent")
+        run.pack(fill="x", pady=(14, 0))
+        ctk.CTkLabel(run, text="Проверить профиль: закупки, размещённые за", font=theme.font(13, "bold"),
+                     text_color=theme.TEXT, anchor="w").pack(fill="x")
+        self.period = segmented(run, list(PERIODS), lambda _: self._refresh_period())
+        self.period.set(self.prefs.period if self.prefs.period in PERIODS else PERIODS[0])
+        self.period.pack(fill="x", pady=(4, 0))
+        self.dates = dates = ctk.CTkFrame(run, fg_color="transparent")
+        self.date_from = entry(dates, "ДД.ММ.ГГГГ", width=120)
+        self.date_from.pack(side="left")
+        label(dates, "—").pack(side="left", padx=8)
+        self.date_to = entry(dates, "ДД.ММ.ГГГГ", width=120)
+        self.date_to.pack(side="left")
+        set_entry(self.date_from, self.prefs.date_from)
+        set_entry(self.date_to, self.prefs.date_to)
+        self.start_button = ctk.CTkButton(run, text="Найти по профилю", width=220, height=40, corner_radius=10,
+                                          font=theme.font(15, "bold"), fg_color=theme.ACCENT,
+                                          hover_color=theme.ACCENT_HOVER, command=self._start)
+        self.start_button.pack(anchor="w", pady=(10, 0))
+        self._refresh_period()  # the custom dates are shown only for "Свой период"
         note = "Файлы профилей — в папке profiles. Окно сохраняет файл целиком, без комментариев."
         ctk.CTkLabel(card.body, text=note, font=theme.font(12), text_color=theme.TEXT_MUTED, anchor="w").pack(
             fill="x", pady=(10, 0))
 
-    def _build_words_tab(self, tab: ctk.CTkBaseClass) -> None:
-        words = SectionCard(tab, "Ключевые слова",
-                            "По одному на строку, ищутся словоформы: «картридж» найдёт «картриджей». «канцеляр*» — "
-                            "начало слова. Несколько слов — все в названии или в одной позиции; \"фраза в кавычках\" — "
-                            "точный порядок.")
-        words.pack(fill="x", pady=(0, 12))
-        self.keywords = textbox(words.body, 96)
-        self.keywords.pack(fill="x")
-
-        row = ctk.CTkFrame(tab, fg_color="transparent")
-        row.pack(fill="x")
-        row.grid_columnconfigure((0, 1), weight=1, uniform="words")
-        minus = SectionCard(row, "Минус-слова", "В названии отсеивают закупку, в позиции — только позицию.")
-        minus.grid(row=0, column=0, sticky="nsew", padx=(0, 6))
-        self.minus = textbox(minus.body, 84)
-        self.minus.pack(fill="both", expand=True)
-        codes = SectionCard(row, "Коды позиций", "Начала кодов через запятую: «17.23» — вся группа.")
-        codes.grid(row=0, column=1, sticky="nsew", padx=(6, 0))
-        label(codes.body, "ОКПД2").pack(anchor="w")
-        self.okpd2 = entry(codes.body, "17.23, 32.99.12")
-        self.okpd2.pack(fill="x", pady=(2, 6))
-        label(codes.body, "КТРУ").pack(anchor="w")
-        self.ktru = entry(codes.body, "нет")
-        self.ktru.pack(fill="x", pady=(2, 0))
-
-    def _build_export_tab(self, tab: ctk.CTkBaseClass) -> None:
-        card = SectionCard(tab, "Открытые закупки по бюджету",
-                           "Закупки выбранных регионов, по которым ещё принимаются заявки: все или только вашей ниши. "
-                           "Сайт ЕИС годами не меняет этап «Подача заявок», поэтому программа сама сверяет срок "
-                           "подачи.")
-        card.pack(fill="x")
-        grid = ctk.CTkFrame(card.body, fg_color="transparent")
-        grid.pack(fill="x")
-        grid.grid_columnconfigure(1, weight=1)
-        rows = iter(range(10))
-
-        def field(text: str, widget: ctk.CTkBaseClass) -> None:
-            row_number = next(rows)
-            label(grid, text).grid(row=row_number, column=0, sticky="w", padx=(0, 14), pady=5)
-            widget.grid(row=row_number, column=1, sticky="ew", pady=5)
-
-        regions_row = ctk.CTkFrame(grid, fg_color="transparent")
-        neutral_button(regions_row, "Выбрать…", self._pick_export_regions, width=100).pack(side="left")
-        self.export_regions_label = ctk.CTkLabel(regions_row, text="", font=theme.font(13), text_color=theme.TEXT,
-                                                 anchor="w", justify="left", wraplength=440)
-        self.export_regions_label.pack(side="left", padx=10, fill="x", expand=True)
-        field("Регионы заказчиков", regions_row)
-
-        prices = ctk.CTkFrame(grid, fg_color="transparent")
-        self.export_price_from = entry(prices, "от, ₽", width=150)
-        self.export_price_from.pack(side="left")
-        label(prices, "—").pack(side="left", padx=8)
-        self.export_price_to = entry(prices, "до, ₽", width=150)
-        self.export_price_to.pack(side="left")
-        field("Начальная цена", prices)
-
-        self.export_filter = ctk.CTkOptionMenu(
-            grid, values=[ALL_NOTICES], height=34, font=theme.font(13), dropdown_font=theme.font(13),
-            fg_color=theme.INPUT_BG, button_color=theme.NEUTRAL_BUTTON, button_hover_color=theme.NEUTRAL_BUTTON_HOVER,
-            text_color=theme.TEXT, dynamic_resizing=False)
-        self.export_filter.set(ALL_NOTICES)
-        field("Ниша", self.export_filter)
-        self.export_words = entry(grid, "необязательно, например: бумага")
-        field("Слова", self.export_words)
-        self.export_details = ctk.CTkSwitch(grid, text="заказчик, ИНН и позиции из извещений — дольше",
-                                            font=theme.font(13), text_color=theme.TEXT, progress_color=theme.ACCENT)
-        field("Подробности", self.export_details)
-
-        self.export_button = ctk.CTkButton(card.body, text="Выгрузить в Excel", width=220, height=40, corner_radius=10,
-                                           font=theme.font(15, "bold"), fg_color=theme.ACCENT,
-                                           hover_color=theme.ACCENT_HOVER, command=self._start_export)
-        self.export_button.pack(anchor="w", pady=(12, 0))
-        note = ctk.CTkLabel(card.body, font=theme.font(12), text_color=theme.TEXT_MUTED, anchor="w", justify="left",
-                            text=f"Закупки, размещённые за {LOOKBACK_DAYS} дней. Без подробностей — запрос к сайту "
-                                 "на 50 закупок; с подробностями или нишей — ещё по запросу на каждую (потом из кэша).",
-                            wraplength=500)
-        note.pack(fill="x", pady=(10, 0))
-        wrap_to_width(card, [note])
-
-        set_entry(self.export_price_from, self.prefs.export_price_from)
-        set_entry(self.export_price_to, self.prefs.export_price_to)
-        set_entry(self.export_words, self.prefs.export_words)
-        if self.prefs.export_details:
-            self.export_details.select()
-        self._show_export_regions()
+    def _toggle_more(self, show: bool | None = None) -> None:
+        show = not self.more_shown if show is None else show
+        self.more_shown = show
+        if show:
+            self.more.pack(fill="x", after=self.more_button)
+        else:
+            self.more.pack_forget()
+        self.more_button.configure(text=("▾ " if show else "▸ ") + MORE)
 
     def _build_results_tab(self, tab: ctk.CTkBaseClass) -> None:
         self.results_header = ctk.CTkLabel(tab, text="Здесь появятся подошедшие закупки: нажмите «Найти закупки».",
@@ -381,31 +440,14 @@ class App(ctk.CTk):
         panel = ctk.CTkFrame(master, fg_color=theme.CARD_BG, corner_radius=14, border_width=1,
                              border_color=theme.CARD_BORDER)
         panel.grid(row=0, column=1, sticky="nsew")
-        ctk.CTkLabel(panel, text="Период размещения", font=theme.font(14, "bold"), text_color=theme.TEXT,
-                     anchor="w").pack(fill="x", padx=20, pady=(14, 4))
-        self.period = segmented(panel, list(PERIODS), lambda _: self._refresh_period())
-        self.period.set(self.prefs.period if self.prefs.period in PERIODS else PERIODS[0])
-        self.period.pack(fill="x", padx=20)
-        self.dates = dates = ctk.CTkFrame(panel, fg_color="transparent")
-        self.date_from = entry(dates, "ДД.ММ.ГГГГ", width=120)
-        self.date_from.pack(side="left")
-        label(dates, "—").pack(side="left", padx=8)
-        self.date_to = entry(dates, "ДД.ММ.ГГГГ", width=120)
-        self.date_to.pack(side="left")
-        set_entry(self.date_from, self.prefs.date_from)
-        set_entry(self.date_to, self.prefs.date_to)
-
-        self.start_button = ctk.CTkButton(panel, text="Найти закупки", height=46, corner_radius=12,
-                                          font=theme.font(17, "bold"), fg_color=theme.ACCENT,
-                                          hover_color=theme.ACCENT_HOVER, command=self._start)
-        self.start_button.pack(fill="x", padx=20, pady=(12, 6))
-        self._refresh_period()  # the custom dates are shown only for "Свой период"
+        ctk.CTkLabel(panel, text="Ход поиска", font=theme.font(14, "bold"), text_color=theme.TEXT,
+                     anchor="w").pack(fill="x", padx=20, pady=(14, 6))
         self.stop_button = ctk.CTkButton(panel, text="Остановить", height=38, corner_radius=10, font=theme.font(14),
                                          fg_color=theme.DANGER, hover_color=theme.DANGER_HOVER, command=self._stop)
         self.progress = ctk.CTkProgressBar(panel, height=10, corner_radius=5, progress_color=theme.ACCENT,
                                            fg_color=theme.NEUTRAL_BUTTON)
         self.progress.set(0)
-        self.progress.pack(fill="x", padx=20, pady=(10, 4))
+        self.progress.pack(fill="x", padx=20, pady=(4, 4))
         self.status = ctk.CTkLabel(panel, text="Готов к работе", font=theme.font(13), text_color=theme.TEXT_MUTED,
                                    anchor="w")
         self.status.pack(fill="x", padx=20)
@@ -444,7 +486,7 @@ class App(ctk.CTk):
                                       fg_color=theme.INPUT_BG, text_color=theme.TEXT, border_width=0,
                                       corner_radius=10, wrap="word")
         self.log_box.pack(fill="both", expand=True, padx=20)
-        self.log_box.insert("1.0", "Здесь появится ход поиска: регионы, скачанные извещения, итог.", "time")
+        self.log_box.insert("1.0", FIRST_STEPS)
         self.log_box.configure(state="disabled")
         self._apply_log_colors()
         self._show_output_dir()
@@ -503,6 +545,7 @@ class App(ctk.CTk):
         self.regions = list(profile.regions)
         self._show_regions()
         set_text(self.keywords, profile.keywords)
+        set_text(self.strong, profile.strong)
         set_text(self.minus, profile.minus)
         set_entry(self.okpd2, ", ".join(profile.okpd2))
         set_entry(self.ktru, ", ".join(profile.ktru))
@@ -515,6 +558,9 @@ class App(ctk.CTk):
             self.all_stages.select()
         else:
             self.all_stages.deselect()
+        # A folded filter must not work unseen.
+        used = profile.customer_inn or profile.exclude_customer_inn or profile.telegram_chat or profile.all_stages
+        self._toggle_more(bool(used) or self.more_shown)
 
     def _form_profile(self) -> Profile:
         """The profile as typed in the window, checked the same way as a profile file."""
@@ -522,6 +568,7 @@ class App(ctk.CTk):
             "name": self.name.get().strip() or "Без названия",
             "regions": [code[:2] for code in self.regions],
             "keywords": text_lines(self.keywords),
+            "strong": text_lines(self.strong),
             "minus": text_lines(self.minus),
             "okpd2": split_list(self.okpd2.get()),
             "ktru": split_list(self.ktru.get()),
@@ -571,7 +618,7 @@ class App(ctk.CTk):
 
     def _refresh_period(self) -> None:
         if self.period.get() == CUSTOM:
-            self.dates.pack(fill="x", padx=20, pady=(6, 0), before=self.start_button)
+            self.dates.pack(fill="x", pady=(6, 0), before=self.start_button)
         else:
             self.dates.pack_forget()
 
@@ -663,10 +710,12 @@ class App(ctk.CTk):
 
     # ------------------------------------------------------------------ export by budget
 
-    def _pick_export_regions(self) -> None:
+    def _pick_export_regions(self, then: Any = None) -> None:
         def done(selected: list[str]) -> None:
             self.export_regions = selected
             self._show_export_regions()
+            if selected and then:
+                self.after(100, then)
 
         RegionPicker(self, self.export_regions, done)
 
@@ -674,20 +723,19 @@ class App(ctk.CTk):
         _show_region_names(self.export_regions_label, self.export_regions)
 
     def _refresh_export_filters(self) -> None:
-        """Every open notice, or the ones of a niche: a saved profile or a template."""
-        values = [ALL_NOTICES, *(PROFILE_FILTER + name for name in self.profile_files),
-                  *(TEMPLATE_FILTER + name for name in self.templates)]
+        """Every open notice, or the ones of a niche: a template, ready to use, or a saved profile."""
+        values = [ALL_NOTICES, *self.templates, *(MY_PROFILE + name for name in self.profile_files)]
         self.export_filter.configure(values=values)
-        wanted = self.export_filter.get() if self._filters_loaded else self.prefs.export_filter
+        wanted = self.export_filter.get() if self._filters_loaded else _menu_choice(self.prefs.export_filter)
         self._filters_loaded = True  # from now on the menu keeps what the user picked
         self.export_filter.set(wanted if wanted in values else ALL_NOTICES)
 
     def _export_profile(self) -> Profile | None:
         choice = self.export_filter.get()
-        if choice.startswith(PROFILE_FILTER) and choice.removeprefix(PROFILE_FILTER) in self.profile_files:
-            return load_profile(self.profile_files[choice.removeprefix(PROFILE_FILTER)])
-        if choice.startswith(TEMPLATE_FILTER) and choice.removeprefix(TEMPLATE_FILTER) in self.templates:
-            return from_template(self.templates[choice.removeprefix(TEMPLATE_FILTER)])
+        if choice in self.templates:
+            return from_template(self.templates[choice])
+        if choice.startswith(MY_PROFILE) and choice.removeprefix(MY_PROFILE) in self.profile_files:
+            return load_profile(self.profile_files[choice.removeprefix(MY_PROFILE)])
         return None
 
     def _export_query(self) -> ExportQuery:
@@ -702,6 +750,9 @@ class App(ctk.CTk):
     def _start_export(self) -> None:
         if self._busy():
             return
+        if not self.export_regions:  # the one thing a first search needs: ask for it and go on
+            self._pick_export_regions(then=self._start_export)
+            return
         try:
             query = self._export_query()
         except ValueError as error:  # ProfileError too
@@ -709,7 +760,6 @@ class App(ctk.CTk):
             return
         out_dir = self._output_dir()
         self._begin(f"Открытые закупки: {_export_title(query)}")
-        self.export_button.configure(text="Идёт выгрузка…")
 
         def work() -> None:
             client = SiteClient()
@@ -758,7 +808,7 @@ class App(ctk.CTk):
         self.result_title.configure(text=f"{prefix}: открытых закупок {len(result.notices)}")
         self._show_report_card(path, stopped)
         if result.notices:
-            self.tabs.set("Результаты")
+            self.tabs.set(RESULTS_TAB)
 
     def _show_export(self, result: ExportResult) -> None:
         for child in self.results_list.winfo_children():
@@ -832,7 +882,7 @@ class App(ctk.CTk):
                              f"запросов к сайту {requests}")
         self._show_report_card(path, stopped)
         if profile_result.matches:
-            self.tabs.set("Результаты")
+            self.tabs.set(RESULTS_TAB)
 
     def _show_report_card(self, path: Path | None, stopped: bool) -> None:
         self.status.configure(text="Готов к работе")
@@ -1059,11 +1109,9 @@ class App(ctk.CTk):
         self.worker.start()
 
     def _set_running(self, running: bool) -> None:
-        self.start_button.configure(state="disabled" if running else "normal",
-                                    text="Идёт поиск…" if running else "Найти закупки")
-        self.export_button.configure(state="disabled" if running else "normal")
-        if not running:
-            self.export_button.configure(text="Выгрузить в Excel")
+        state = "disabled" if running else "normal"
+        self.start_button.configure(state=state, text="Идёт поиск…" if running else "Найти по профилю")
+        self.export_button.configure(state=state, text="Идёт поиск…" if running else "Найти закупки")
         if running:
             self.stop_button.configure(state="normal", text="Остановить")
             self.stop_button.pack(fill="x", padx=20, before=self.progress)
@@ -1189,6 +1237,15 @@ class App(ctk.CTk):
 def _show_region_names(widget: ctk.CTkLabel, codes: list[str]) -> None:
     names = [REGIONS[code] for code in codes if code in REGIONS]
     widget.configure(text=", ".join(names) or "не выбраны", text_color=theme.TEXT if names else theme.DANGER)
+
+
+def _menu_choice(remembered: str) -> str:
+    """The niche menu item remembered by an older version: "Шаблон: Мебель" is "Мебель" now."""
+    if remembered.startswith(TEMPLATE_FILTER):
+        return remembered.removeprefix(TEMPLATE_FILTER)
+    if remembered.startswith(PROFILE_FILTER):
+        return MY_PROFILE + remembered.removeprefix(PROFILE_FILTER)
+    return remembered
 
 
 def _export_title(query: ExportQuery) -> str:
