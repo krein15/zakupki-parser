@@ -1,4 +1,11 @@
-# Zakupki Parser — извещения о госзакупках 44-ФЗ в Excel
+<a href="https://kreinstudio.ru/">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/logo-dark@2x.png">
+    <img src="assets/brand/logo-light@2x.png" alt="krein — студия разработки" width="260">
+  </picture>
+</a>
+
+# Закупки Парсер — извещения о госзакупках 44-ФЗ в Excel
 
 [![Тесты](https://github.com/krein15/zakupki-parser/actions/workflows/tests.yml/badge.svg)](https://github.com/krein15/zakupki-parser/actions/workflows/tests.yml)
 
@@ -312,4 +319,4 @@ ruff check .
 
 ## Лицензия
 
-[MIT](LICENSE)
+[MIT](LICENSE) — для кода. Логотип krein в `assets/brand/` — знак автора, под MIT не распространяется.

@@ -27,6 +27,8 @@ from zkparser.gui.widgets import set_entry  # noqa: E402
 FRAME_MS = 400
 WIDTH = 1100  # the GIF is scaled down to this width
 SCROLL_STEPS = 12
+# The krein kit: the green of "~/" and of the cursor on light and on dark, the dark of the icon, the caption grey.
+BRAND_COLORS = [(0x0C, 0x9A, 0x4A), (0x5C, 0xF2, 0x8E), (0x0A, 0x0C, 0x0F), (0x12, 0x14, 0x18), (0x6F, 0x76, 0x80)]
 
 
 def main() -> None:
@@ -95,11 +97,26 @@ def save_gif(frames: list[Image.Image], output: Path) -> None:
             merged[-1] = (merged[-1][0], merged[-1][1] + FRAME_MS)
         else:
             merged.append((frame, FRAME_MS))
-    images = [frame.convert("P", palette=Image.ADAPTIVE, colors=128) for frame, _ in merged]
+    palette = shared_palette([frame for frame, _ in merged])
+    images = [frame.quantize(palette=palette, dither=Image.Dither.NONE) for frame, _ in merged]
     durations = [duration for _, duration in merged]
     durations[-1] = 2500  # rest on the last frame before the loop starts again
     output.parent.mkdir(parents=True, exist_ok=True)
     images[0].save(output, save_all=True, append_images=images[1:], duration=durations, loop=0, optimize=True)
+
+
+def shared_palette(frames: list[Image.Image]) -> Image.Image:
+    """One palette for all frames with the brand's colours kept exactly: a palette of its own for every frame turned
+    the green of the logo grey on some of them."""
+    thumbs = [frame.resize((frame.width // 2, frame.height // 2)) for frame in frames]
+    sample = Image.new("RGB", (thumbs[0].width, thumbs[0].height * len(thumbs)))
+    for index, thumb in enumerate(thumbs):
+        sample.paste(thumb, (0, index * thumb.height))
+    adaptive = sample.quantize(colors=256 - len(BRAND_COLORS), method=Image.Quantize.MEDIANCUT)
+    colors = adaptive.getpalette()[: 3 * (256 - len(BRAND_COLORS))]
+    palette = Image.new("P", (1, 1))
+    palette.putpalette(colors + [channel for color in BRAND_COLORS for channel in color])
+    return palette
 
 
 if __name__ == "__main__":

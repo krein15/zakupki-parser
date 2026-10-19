@@ -38,7 +38,7 @@ from ..pipeline import Found, RunResult, run_profiles
 from ..profiles import Profile, ProfileError, from_template, load_profile, load_templates, parse_profile, save_profile
 from ..regions import REGIONS
 from ..scheduler import MOSCOW, SchedulerError
-from ..settings import APP_NAME, app_data_dir, default_cache_dir, default_output_dir, profiles_dir
+from ..settings import app_data_dir, default_cache_dir, default_output_dir, profiles_dir
 from ..telegram import SecretFilter, TelegramBot, TelegramError
 from ..website.client import SiteClient
 from . import theme
@@ -66,6 +66,10 @@ NEW_PROFILE = "— новый профиль —"
 NEW_MENU = "Новый профиль…"
 EMPTY_TEMPLATE = "Пустой"
 MAX_RESULT_CARDS = 60
+TITLE = "Закупки Парсер"  # the name the window shows; folders and files keep APP_NAME, "Zakupki Parser"
+BRAND_URL = "https://kreinstudio.ru/"
+ICON_SIZE = (44, 44)
+LOGO_SIZE = (233, 46)  # the full logo, 1651×326, with its clear space: the drawing is 213 px wide (the minimum 200)
 SEARCH_TAB, RESULTS_TAB, PROFILE_TAB, MONITORING_TAB = "Поиск", "Результаты", "Профиль", "Мониторинг"
 ALL_NOTICES = "Все закупки"
 MY_PROFILE = "Мой профиль: "  # a saved profile in the niche menu; templates are listed by their names
@@ -116,7 +120,7 @@ class App(ctk.CTk):
         self._filters_loaded = False
         self._closing = False
 
-        self.title(f"{APP_NAME} {__version__}")
+        self.title(f"{TITLE} {__version__}")
         self._size_window(1240, 820)
         icon = theme.resource_path("assets/icon.ico")
         if icon.exists():
@@ -171,16 +175,31 @@ class App(ctk.CTk):
     def _build_header(self) -> None:
         header = ctk.CTkFrame(self, fg_color="transparent")
         header.pack(fill="x", padx=24, pady=(18, 14))
-        ctk.CTkLabel(header, text="ЗК", width=44, height=44, corner_radius=12, fg_color=theme.ACCENT,
-                     text_color="#FFFFFF", font=theme.font(17, "bold")).pack(side="left")
+        icon = _brand_image("icon-dark-512.png", "icon-dark-512.png", ICON_SIZE)
+        if icon:
+            ctk.CTkLabel(header, image=icon, text="").pack(side="left")
+        else:  # sources run without Pillow
+            ctk.CTkLabel(header, text=">_", width=44, height=44, corner_radius=12, fg_color="#0A0C0F",
+                         text_color="#5CF28E", font=theme.font(17, "bold")).pack(side="left")
         titles = ctk.CTkFrame(header, fg_color="transparent")
         titles.pack(side="left", padx=12)
-        ctk.CTkLabel(titles, text=APP_NAME, font=theme.font(21, "bold"), text_color=theme.TEXT).pack(anchor="w")
+        name = ctk.CTkFrame(titles, fg_color="transparent")
+        name.pack(anchor="w")
+        ctk.CTkLabel(name, text=TITLE, font=theme.font(21, "bold"), text_color=theme.TEXT).pack(side="left")
+        author = ctk.CTkLabel(name, text="by kreinstudio", font=theme.font(13), text_color=theme.TEXT_MUTED,
+                              cursor="hand2")
+        author.pack(side="left", padx=(8, 0), pady=(6, 0))
+        author.bind("<Button-1>", lambda _: webbrowser.open(BRAND_URL))
         ctk.CTkLabel(titles, text="Закупки 44-ФЗ под ваш ассортимент: отчёт в Excel и новые закупки в Telegram",
                      font=theme.font(13), text_color=theme.TEXT_MUTED).pack(anchor="w")
+        image = _brand_image("logo-light@2x.png", "logo-dark@2x.png", LOGO_SIZE)
+        logo = ctk.CTkLabel(header, image=image, text="", cursor="hand2") if image else None
+        if logo:
+            logo.pack(side="right")
+            logo.bind("<Button-1>", lambda _: webbrowser.open(BRAND_URL))
         self.appearance = segmented(header, ["Светлая", "Тёмная", "Системная"], self._set_appearance)
         self.appearance.set(self.prefs.appearance)
-        self.appearance.pack(side="right")
+        self.appearance.pack(side="right", padx=(0, 12 if logo else 0))
         self._set_appearance(self.prefs.appearance)
 
     def _build_search_tab(self, tab: ctk.CTkBaseClass) -> None:
@@ -518,7 +537,7 @@ class App(ctk.CTk):
             profile = load_profile(path)
         except ProfileError as error:
             self._log("error", str(error))
-            messagebox.showerror(APP_NAME, str(error), parent=self)
+            messagebox.showerror(TITLE, str(error), parent=self)
             return
         self.profile_path = path
         self.prefs.profile = name
@@ -1164,7 +1183,7 @@ class App(ctk.CTk):
 
     def _warn(self, message: str) -> None:
         self._log("warning", message)
-        messagebox.showwarning(APP_NAME, message, parent=self)
+        messagebox.showwarning(TITLE, message, parent=self)
 
     # ------------------------------------------------------------------ files and appearance
 
@@ -1208,7 +1227,7 @@ class App(ctk.CTk):
     def _on_close(self) -> None:
         self._save_preferences()
         if self._busy():
-            if not messagebox.askyesno(APP_NAME, "Поиск ещё идёт. Остановить и выйти?", parent=self):
+            if not messagebox.askyesno(TITLE, "Поиск ещё идёт. Остановить и выйти?", parent=self):
                 return
             self._closing = True
             self.cancel_event.set()
@@ -1237,6 +1256,18 @@ class App(ctk.CTk):
 def _show_region_names(widget: ctk.CTkLabel, codes: list[str]) -> None:
     names = [REGIONS[code] for code in codes if code in REGIONS]
     widget.configure(text=", ".join(names) or "не выбраны", text_color=theme.TEXT if names else theme.DANGER)
+
+
+def _brand_image(light: str, dark: str, size: tuple[int, int]) -> ctk.CTkImage | None:
+    """An image of the author's brand kit (assets/brand) for the light and the dark theme."""
+    try:
+        from PIL import Image
+    except ImportError:  # sources run without Pillow: the window works, only without the pictures
+        return None
+    paths = [theme.resource_path(f"assets/brand/{name}") for name in (light, dark)]
+    if not all(path.exists() for path in paths):
+        return None
+    return ctk.CTkImage(light_image=Image.open(paths[0]), dark_image=Image.open(paths[1]), size=size)
 
 
 def _menu_choice(remembered: str) -> str:

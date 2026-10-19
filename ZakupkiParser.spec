@@ -10,6 +10,7 @@ from PyInstaller.utils.hooks import collect_data_files, copy_metadata
 
 datas = [
     ("assets/icon.ico", "assets"),
+    ("assets/brand/*.png", "assets/brand"),  # the author's icon and logo in the header
     ("zkparser/templates/*.toml", "zkparser/templates"),  # niche templates of the "Новый профиль…" menu
     ("zkparser/certs/russian_trusted_root_ca.pem", "zkparser/certs"),
 ]
