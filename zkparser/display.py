@@ -9,6 +9,17 @@ from .models import Notice, Position
 
 MAX_POSITIONS = 20
 CURRENCY_SIGNS = {"RUB": "₽"}
+ESHOP = "частью 12 статьи 93"  # how the search and the XML name a purchase through an electronic shop
+ON_PLATFORM = "на площадке"  # where an electronic shop keeps its deadline: the site does not publish it
+
+
+def is_eshop(placing_way: str) -> bool:
+    return ESHOP in placing_way
+
+
+def no_deadline(placing_way: str) -> str:
+    """What to show in place of a missing application deadline."""
+    return f"срок подачи — {ON_PLATFORM}" if is_eshop(placing_way) else "срок подачи не указан"
 
 
 def money(value: Decimal | None, currency: str = "RUB") -> str:
@@ -121,7 +132,8 @@ def format_match(notice: Notice, reasons: tuple[str, ...], stage: str = "") -> s
         customer = f"{customers[0].customer.name} (ИНН {customers[0].customer.inn or 'не указан'})"
     else:
         customer = f"{len(customers)} заказчиков, совместная закупка"
-    deadline = f"заявки до {moment(notice.applications_end)}" if notice.applications_end else "срок подачи не указан"
+    deadline = (f"заявки до {moment(notice.applications_end)}" if notice.applications_end
+                else no_deadline(notice.placing_way))
     status = f" · {stage}" if stage else ""
     return "\n".join(
         [

@@ -231,3 +231,9 @@ def test_answer_and_edit_buttons():
     assert first["json"] == {"callback_query_id": "cb1", "text": "Отмечено"}
     assert second["url"].endswith("/editMessageReplyMarkup")
     assert second["json"]["message_id"] == 77
+
+
+def test_card_of_an_e_shop_purchase_sends_to_the_platform_for_the_deadline():
+    text = card("eshop_drug", matched_by=("«калия хлорид»",))
+    assert "⏳ срок подачи — на площадке" in text
+    assert " мл\n" in text  # "см[3*];^мл" of the notice

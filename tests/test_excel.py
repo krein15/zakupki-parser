@@ -150,3 +150,9 @@ def test_profiles_with_the_same_name_get_separate_files(tmp_path):
     assert first != second
     assert second.stem.endswith("(2)")
     assert first.exists() and second.exists()
+
+
+def test_an_e_shop_purchase_has_its_deadline_on_the_platform(tmp_path):
+    row = {cell.column_letter: cell for cell in export(tmp_path, [found("eshop")])["Закупки"][2]}
+    assert row["E"].value == "на площадке"
+    assert "электронный магазин: срок подачи предложений знает только площадка АО «Сбербанк-АСТ»" in row["N"].value

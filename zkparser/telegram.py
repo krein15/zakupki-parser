@@ -19,7 +19,7 @@ from typing import Any
 
 import requests
 
-from .display import money, plural
+from .display import money, no_deadline, plural
 from .excel import moscow_offset
 from .models import Notice
 from .pipeline import Found
@@ -42,6 +42,8 @@ UNITS = {
     "квадратный метр": "м²", "кубический метр": "м³", "метр": "м", "тонна": "т", "пачка": "пач.", "упаковка": "уп.",
     "комплект": "компл.", "набор": "набор", "рулон": "рул.", "флакон": "фл.", "ампула": "амп.",
     "условная единица": "усл. ед.", "сутки": "сут.", "день": "дн.", "услуга": "усл.",
+    "кубический сантиметр": "мл", "миллиграмм": "мг", "грамм": "г", "микрограмм": "мкг", "доза": "доз",
+    "международная единица биологической активности": "МЕ", "единица действия биологической активности": "ЕД",
 }
 
 
@@ -190,7 +192,7 @@ def notice_message(profile_name: str, found: Found, now: datetime) -> str:
         days = (found.hit.deadline - now.date()).days
         deadline = f"до {found.hit.deadline:%d.%m} ({'сегодня' if days == 0 else f'{days} дн.'})"
     else:
-        deadline = "срок подачи не указан"
+        deadline = no_deadline(notice.placing_way or found.hit.placing_way)
     customers = notice.customers
     if len(customers) == 1:
         customer = customers[0].customer.name

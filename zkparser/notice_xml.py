@@ -9,13 +9,18 @@ from the placing organization when that organization is the customer itself.
 
 A purchase through an electronic shop (ч. 12 ст. 93, epNotificationEZT2020) has no title, no application period and
 keeps its positions straight in purchaseObjectsInfo; even the site shows such a purchase without a name. The title is
-made of its position names, so the matching and the reports still see what is bought.
+made of its position names, so the matching and the reports still see what is bought. The end of its offers is known
+only to the platform: neither the XML, nor the search, nor the notice page of the site has it.
+
+A drug names its unit in OKEI's symbol notation ("см[3*];^мл") or with the symbol in brackets ("Штука (шт)"), while
+the other positions name the same OKEI codes in words. Drugs get the words too, so the reports show one spelling.
 
 The XML comes from outside, so it is parsed without DTDs, entity expansion or network access.
 """
 
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
@@ -27,6 +32,13 @@ from .models import CustomerPart, Notice, Organization, Position
 PARSER = etree.XMLParser(resolve_entities=False, no_network=True, load_dtd=False, remove_comments=True)
 ROOT_PREFIX = "epNotification"
 TITLE_POSITIONS = 3  # a notice without a title is named after its first positions
+# The OKEI codes of drug units as the other positions name them (12 thousand notices of Ural, October 2026).
+OKEI_NAMES = {
+    "111": "Кубический сантиметр; миллилитр", "113": "Кубический метр", "161": "Миллиграмм", "163": "Грамм",
+    "164": "Микрограмм", "639": "Доза", "796": "Штука", "876": "Условная единица",
+    "9910": "Международная единица биологической активности", "9920": "Единица действия биологической активности",
+}
+SYMBOL = re.compile(r"\s*\([^()]*\)$")  # "Штука (шт)"
 
 
 class NoticeFormatError(ValueError):
@@ -167,13 +179,22 @@ def _positions(info: etree._Element | None) -> tuple[Position, ...]:
                 ktru_code=_text(ktru, "code"),
                 ktru_name=_text(ktru, "name"),
                 quantity=_decimal(item, "drugQuantityCustomersInfo/total"),
-                unit=_text(unit, "name"),
+                unit=_drug_unit(unit),
                 price=_decimal(item, "pricePerUnit"),
                 total=_decimal(item, "positionPrice"),
                 is_drug=True,
             )
         )
     return tuple(positions)
+
+
+def _drug_unit(unit: etree._Element | None) -> str:
+    """"см[3*];^мл" (OKEI 111) → "Кубический сантиметр; миллилитр"; an unknown code only loses the notation."""
+    name = OKEI_NAMES.get(_text(unit, "code"))
+    if name:
+        return name
+    name = SYMBOL.sub("", _text(unit, "name"))
+    return name.replace("[3*]", "³").replace("[2*]", "²").replace(";^", "; ")
 
 
 def _findall(element: etree._Element | None, path: str) -> list[etree._Element]:

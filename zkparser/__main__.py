@@ -23,7 +23,7 @@ from . import monitor_cli
 from .audit import parse_keywords, run_audit
 from .cache import NoticeCache
 from .config import load_telegram_settings
-from .display import days_left, format_match, format_notice, money, price_range, regions_count
+from .display import days_left, format_match, format_notice, money, no_deadline, price_range, regions_count
 from .excel import (
     audit_file_name,
     build_file_name,
@@ -362,7 +362,7 @@ def print_listing(region: str, collected: int, total: int) -> None:
 def print_open(result: ExportResult) -> None:
     for item in result.notices[:MAX_PRINTED]:
         hit = item.hit
-        deadline = f"до {hit.deadline:%d.%m.%Y}" if hit.deadline else "срок не указан"
+        deadline = f"до {hit.deadline:%d.%m.%Y}" if hit.deadline else no_deadline(hit.placing_way)
         days = item.days_left(result.today)
         left = f" ({days_left(days)})" if days is not None else ""
         title = hit.title if len(hit.title) <= 90 else hit.title[:89] + "…"

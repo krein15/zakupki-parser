@@ -32,7 +32,7 @@ from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.worksheet.worksheet import Worksheet
 
 from .audit import AuditResult, AuditRow
-from .display import money, plural, price_range, regions_count
+from .display import ON_PLATFORM, is_eshop, money, plural, price_range, regions_count
 from .export import ExportResult, OpenNotice
 from .models import Notice
 from .pipeline import SEARCH_ONLY, Found, ProfileResult
@@ -275,7 +275,7 @@ def _audit_row(row: AuditRow, now: datetime, side: str, *, both: bool) -> list[A
         notice.reg_number,
         notice.title,
         notice.max_price,
-        _local(notice.applications_end),
+        _deadline(_local(notice.applications_end), notice.placing_way),
         found.stage(now),
         customer,
         _regions(found.regions),
@@ -415,7 +415,7 @@ def _notice_row(found: Found, now: datetime) -> list[Any]:
         notice.title,
         "\n".join(found.verdict.reasons),
         notice.max_price,
-        _local(notice.applications_end),
+        _deadline(_local(notice.applications_end), notice.placing_way),
         moscow_offset(notice.applications_end),
         found.stage(now),
         notice.placing_way,
@@ -434,6 +434,8 @@ def _notes(notice: Notice) -> str:
     notes = []
     if notice.document_type == SEARCH_ONLY:
         notes.append("извещение не скачалось с сайта: проверено только название из поиска, позиций и ИНН нет")
+    if is_eshop(notice.placing_way) and notice.applications_end is None:
+        notes.append(f"электронный магазин: срок подачи предложений знает только площадка {notice.etp}".rstrip())
     if len(notice.customers) > 1:
         notes.append(f"совместная закупка, заказчиков: {len(notice.customers)}")
     if notice.quantity_undefined:
@@ -451,7 +453,7 @@ def _open_row(item: OpenNotice, today: date) -> list[Any]:
         hit.reg_number,
         hit.title,
         hit.price,
-        hit.deadline,
+        _deadline(hit.deadline, hit.placing_way),
         item.days_left(today),
         hit.placing_way,
         hit.organization,
@@ -464,14 +466,15 @@ def _open_row(item: OpenNotice, today: date) -> list[Any]:
 def _detailed_row(item: OpenNotice, today: date) -> list[Any]:
     hit, notice = item.hit, item.notice
     if notice is None:  # the XML did not download: what the search showed
-        return [hit.reg_number, hit.title, hit.price, hit.deadline, "", item.days_left(today), hit.placing_way,
+        return [hit.reg_number, hit.title, hit.price, _deadline(hit.deadline, hit.placing_way), "",
+                item.days_left(today), hit.placing_way,
                 hit.organization, "", _regions(item.regions), "", hit.published, "подробности не скачались"]
     customers = [part.customer for part in notice.customers]
     return [
         notice.reg_number,
         notice.title,
         notice.max_price,
-        _local(notice.applications_end) or hit.deadline,
+        _deadline(_local(notice.applications_end) or hit.deadline, notice.placing_way),
         moscow_offset(notice.applications_end),
         item.days_left(today),
         notice.placing_way,
@@ -486,6 +489,11 @@ def _detailed_row(item: OpenNotice, today: date) -> list[Any]:
 
 def _regions(codes: tuple[str, ...]) -> str:
     return ", ".join(REGIONS.get(code, code) for code in codes)
+
+
+def _deadline(day: date | datetime | None, placing_way: str) -> date | datetime | str | None:
+    """The end of applications; an electronic shop's is known to its platform only, the site does not publish it."""
+    return ON_PLATFORM if day is None and is_eshop(placing_way) else day
 
 
 def _local(moment: datetime | None) -> datetime | None:

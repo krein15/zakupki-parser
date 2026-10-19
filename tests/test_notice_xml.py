@@ -69,7 +69,7 @@ def test_drug_positions():
     assert drug.name == "ЛЕВОДОПА+ЭНТАКАПОН+КАРБИДОПА"
     assert (drug.okpd2_code, drug.ktru_code) == ("21.20.10.234", "21.20.10.234-00019")
     assert (drug.quantity, drug.unit, drug.price, drug.total) == (
-        Decimal("1560"), "шт", Decimal("149.99"), Decimal("233984.40")
+        Decimal("1560"), "Штука", Decimal("149.99"), Decimal("233984.40")
     )
 
 
@@ -161,6 +161,7 @@ def test_an_e_shop_drug_purchase_keeps_its_drugs_in_the_notification():
     notice = parse_notice((FIXTURES / "notice_eshop_drug.xml").read_bytes())
     (position,) = notice.positions
     assert position.is_drug and position.okpd2_code == "21.20.10.134"
+    assert position.unit == "Кубический сантиметр; миллилитр"  # the notice says "см[3*];^мл"
     assert notice.title.startswith("КАЛИЯ ХЛОРИД")
 
 
@@ -170,3 +171,21 @@ def test_a_title_made_of_many_positions_counts_the_rest():
 
     positions = tuple(Position(name=name) for name in ("Стол", "Стул", "Стол", "Шкаф", "Тумба", "Полка"))
     assert _title_from(positions) == "Стол; Стул; Шкаф и ещё 2 позиции"
+
+
+@pytest.mark.parametrize(
+    ("code", "name", "unit"),
+    [
+        ("111", "см[3*];^мл", "Кубический сантиметр; миллилитр"),
+        ("796", "Штука (шт)", "Штука"),
+        ("9912", "млн. МЕ", "млн. МЕ"),
+        ("1", "дм[3*];^л (дм[3*];^л)", "дм³; л"),
+    ],
+)
+def test_a_drug_unit_is_named_in_words(code, name, unit):
+    from lxml import etree
+
+    from zkparser.notice_xml import _drug_unit
+
+    element = etree.fromstring(f"<manualUserOKEI><code>{code}</code><name>{name}</name></manualUserOKEI>")
+    assert _drug_unit(element) == unit

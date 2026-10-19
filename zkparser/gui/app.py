@@ -25,7 +25,7 @@ import customtkinter as ctk
 from .. import __version__, scheduler
 from ..cache import NoticeCache
 from ..config import CHAT_KEY, TOKEN_KEY, load_telegram_settings, primary_env_file, save_env_value
-from ..display import days_left, moment, money, price_range, regions_count
+from ..display import days_left, moment, money, no_deadline, price_range, regions_count
 from ..excel import build_file_name, export_file_name, export_open_notices, export_profile, moscow_offset
 from ..export import LOOKBACK_DAYS, ExportQuery, ExportResult, OpenNotice, export_open
 from ..fetch import STOPPED, FetchReport, problems
@@ -636,7 +636,7 @@ class App(ctk.CTk):
         top = ctk.CTkFrame(card, fg_color="transparent")
         top.pack(fill="x", padx=14, pady=(10, 0))
         deadline = (f"заявки до {moment(notice.applications_end)} ({moscow_offset(notice.applications_end)})"
-                    if notice.applications_end else "срок подачи не указан")
+                    if notice.applications_end else no_deadline(notice.placing_way or found.hit.placing_way))
         ctk.CTkLabel(top, text=f"{money(notice.max_price, notice.currency)} · {deadline}", font=theme.font(13, "bold"),
                      text_color=theme.TEXT, anchor="w").pack(side="left")
         stage = found.stage(datetime.now().astimezone())
@@ -784,7 +784,7 @@ class App(ctk.CTk):
         if notice and notice.applications_end:
             deadline = f"заявки до {moment(notice.applications_end)} ({moscow_offset(notice.applications_end)})"
         else:
-            deadline = f"заявки до {hit.deadline:%d.%m.%Y}" if hit.deadline else "срок подачи не указан"
+            deadline = f"заявки до {hit.deadline:%d.%m.%Y}" if hit.deadline else no_deadline(hit.placing_way)
         price = money(notice.max_price, notice.currency) if notice else money(hit.price)
         ctk.CTkLabel(top, text=f"{price} · {deadline}", font=theme.font(13, "bold"), text_color=theme.TEXT,
                      anchor="w").pack(side="left")
