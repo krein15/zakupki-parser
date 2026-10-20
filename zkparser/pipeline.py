@@ -4,6 +4,9 @@ profile. One download serves any number of niches or clients.
 A notice whose XML never came through is still checked — by what the search results show: its title, price and the
 organization that placed it. Positions and codes are unknown then, so only the words of the title can match, and the
 reports say so (SEARCH_ONLY).
+
+Given the ids of the OKPD2 classifier, a run downloads only the notices the profiles may want — those with their codes
+or with their words in the title (shortlist.py); the rest are checked by their titles only, as above.
 """
 
 from __future__ import annotations
@@ -15,13 +18,14 @@ from datetime import UTC, date, datetime
 from .cache import NoticeCache
 from .fetch import Cancel, FetchReport, Progress, fetch_notices
 from .matching import Matcher, Verdict
-from .models import CustomerPart, Notice, Organization
+from .models import Notice
 from .notice_xml import NoticeFormatError, parse_notice
 from .profiles import Profile
+from .shortlist import SEARCH_ONLY, can_shortlist, search_only_notice, shortlist
+from .website.okpd2 import Okpd2Ids
 from .website.search import Client, SearchHit, SearchQuery, Stage
 
 APPLICATIONS_STAGE = "Подача заявок"  # how the search results name Stage.APPLICATIONS
-SEARCH_ONLY = "search"  # Notice.document_type of a notice known only from the search results
 # The site keeps "Подача заявок" for years after the deadline (in Tyumen 749 of 855 such notices had closed, the
 # oldest in 2014), so a notice past its deadline is shown as closed whatever the site says.
 CLOSED_STAGE = "Приём заявок окончен"
@@ -44,17 +48,6 @@ class Found:
     def search_only(self) -> bool:
         """The XML did not come through: only the title was checked, positions are unknown."""
         return self.notice.document_type == SEARCH_ONLY
-
-
-def search_only_notice(hit: SearchHit) -> Notice:
-    """What the search results tell about a notice whose XML could not be downloaded."""
-    organization = Organization(name=hit.organization)
-    return Notice(
-        reg_number=hit.reg_number, version=0, document_type=SEARCH_ONLY, url=hit.url, title=hit.title,
-        placing_way=hit.placing_way, placing_way_code="", etp="", published=None, applications_start=None,
-        applications_end=None, max_price=hit.price, currency="RUB", placer=organization, placer_role="",
-        customers=(CustomerPart(organization),), positions=(),
-    )
 
 
 def actual_stage(hit: SearchHit, now: datetime, deadline: datetime | None = None) -> str:
@@ -96,14 +89,23 @@ def run_profiles(
     region_done: RegionDone | None = None,
     cancel: Cancel | None = None,
     now: datetime | None = None,
+    ids: Okpd2Ids | None = None,
 ) -> RunResult:
+    """``ids`` — the OKPD2 classifier: with it only the notices the profiles may want are downloaded."""
     now = now or datetime.now(UTC)
     matchers = [Matcher(profile) for profile in profiles]  # a broken keyword surfaces before any download
     result = RunResult([ProfileResult(profile) for profile in profiles])
 
     found: dict[str, tuple[SearchHit, set[str]]] = {}  # a joint purchase can come up in several regions
     for region, query in _queries(profiles, start, end):
-        report = fetch_notices(client, cache, query, progress, cancel)
+        local = [(profile, matcher) for profile, matcher in zip(profiles, matchers, strict=True)
+                 if region in profile.regions]
+        choose = None
+        if ids is not None and can_shortlist(profile for profile, _ in local):
+            def choose(hits: list[SearchHit], query: SearchQuery = query, local: list = local) -> set[str]:
+                return shortlist(client, ids, query, hits, [profile for profile, _ in local],
+                                 [matcher for _, matcher in local])
+        report = fetch_notices(client, cache, query, progress, cancel, choose=choose)
         result.reports[region] = report
         if region_done:
             region_done(region, report)

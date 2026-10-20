@@ -48,6 +48,10 @@ class SearchQuery:
     price_from: int | None = None  # initial maximum price, rubles
     price_to: int | None = None
     stages: tuple[Stage, ...] = (Stage.APPLICATIONS,)  # empty — any stage
+    # Only the notices with one of these OKPD2 codes (or a nested one) in a position. The site needs the ids of its
+    # classifier for that (website/okpd2.py); the codes alone it ignores.
+    okpd2: tuple[str, ...] = ()
+    okpd2_ids: tuple[str, ...] = ()
 
     def params(self, page: int = 1) -> dict[str, str]:
         regions = ",".join(self.regions)
@@ -70,6 +74,9 @@ class SearchQuery:
             params["priceToGeneral"] = str(self.price_to)
         for stage in self.stages:
             params[stage.value] = "on"
+        if self.okpd2_ids:
+            params.update(okpd2Ids=",".join(self.okpd2_ids), okpd2IdsCodes=",".join(self.okpd2),
+                          okpd2IdsWithNested="on")
         return params
 
     def split(self) -> tuple[SearchQuery, SearchQuery]:

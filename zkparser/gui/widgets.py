@@ -95,6 +95,39 @@ def segmented(master: ctk.CTkBaseClass, values: list[str], command: Callable[[st
         text_color=theme.TEXT, fg_color=theme.NEUTRAL_BUTTON)
 
 
+class ExamplesDialog(ctk.CTkToplevel):
+    """Links of a few fitting notices, for a profile made of what they share."""
+
+    def __init__(self, master: ctk.CTk, on_done: Callable[[str], None]) -> None:
+        super().__init__(master, fg_color=theme.APP_BG)
+        self.title("Профиль по примерам")
+        self.geometry("560x420")
+        self.transient(master)
+        self.after(50, self.grab_set)
+        self._on_done = on_done
+        hint = ("Вставьте ссылки или номера 2–5 закупок, которые вам подходят, — по одной на строку. Программа "
+                "возьмёт их коды ОКПД2 и общие слова и соберёт профиль. Лишнее потом можно удалить.")
+        note = ctk.CTkLabel(self, text=hint, font=theme.font(13), text_color=theme.TEXT, anchor="w", justify="left",
+                            wraplength=510)
+        note.pack(fill="x", padx=16, pady=(16, 8))
+        self.text = textbox(self, 220)
+        self.text.pack(fill="both", expand=True, padx=16)
+        self.text.focus_set()
+        buttons = ctk.CTkFrame(self, fg_color="transparent")
+        buttons.pack(fill="x", padx=16, pady=16)
+        accent_button(buttons, "Собрать профиль", self._done, width=160).pack(side="right")
+        neutral_button(buttons, "Отмена", self._close, width=110).pack(side="left")
+
+    def _done(self) -> None:
+        text = self.text.get("1.0", "end")
+        self._close()
+        self._on_done(text)
+
+    def _close(self) -> None:
+        self.grab_release()
+        self.destroy()
+
+
 class RegionPicker(ctk.CTkToplevel):
     """A dialog with a checkbox per region and a search box."""
 

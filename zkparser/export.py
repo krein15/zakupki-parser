@@ -12,11 +12,14 @@ days, 701 in 180, 14 116 with no window).
 The search shows the organization that placed the notice, often an authorized body rather than the customer. With
 ``details`` the XML of every open notice is downloaded (one request each, cached) for the real customers with their
 INNs, the exact deadline with its time zone and the positions. With a ``profile`` the details are downloaded too and
-only the notices that fit the profile stay: the open notices of a niche, with the reason each one fits.
+only the notices that fit the profile stay: the open notices of a niche, with the reason each one fits. Given the ids
+of the OKPD2 classifier, only the notices with the niche's codes or words in the title are downloaded (shortlist.py):
+the first search of a niche takes minutes instead of an hour.
 """
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
@@ -28,8 +31,12 @@ from .models import Notice
 from .notice_xml import NoticeFormatError, parse_notice
 from .pipeline import NO_DEADLINE
 from .profiles import Profile
+from .shortlist import can_shortlist, shortlist
 from .website.client import SiteError
+from .website.okpd2 import Okpd2Ids
 from .website.search import Client, SearchHit, SearchQuery, Stage, search
+
+log = logging.getLogger("zkparser.website")
 
 LOOKBACK_DAYS = 180
 
@@ -86,6 +93,7 @@ class ExportResult:
     listed: int = 0  # distinct notices the search gave
     closed: int = 0  # of them past the deadline, though the site still says "Подача заявок"
     unmatched: int = 0  # open, but not fitting the profile
+    skipped: int = 0  # of the unmatched, not even downloaded: neither the niche's codes nor its words in the title
     downloads: FetchReport | None = None  # with details
     broken: list[tuple[str, str]] = field(default_factory=list)  # notices whose XML could not be parsed
     error: str = ""  # why the run stopped early; what was collected is still exported
@@ -104,8 +112,10 @@ def export_open(
     listing: Listing | None = None,
     progress: Progress | None = None,
     cancel: Cancel | None = None,
+    ids: Okpd2Ids | None = None,
 ) -> ExportResult:
-    """``now`` is an aware datetime; its date in the computer's time zone is "today"."""
+    """``now`` is an aware datetime; its date in the computer's time zone is "today". ``ids`` — the OKPD2 classifier:
+    with it a niche downloads only the notices with its codes or words in the title."""
     today = now.date()
     result = ExportResult(query, today, today - timedelta(days=LOOKBACK_DAYS))
     found: dict[str, tuple[SearchHit, list[str]]] = {}
@@ -140,17 +150,28 @@ def export_open(
         OpenNotice(hit, tuple(regions)) for hit, regions in found.values()
         if hit.deadline is None or hit.deadline >= today
     ]
+    profile = query.profile
+    if profile is not None and ids is not None and can_shortlist([profile]) and candidates and not result.error:
+        every_region = SearchQuery(query.regions, result.since, today, text=query.text, price_from=query.price_from,
+                                   price_to=query.price_to, stages=(Stage.APPLICATIONS,))
+        try:
+            wanted = shortlist(client, ids, every_region, [item.hit for item in candidates], [profile])
+        except SiteError as error:
+            log.warning("Не удалось отобрать закупки по кодам ниши (%s): скачиваются все открытые", error)
+        else:
+            result.skipped = sum(item.hit.reg_number not in wanted for item in candidates)
+            candidates = [item for item in candidates if item.hit.reg_number in wanted]
     if query.detailed and candidates and not result.error:
         candidates = _with_details(client, cache, candidates, now, result, progress, cancel)
-    result.closed = result.listed - len(candidates)
-    if query.profile is not None:
-        matcher = Matcher(query.profile)
+    result.closed = result.listed - len(candidates) - result.skipped
+    if profile is not None:
+        matcher = Matcher(profile)
         fitting = []
         for item in candidates:
             verdict = matcher.evaluate(item.notice) if item.notice else None
             if verdict and verdict.matched:
                 fitting.append(replace(item, verdict=verdict))
-        result.unmatched = len(candidates) - len(fitting)
+        result.unmatched = len(candidates) - len(fitting) + result.skipped
         candidates = fitting
     result.notices = sorted(candidates, key=_order)
     return result

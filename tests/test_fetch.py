@@ -7,7 +7,7 @@ from datetime import date, datetime, timedelta
 from conftest import FakeSite, numbers
 
 from zkparser.cache import NoticeCache
-from zkparser.fetch import CACHED, DOWNLOADED, FAILED, MAX_FAILURES_IN_ROW, fetch_notices
+from zkparser.fetch import CACHED, DOWNLOADED, FAILED, MAX_FAILURES_IN_ROW, chosen, fetch_notices
 from zkparser.website.client import RateLimited, SiteError
 from zkparser.website.notice import NOTICE_XML_PATH
 from zkparser.website.search import SearchQuery
@@ -139,3 +139,23 @@ def test_search_failure_is_reported(tmp_path):
         report = fetch_notices(DownSite({}), cache, QUERY)
     assert report.found == 0
     assert report.error
+
+
+
+def test_only_the_chosen_notices_are_downloaded(tmp_path):
+    site = FakeSite({DAY: numbers(4)})
+    with NoticeCache(tmp_path) as cache:
+        report = fetch_notices(site, cache, QUERY, choose=lambda hits: {hits[0].reg_number, hits[2].reg_number})
+    assert (report.found, report.downloaded, report.skipped) == (4, 2, 2)
+    assert len(report.hits) == 4  # the matching still sees everything the search found
+    assert chosen(report) == ", для скачивания отобрано 2"
+
+
+def test_when_choosing_fails_everything_is_downloaded(tmp_path):
+    def choose(hits):
+        raise SiteError("справочник не ответил")
+
+    with NoticeCache(tmp_path) as cache:
+        report = fetch_notices(FakeSite({DAY: numbers(3)}), cache, QUERY, choose=choose)
+    assert (report.downloaded, report.skipped) == (3, 0)
+    assert chosen(report) == ""

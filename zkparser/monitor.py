@@ -27,6 +27,7 @@ from .fetch import Cancel, Progress
 from .pipeline import Found, ProfileResult, RegionDone, RunResult, run_profiles
 from .profiles import Profile
 from .telegram import SKIP, TAKE, TelegramBot, TelegramError, feedback_buttons, notice_message
+from .website.okpd2 import Okpd2Ids
 from .website.search import Client
 
 log = logging.getLogger("zkparser.monitor")
@@ -252,10 +253,11 @@ def monitor(
     progress: Progress | None = None,
     region_done: RegionDone | None = None,
     cancel: Cancel | None = None,
+    ids: Okpd2Ids | None = None,
 ) -> MonitorResult:
     start, end = monitoring_period(profiles, state, today)
     run = run_profiles(
-        client, cache, profiles, start, end, progress=progress, region_done=region_done, cancel=cancel
+        client, cache, profiles, start, end, progress=progress, region_done=region_done, cancel=cancel, ids=ids
     )
     result = MonitorResult(start, end, run)
 

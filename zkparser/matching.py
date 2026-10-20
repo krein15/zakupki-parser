@@ -50,6 +50,19 @@ class Morphology:
             found = self._lemmas[word] = frozenset(forms | {word})
         return found
 
+    def best(self, word: str) -> tuple[str, str]:
+        """The most likely reading of the word: its normal form and part of speech ("NOUN", "ADJF"…)."""
+        parse = self._analyzer.parse(word)[0]
+        return normalize(parse.normal_form), str(parse.tag.POS or "")
+
+    def phrase(self, adjective: str, noun: str) -> str:
+        """"информационной системы" → "информационная система": the pair in the nominative, the way people write it."""
+        head = self._analyzer.parse(noun)[0]
+        number = "plur" if head.tag.number == "plur" and head.normal_form == head.word else "sing"
+        grammemes = {"nomn", number} | ({head.tag.gender} if number == "sing" and head.tag.gender else set())
+        agreed = self._analyzer.parse(adjective)[0].inflect(grammemes)
+        return f"{agreed.word if agreed else adjective} {head.normal_form}"
+
 
 @cache
 def default_morphology() -> Morphology:

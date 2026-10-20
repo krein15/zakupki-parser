@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import re
 from datetime import date, datetime, timedelta, timezone
 
 import pytest
@@ -14,8 +16,10 @@ from zkparser.display import days_left, price_range, regions_count, short_money
 from zkparser.excel import DETAILED_COLUMNS, OPEN_COLUMNS, export_file_name, export_open_notices
 from zkparser.export import LOOKBACK_DAYS, ExportQuery, export_open
 from zkparser.fetch import STOPPED
+from zkparser.notice_xml import parse_notice
 from zkparser.profiles import from_template, load_templates
 from zkparser.website.notice import NOTICE_XML_PATH
+from zkparser.website.okpd2 import CLASSIFIER_PATH, Okpd2Ids
 from zkparser.website.search import SEARCH_PATH
 
 TYUMEN, KHMAO = "72000000000", "86000000000"
@@ -51,7 +55,11 @@ def entry(number: str, deadline: str, price: str = "1 000 000,00 ₽", title: st
 
 
 class OpenSite:
-    """One page of search results per region; notice XML from the fixtures."""
+    """One page of search results per region; notice XML from the fixtures.
+
+    Like the real site, the OKPD2 classifier gives an id for a code, and a search with ids lists only the notices
+    with such a code in a position (the codes are read from the fixtures).
+    """
 
     def __init__(self, by_region: dict[str, list[str]]):
         self.by_region = by_region
@@ -61,10 +69,27 @@ class OpenSite:
         self.calls.append((path, params))
         if path == NOTICE_XML_PATH:
             return (FIXTURES / f"notice_{NOTICES[params['regNumber']]}.xml").read_bytes()
+        if path == CLASSIFIER_PATH:
+            code = params["value"]
+            return json.dumps({"children": [{"code": code, "key": f"id {code}", "children": None}]}).encode()
         assert path == SEARCH_PATH
-        blocks = self.by_region.get(params["customerPlace"], [])
+        blocks = [block for region in params["customerPlace"].split(",") for block in self.by_region.get(region, [])]
+        if params.get("okpd2Ids"):
+            codes = tuple(params["okpd2IdsCodes"].split(","))
+            blocks = [block for block in blocks if self._has_code(block, codes)]
         return (f'<html><body><div class="search-results__total">{len(blocks)} записей</div>{"".join(blocks)}'
                 "</body></html>").encode()
+
+    @staticmethod
+    def _has_code(block: str, codes: tuple[str, ...]) -> bool:
+        number = re.search(r"regNumber=(\d+)", block).group(1)
+        if number not in NOTICES:
+            return False
+        notice = parse_notice((FIXTURES / f"notice_{NOTICES[number]}.xml").read_bytes())
+        return any(position.okpd2_code.startswith(codes) for position in notice.positions)
+
+    def classifier_requests(self) -> list[str]:
+        return [params["value"] for path, params in self.calls if path == CLASSIFIER_PATH]
 
     def searches(self) -> list[dict]:
         return [params for path, params in self.calls if path == SEARCH_PATH]
@@ -287,6 +312,7 @@ def test_a_profile_keeps_only_the_open_notices_of_its_niche(tmp_path):
 
 def test_export_command_with_a_template(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(cli, "datetime", Frozen)
+    monkeypatch.setattr(cli, "okpd2_ids_path", lambda: tmp_path / "okpd2_ids.json")
     monkeypatch.setattr(cli, "SiteClient", lambda: StatsSite(OpenSite({TYUMEN: TYUMEN_RESULTS})))
     code = cli.main(["export", "-r", "72", "--template", "топливо", "--no-excel", "--cache-dir", str(tmp_path)])
     out = capsys.readouterr().out
@@ -294,3 +320,36 @@ def test_export_command_with_a_template(tmp_path, monkeypatch, capsys):
     assert "профиль «Топливо и ГСМ»" in out
     assert "Подходят профилю «Топливо и ГСМ»:" in out
     assert "Почему: «горюче-смазочн*»" in out
+
+
+
+def test_a_niche_downloads_only_the_notices_with_its_codes_or_words(tmp_path):
+    """The fuel notice has the code 19.20 and the words; drugs, tomato paste and the audit have neither."""
+    site = OpenSite({TYUMEN: TYUMEN_RESULTS})
+    ids = Okpd2Ids(site, tmp_path / "ids.json")
+    result = run(site, tmp_path, ExportQuery((TYUMEN,), profile=FUEL_PROFILE), ids=ids)
+    assert site.downloads() == [FUEL]
+    assert [item.hit.reg_number for item in result.notices] == [FUEL]
+    assert (result.closed, result.unmatched, result.skipped) == (2, 3, 3)
+    coded = [params for params in site.searches() if params.get("okpd2Ids")]
+    assert [params["okpd2IdsCodes"] for params in coded] == [",".join(FUEL_PROFILE.okpd2)]
+    assert coded[0]["okpd2IdsWithNested"] == "on"
+
+    again = OpenSite({TYUMEN: TYUMEN_RESULTS})  # the ids are remembered: the classifier is asked once
+    run(again, tmp_path, ExportQuery((TYUMEN,), profile=FUEL_PROFILE), ids=Okpd2Ids(again, tmp_path / "ids.json"))
+    assert again.classifier_requests() == []
+
+
+class NoClassifier(OpenSite):
+    def get(self, path, params=None):
+        if path == CLASSIFIER_PATH:
+            return b"<html>Service unavailable</html>"
+        return super().get(path, params)
+
+
+def test_without_the_classifier_every_open_notice_is_downloaded(tmp_path):
+    site = NoClassifier({TYUMEN: TYUMEN_RESULTS})
+    result = run(site, tmp_path, ExportQuery((TYUMEN,), profile=FUEL_PROFILE), ids=Okpd2Ids(site))
+    assert sorted(site.downloads()) == sorted([DRUGS, JOINT, FUEL, AUDIT])
+    assert [item.hit.reg_number for item in result.notices] == [FUEL]
+    assert result.skipped == 0

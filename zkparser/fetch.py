@@ -28,6 +28,7 @@ RESTING = "пропущено: не скачивается"
 
 Progress = Callable[[int, int, SearchHit, str], None]  # number, total, notice, one of the statuses above
 Cancel = Callable[[], bool]  # asked between notices: True stops the run, what was downloaded stays in the cache
+Choose = Callable[[list[SearchHit]], set[str]]  # the registry numbers worth downloading among what the search found
 STOPPED = "Остановлено по запросу"
 
 
@@ -38,6 +39,7 @@ class FetchReport:
     cached: int = 0
     failed: list[tuple[str, str]] = field(default_factory=list)  # registry number, reason
     resting: list[str] = field(default_factory=list)  # failed in earlier runs too: not tried this time
+    skipped: int = 0  # not chosen for download: neither the niche's codes nor its words in the title
     truncated: bool = False  # the search hit the site's limit of 5 000 results
     error: str = ""  # why the run stopped early; empty if it went through
     hits: list[SearchHit] = field(default_factory=list)  # everything the search found
@@ -49,7 +51,11 @@ def fetch_notices(
     query: SearchQuery,
     progress: Progress | None = None,
     cancel: Cancel | None = None,
+    *,
+    choose: Choose | None = None,
 ) -> FetchReport:
+    """Search and download. ``choose`` picks the notices worth downloading (see shortlist.py); when it cannot —
+    the site fails it — every notice is downloaded, as without it."""
     report = FetchReport()
     try:
         result = search(client, query)
@@ -57,7 +63,13 @@ def fetch_notices(
         report.error = str(error)
         return report
     report.hits, report.truncated = result.hits, result.truncated
-    download_notices(client, cache, report, progress, cancel, probe=lambda: read_page(client, query, 1))
+    only = None
+    if choose is not None:
+        try:
+            only = choose(result.hits)
+        except SiteError as error:
+            log.warning("Не удалось отобрать закупки по кодам ниши (%s): скачиваются все", error)
+    download_notices(client, cache, report, progress, cancel, probe=lambda: read_page(client, query, 1), only=only)
     return report
 
 
@@ -69,16 +81,20 @@ def download_notices(
     cancel: Cancel | None = None,
     *,
     probe: Callable[[], object] | None = None,
+    only: set[str] | None = None,
 ) -> None:
-    """Keep the XML of every notice in ``report.hits`` in the cache; counts and the reason to stop go to the report.
+    """Keep the XML of the notices in ``report.hits`` in the cache — of those in ``only`` when it is given; counts and
+    the reason to stop go to the report.
 
     ``probe`` asks the site something it surely answers (the search page of the query) when no notice has come
     through yet in this run and several have failed in a row.
     """
+    hits = report.hits if only is None else [hit for hit in report.hits if hit.reg_number in only]
     report.found = len(report.hits)
+    report.skipped = len(report.hits) - len(hits)
     failures_in_row = 0
     last_good = ""  # a notice the site gave in this run: asking for it again tells whether the site is up
-    for number, hit in enumerate(report.hits, 1):
+    for number, hit in enumerate(hits, 1):
         if cancel and cancel():
             report.error = STOPPED
             return
@@ -116,7 +132,12 @@ def download_notices(
                 last_good = hit.reg_number
                 status = DOWNLOADED
         if progress:
-            progress(number, report.found, hit, status)
+            progress(number, len(hits), hit, status)
+
+
+def chosen(report: FetchReport) -> str:
+    """", для скачивания отобрано 40" for a region's line when the niche picked what to download; empty otherwise."""
+    return f", для скачивания отобрано {report.found - report.skipped}" if report.skipped else ""
 
 
 def problems(report: FetchReport) -> str:

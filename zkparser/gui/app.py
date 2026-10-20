@@ -29,22 +29,25 @@ from .. import __version__, scheduler
 from ..cache import NoticeCache
 from ..config import CHAT_KEY, TOKEN_KEY, load_telegram_settings, primary_env_file, save_env_value
 from ..display import days_left, moment, money, no_deadline, price_range, regions_count
+from ..examples import Suggestion, load_examples, parse_numbers, suggest, to_profile
 from ..excel import build_file_name, export_file_name, export_open_notices, export_profile, moscow_offset
 from ..export import LOOKBACK_DAYS, ExportQuery, ExportResult, OpenNotice, export_open
-from ..fetch import STOPPED, FetchReport, problems
+from ..fetch import STOPPED, FetchReport, chosen, problems
 from ..monitor import MonitorResult, MonitorState, monitor
 from ..monitor_cli import TEST_MESSAGE, bot_line, parse_time, state_path
 from ..pipeline import Found, RunResult, run_profiles
 from ..profiles import Profile, ProfileError, from_template, load_profile, load_templates, parse_profile, save_profile
 from ..regions import REGIONS
 from ..scheduler import MOSCOW, SchedulerError
-from ..settings import app_data_dir, default_cache_dir, default_output_dir, profiles_dir
+from ..settings import app_data_dir, default_cache_dir, default_output_dir, okpd2_ids_path, profiles_dir
 from ..telegram import SecretFilter, TelegramBot, TelegramError
 from ..website.client import SiteClient
+from ..website.okpd2 import Okpd2Ids
 from . import theme
 from .forms import period_text, rubles, safe_file_name, short_path, split_list, without_path
 from .preferences import CUSTOM, PERIODS, Preferences, period_dates
 from .widgets import (
+    ExamplesDialog,
     RegionPicker,
     SectionCard,
     accent_button,
@@ -65,6 +68,7 @@ LOG_COLORS = {"warning": theme.WARNING, "error": theme.DANGER, "success": theme.
 NEW_PROFILE = "— новый профиль —"
 NEW_MENU = "Новый профиль…"
 EMPTY_TEMPLATE = "Пустой"
+BY_EXAMPLES = "По примерам закупок…"
 MAX_RESULT_CARDS = 60
 TITLE = "Закупки Парсер"  # the name the window shows; folders and files keep APP_NAME, "Zakupki Parser"
 BRAND_URL = "https://kreinstudio.ru/"
@@ -253,8 +257,8 @@ class App(ctk.CTk):
         self.export_details.pack(anchor="w", pady=(10, 0))
         note = ctk.CTkLabel(card.body, font=theme.font(12), text_color=theme.TEXT_MUTED, anchor="w", justify="left",
                             text=f"Закупки, размещённые за {LOOKBACK_DAYS} дней. «Все закупки» собираются за "
-                                 "минуту-две. Нишу программа проверяет по каждому извещению: в первый раз это дольше, "
-                                 "потом извещения берутся из кэша.",
+                                 "минуту-две. Для ниши программа сначала отбирает закупки по её кодам и словам "
+                                 "в названии и скачивает только их — обычно несколько минут, потом быстрее.",
                             wraplength=500)
         note.pack(fill="x", pady=(10, 0))
         wrap_to_width(card, [note])
@@ -280,7 +284,8 @@ class App(ctk.CTk):
         accent_button(row, "Сохранить", self._save_profile, width=106).pack(side="right", padx=(8, 0))
         self.templates = {template.name: template for template in load_templates()}
         self.template_menu = ctk.CTkOptionMenu(
-            row, values=[EMPTY_TEMPLATE, *self.templates], command=self._new_from_template, width=150, height=34,
+            row, values=[BY_EXAMPLES, EMPTY_TEMPLATE, *self.templates], command=self._new_from_template, width=150,
+            height=34,
             font=theme.font(13), dropdown_font=theme.font(13), fg_color=theme.NEUTRAL_BUTTON,
             button_color=theme.NEUTRAL_BUTTON, button_hover_color=theme.NEUTRAL_BUTTON_HOVER, text_color=theme.TEXT,
             dynamic_resizing=False)
@@ -551,6 +556,9 @@ class App(ctk.CTk):
     def _new_from_template(self, choice: str) -> None:
         """A new, not yet saved profile: words and codes from the template, regions kept from the form."""
         self.template_menu.set(NEW_MENU)
+        if choice == BY_EXAMPLES:
+            ExamplesDialog(self, self._collect_examples)
+            return
         if choice not in self.templates:
             self._new_profile()
             return
@@ -558,6 +566,42 @@ class App(ctk.CTk):
         self.profile_menu.set(NEW_PROFILE)
         self._show_profile(from_template(self.templates[choice], tuple(self.regions)))
         self._log("info", f"Шаблон «{choice}»: проверьте регионы и слова, затем «Сохранить».")
+
+    def _collect_examples(self, text: str) -> None:
+        """Download the example notices and fill the form with what they share."""
+        if self._busy():
+            return
+        numbers = parse_numbers(text)
+        if not numbers:
+            self._warn("Не нашёл номеров закупок: вставьте ссылки на закупки ЕИС или их 19-значные номера")
+            return
+        self._begin(f"Профиль по примерам: закупок {len(numbers)}")
+
+        def work() -> None:
+            with NoticeCache(default_cache_dir()) as cache:
+                notices, problems = load_examples(SiteClient(), cache, numbers)
+            self.events.put(("examples_done", (notices, problems, suggest(notices) if notices else None)))
+
+        self._run_in_background(work, "examples")
+
+    def _finish_examples(self, notices: list, problems: list[str], suggestion: Suggestion | None) -> None:
+        self._set_running(False)
+        self.status.configure(text="Готов к работе")
+        self.progress.set(1)
+        for problem in problems:
+            self._log("warning", f"Не прочитана {problem}")
+        if suggestion is None:
+            return
+        for notice in notices:
+            self._log("info", f"Пример: {notice.title[:90]}")
+        for note in suggestion.notes:
+            self._log("info", note)
+        self.profile_path = None
+        self.profile_menu.set(NEW_PROFILE)
+        self._show_profile(to_profile(suggestion, "Профиль по примерам", tuple(self.regions)))
+        self.tabs.set(PROFILE_TAB)
+        self._log("success", "Профиль собран: уберите лишние слова и коды (откуда что взялось — выше в журнале), "
+                             "затем «Сохранить».")
 
     def _show_profile(self, profile: Profile) -> None:
         set_entry(self.name, profile.name)
@@ -670,7 +714,8 @@ class App(ctk.CTk):
 
             with NoticeCache(default_cache_dir()) as cache:
                 result = run_profiles(client, cache, [profile], start, end, progress=progress,
-                                      region_done=region_done, cancel=self.cancel_event.is_set)
+                                      region_done=region_done, cancel=self.cancel_event.is_set,
+                                      ids=Okpd2Ids(client, okpd2_ids_path()))
             generated_at = datetime.now().replace(microsecond=0)
             path = None
             try:
@@ -796,7 +841,8 @@ class App(ctk.CTk):
 
             with NoticeCache(default_cache_dir()) as cache:
                 result = export_open(client, cache, query, datetime.now().astimezone(), listing=listing,
-                                     progress=progress, cancel=self.cancel_event.is_set)
+                                     progress=progress, cancel=self.cancel_event.is_set,
+                                     ids=Okpd2Ids(client, okpd2_ids_path()))
             generated_at = datetime.now().replace(microsecond=0)
             path = None
             try:
@@ -818,6 +864,10 @@ class App(ctk.CTk):
                       f"{REGIONS.get(code, code)}: с этапом «Подача заявок» {count.listed}, открыто {count.open}{cut}")
         if result.error and not stopped:
             self._log("warning", f"Выгрузка остановлена: {result.error}. В отчёте — то, что успело собраться.")
+        if result.skipped:
+            opened = len(result.notices) + result.unmatched
+            self._log("info", f"Скачивались только закупки с кодами ниши или её словами в названии: "
+                              f"{opened - result.skipped} из {opened}")
         if result.downloads and result.downloads.failed:
             self._log("warning", f"Не скачалось извещений: {len(result.downloads.failed)} — в отчёте без подробностей")
         for number, reason in result.broken:
@@ -1070,11 +1120,12 @@ class App(ctk.CTk):
                 NoticeCache(default_cache_dir()) as cache,
                 MonitorState(app_data_dir() / "monitor.sqlite3") as state,
             ):
-                result = monitor(SiteClient(), cache, state, profiles, today=now.astimezone(MOSCOW).date(), now=now,
+                client = SiteClient()
+                result = monitor(client, cache, state, profiles, today=now.astimezone(MOSCOW).date(), now=now,
                                  bot=bot, default_chat=settings.chat, out_dir=out_dir,
                                  region_done=lambda region, report: self.events.put(
                                      ("log", ("info", _region_line(region, report)))),
-                                 cancel=self.cancel_event.is_set)
+                                 cancel=self.cancel_event.is_set, ids=Okpd2Ids(client, okpd2_ids_path()))
             self.events.put(("monitor_done", result))
 
         self._run_in_background(work, "monitor")
@@ -1155,6 +1206,8 @@ class App(ctk.CTk):
                     self._finish_search(*payload)
                 elif kind == "export_done":
                     self._finish_export(*payload)
+                elif kind == "examples_done":
+                    self._finish_examples(*payload)
                 elif kind == "monitor_done":
                     self._finish_monitor(payload)
                 elif kind == "failed":
@@ -1291,7 +1344,7 @@ def _export_title(query: ExportQuery) -> str:
 
 
 def _region_line(region: str, report: FetchReport) -> str:
-    return (f"{REGIONS.get(region, region)}: найдено {report.found}, скачано {report.downloaded}, "
+    return (f"{REGIONS.get(region, region)}: найдено {report.found}{chosen(report)}, скачано {report.downloaded}, "
             f"из кэша {report.cached}{problems(report)}")
 
 

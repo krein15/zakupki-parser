@@ -24,6 +24,7 @@ from .audit import parse_keywords, run_audit
 from .cache import NoticeCache
 from .config import load_telegram_settings
 from .display import days_left, format_match, format_notice, money, no_deadline, price_range, regions_count
+from .examples import load_examples, parse_numbers, suggest, to_profile
 from .excel import (
     audit_file_name,
     build_file_name,
@@ -34,14 +35,23 @@ from .excel import (
     headline,
 )
 from .export import LOOKBACK_DAYS, ExportQuery, ExportResult, export_open
-from .fetch import CACHED, STOPPED, FetchReport, fetch_notices, problems
+from .fetch import CACHED, STOPPED, FetchReport, chosen, fetch_notices, problems
 from .notice_xml import NoticeFormatError, parse_notice
 from .pipeline import ProfileResult, run_profiles
-from .profiles import ProfileError, Template, from_template, load_profile, load_templates, save_profile
+from .profiles import (
+    ProfileError,
+    Template,
+    dump_profile,
+    from_template,
+    load_profile,
+    load_templates,
+    save_profile,
+)
 from .regions import REGIONS, resolve_region
-from .settings import default_cache_dir, default_output_dir, profiles_dir
+from .settings import default_cache_dir, default_output_dir, okpd2_ids_path, profiles_dir
 from .website.client import SiteClient, SiteError
 from .website.notice import download_notice
+from .website.okpd2 import Okpd2Ids
 from .website.search import SearchHit, SearchQuery, Stage
 
 DATE_FORMATS = ("%Y-%m-%d", "%d.%m.%Y")
@@ -137,6 +147,15 @@ def build_parser() -> argparse.ArgumentParser:
     templates.add_argument(
         "-o", "--out", type=Path, metavar="ФАЙЛ", help="куда сохранить профиль (по умолчанию в папку profiles)"
     )
+    examples = commands.add_parser(
+        "examples", help="профиль по примерам: коды и слова, общие для подходящих закупок"
+    )
+    examples.add_argument("links", nargs="+", metavar="ССЫЛКА", help="ссылки или номера 2–5 подходящих закупок")
+    examples.add_argument("-n", "--name", default="Профиль по примерам", help="название профиля")
+    examples.add_argument("-r", "--region", action="append", default=[], metavar="РЕГИОН",
+                          help="регион профиля; по умолчанию — регионы заказчиков примеров")
+    examples.add_argument("-o", "--out", type=Path, metavar="ФАЙЛ", help="сохранить профиль в файл")
+    add_cache_dir(examples)
     monitor_cli.add_commands(commands, add_cache_dir)
     return parser
 
@@ -240,8 +259,8 @@ def print_download(number: int, total: int, hit: SearchHit, status: str) -> None
 
 
 def print_region(region: str, report: FetchReport) -> None:
-    print(f"{REGIONS[region]}: найдено {report.found}, скачано {report.downloaded}, из кэша {report.cached}"
-          f"{problems(report)}")
+    print(f"{REGIONS[region]}: найдено {report.found}{chosen(report)}, скачано {report.downloaded}, "
+          f"из кэша {report.cached}{problems(report)}")
 
 
 def write_reports(results: list[ProfileResult], start: date, end: date, out_dir: Path) -> list[Path]:
@@ -270,7 +289,8 @@ def run_match(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     with NoticeCache(args.cache_dir or default_cache_dir()) as cache:
         try:
             result = run_profiles(
-                client, cache, profiles, start, end, progress=print_download, region_done=print_region
+                client, cache, profiles, start, end, progress=print_download, region_done=print_region,
+                ids=Okpd2Ids(client, okpd2_ids_path()),
             )
         except ProfileError as error:
             parser.error(str(error))
@@ -324,7 +344,8 @@ def run_export(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int
     print(f"Открытые закупки: {' · '.join(conditions)} · размещены за {LOOKBACK_DAYS} дней")
     with NoticeCache(args.cache_dir or default_cache_dir()) as cache:
         try:
-            result = export_open(client, cache, query, now, listing=print_listing, progress=print_download)
+            result = export_open(client, cache, query, now, listing=print_listing, progress=print_download,
+                                 ids=Okpd2Ids(client, okpd2_ids_path()))
         except KeyboardInterrupt:
             print("\nОстановлено.")
             return 130
@@ -337,6 +358,9 @@ def run_export(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int
     open_count = len(result.notices) + result.unmatched
     print(f"Открыто {open_count}, срок подачи уже прошёл у {result.closed} из {result.listed}.")
     if profile is not None:
+        if result.skipped:
+            print(f"Скачивались только закупки с кодами ниши или её словами в названии: {open_count - result.skipped} "
+                  f"из {open_count}.")
         print(f"Подходят профилю «{profile.name}»: {len(result.notices)} из {open_count}.")
     print()
     print_open(result)
@@ -477,6 +501,37 @@ def run_templates(args: argparse.Namespace, parser: argparse.ArgumentParser) -> 
     return 0
 
 
+def run_examples(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
+    numbers = parse_numbers(" ".join(args.links))
+    if not numbers:
+        parser.error("не нашёл номеров закупок: дайте ссылки на закупки ЕИС или их 19-значные номера")
+    try:
+        regions = tuple(dict.fromkeys(resolve_region(value) for value in args.region))
+    except ValueError as error:
+        parser.error(str(error))
+    with NoticeCache(args.cache_dir or default_cache_dir()) as cache:
+        notices, problems = load_examples(SiteClient(), cache, numbers)
+    for problem in problems:
+        print(f"Не прочитана: {problem}")
+    if not notices:
+        return 1
+    for notice in notices:
+        print(f"Пример: {notice.reg_number} · {notice.title[:90]}")
+    suggestion = suggest(notices)
+    print("\nОткуда что взялось:")
+    for note in suggestion.notes:
+        print(f"  {note}")
+    profile = to_profile(suggestion, args.name, regions)
+    print("\nЛишнее удалите, нужное добавьте — это черновик, минус-слов в нём нет.\n")
+    print(dump_profile(profile))
+    if args.out:
+        if not profile.regions:
+            parser.error("у примеров не определился регион — укажите его: --region 72")
+        save_profile(profile, args.out)
+        print(f"Профиль сохранён: {args.out}")
+    return 0
+
+
 def run_regions() -> int:
     for code, name in sorted(REGIONS.items(), key=lambda item: item[1]):
         print(f"{code[:2]}  {name}")
@@ -494,6 +549,8 @@ def main(argv: list[str] | None = None) -> int:
         return monitor_cli.run(args, parser)
     if args.command == "templates":
         return run_templates(args, parser)
+    if args.command == "examples":
+        return run_examples(args, parser)
     if args.command == "regions":
         return run_regions()
     if args.command == "show":

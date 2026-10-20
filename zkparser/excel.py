@@ -635,8 +635,10 @@ def _write_export(sheet: Worksheet, result: ExportResult, generated_at: datetime
         ("Из них срок подачи уже прошёл", result.closed),
     ]
     if query.profile is not None:
-        pairs += [("Открыты", len(result.notices) + result.unmatched),
-                  ("Подходят профилю — в выгрузке", len(result.notices))]
+        pairs.append(("Открыты", len(result.notices) + result.unmatched))
+        if result.skipped:
+            pairs.append(("Не скачивались: ни кодов, ни слов ниши в названии", result.skipped))
+        pairs.append(("Подходят профилю — в выгрузке", len(result.notices)))
     else:
         pairs.append(("Открыты — в выгрузке", len(result.notices)))
     if len(query.regions) > 1:

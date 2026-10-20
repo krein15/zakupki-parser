@@ -20,6 +20,11 @@ def default_cache_dir() -> Path:
     return app_data_dir() / "cache"
 
 
+def okpd2_ids_path() -> Path:
+    """The ids of OKPD2 codes in the site's classifier: they do not change, so they are kept between runs."""
+    return app_data_dir() / "okpd2_ids.json"
+
+
 def default_output_dir() -> Path:
     return Path.home() / "Documents" / APP_NAME
 

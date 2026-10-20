@@ -20,14 +20,15 @@ from . import scheduler
 from .bot import Listener, report_check, report_delivery, watch_bot
 from .cache import NoticeCache
 from .config import CHAT_KEY, TelegramSettings, load_telegram_settings, primary_env_file, save_env_value
-from .fetch import STOPPED, FetchReport, problems
+from .fetch import STOPPED, FetchReport, chosen, problems
 from .monitor import MonitorResult, MonitorState, monitor
 from .profiles import ProfileError, load_profile
 from .regions import REGIONS
 from .scheduler import MOSCOW, SchedulerError
-from .settings import app_data_dir, default_cache_dir, default_output_dir
+from .settings import app_data_dir, default_cache_dir, default_output_dir, okpd2_ids_path
 from .telegram import SecretFilter, TelegramBot, TelegramError
 from .website.client import SiteClient
+from .website.okpd2 import Okpd2Ids
 
 log = logging.getLogger("zkparser.monitor")
 
@@ -132,8 +133,9 @@ def run_monitor(args: argparse.Namespace, parser: argparse.ArgumentParser) -> in
         MonitorState(state_path()) as state,
     ):
         try:
+            client = SiteClient()
             result = monitor(
-                SiteClient(),
+                client,
                 cache,
                 state,
                 profiles,
@@ -143,6 +145,7 @@ def run_monitor(args: argparse.Namespace, parser: argparse.ArgumentParser) -> in
                 default_chat=settings.chat,
                 out_dir=None if args.no_excel else args.out or default_output_dir(),
                 region_done=_log_region,
+                ids=Okpd2Ids(client, okpd2_ids_path()),
             )
         except ProfileError as error:
             log.error("%s", error)
@@ -235,8 +238,8 @@ def _single_instance(path: Path) -> IO[str] | None:
 
 def _log_region(region: str, report: FetchReport) -> None:
     log.info(
-        "%s: найдено %d, скачано %d, из кэша %d%s",
-        REGIONS[region], report.found, report.downloaded, report.cached, problems(report),
+        "%s: найдено %d%s, скачано %d, из кэша %d%s",
+        REGIONS[region], report.found, chosen(report), report.downloaded, report.cached, problems(report),
     )
 
 
