@@ -39,6 +39,7 @@ from .models import Notice
 from .pipeline import SEARCH_ONLY, Found, ProfileResult
 from .profiles import Profile
 from .regions import REGIONS
+from .website.search import LAW_NAMES
 
 HEADER_FILL = PatternFill("solid", fgColor="2B2D42")
 HEADER_FONT = Font(bold=True, color="FFFFFF")
@@ -587,6 +588,7 @@ def _write_profile(sheet: Worksheet, result: ProfileResult, start: date, end: da
             ("Сильные слова", ", ".join(profile.strong) or "—"),
             ("Минус-слова", ", ".join(profile.minus) or "—"),
             ("Фильтры мусора", ", ".join(FILTERS[key].title for key in profile.filters) or "—"),
+            ("Типы торгов", ", ".join(LAW_NAMES[law] for law in profile.laws)),
             ("ОКПД2", ", ".join(profile.okpd2) or "—"),
             ("КТРУ", ", ".join(profile.ktru) or "—"),
             ("Только заказчики (ИНН)", ", ".join(profile.customer_inn) or "любые"),

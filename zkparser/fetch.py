@@ -93,7 +93,7 @@ def download_notices(
     report.found = len(report.hits)
     report.skipped = len(report.hits) - len(hits)
     failures_in_row = 0
-    last_good = ""  # a notice the site gave in this run: asking for it again tells whether the site is up
+    last_good: SearchHit | None = None  # a notice the site gave in this run: asking again tells whether it is up
     for number, hit in enumerate(hits, 1):
         if cancel and cancel():
             report.error = STOPPED
@@ -106,7 +106,7 @@ def download_notices(
             status = RESTING
         else:
             try:
-                cache.store(hit, download_notice(client, hit.reg_number))
+                cache.store(hit, download_notice(client, hit.reg_number, hit.guid))
             except RateLimited as error:
                 report.error = str(error)
                 return
@@ -129,7 +129,7 @@ def download_notices(
             else:
                 report.downloaded += 1
                 failures_in_row = 0
-                last_good = hit.reg_number
+                last_good = hit
                 status = DOWNLOADED
         if progress:
             progress(number, len(hits), hit, status)
@@ -150,11 +150,11 @@ def problems(report: FetchReport) -> str:
     return "".join(f", {part}" for part in parts)
 
 
-def _site_answers(client: Client, last_good: str, probe: Callable[[], object] | None) -> bool:
+def _site_answers(client: Client, last_good: SearchHit | None, probe: Callable[[], object] | None) -> bool:
     """Whether the site still gives what it surely has; False also when there is nothing to ask."""
     try:
         if last_good:
-            download_notice(client, last_good)
+            download_notice(client, last_good.reg_number, last_good.guid)
         elif probe is not None:
             probe()
         else:

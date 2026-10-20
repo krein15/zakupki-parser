@@ -14,7 +14,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from enum import StrEnum
 from typing import Protocol
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, urljoin, urlsplit
 
 import lxml.html
 
@@ -28,6 +28,12 @@ MAX_PAGES = 100  # past page 100 the site keeps returning page 100
 MAX_RESULTS = PAGE_SIZE * MAX_PAGES
 HTML_PARSER = lxml.html.HTMLParser(encoding="utf-8")  # the site always serves UTF-8; do not guess from <meta>
 ORGANIZATION_TITLES = ("Заказчик", "Организация, осуществляющая размещение")
+# The kinds of procurement the site publishes: the search filter's parameter and how the results name the law.
+# 223-ФЗ — state companies and their subsidiaries, ПП РФ 615 — capital repairs of apartment buildings.
+LAWS = {"44": "fz44", "223": "fz223", "615": "ppRf615"}
+LAW_NAMES = {"44": "44-ФЗ", "223": "223-ФЗ", "615": "ПП РФ 615"}
+ALL_LAWS = tuple(LAWS)
+GUID = re.compile(r"purchaseNoticeGuid=([\w-]+)")
 
 
 class Stage(StrEnum):
@@ -52,11 +58,12 @@ class SearchQuery:
     # classifier for that (website/okpd2.py); the codes alone it ignores.
     okpd2: tuple[str, ...] = ()
     okpd2_ids: tuple[str, ...] = ()
+    laws: tuple[str, ...] = ("44",)
 
     def params(self, page: int = 1) -> dict[str, str]:
         regions = ",".join(self.regions)
-        params = {
-            "fz44": "on",
+        params = dict.fromkeys((LAWS[key] for key in self.laws), "on")
+        params |= {
             "searchString": self.text,
             "morphology": "on",
             "sortBy": "PUBLISH_DATE",
@@ -100,6 +107,8 @@ class SearchHit:
     published: date | None = None
     updated: date | None = None
     deadline: date | None = None  # end of the application period
+    law: str = "44"
+    guid: str = ""  # a 223-ФЗ notice's XML is asked for by this id, not by the number
 
 
 @dataclass
@@ -187,10 +196,14 @@ def parse_entry(block: lxml.html.HtmlElement) -> SearchHit:
             strict=False,
         )
     )
+    header = _text(block.find_class("registry-entry__header-top__title"))
+    law = next((key for key, name in LAW_NAMES.items() if header.startswith(name)), "44")
+    guid = next((found.group(1) for a in block.xpath(".//a[@href]") if (found := GUID.search(a.get("href")))), "")
     return SearchHit(
         reg_number=reg_number,
-        url=BASE_URL + links[0].get("href"),
-        placing_way=_text(block.find_class("registry-entry__header-top__title")).removeprefix("44-ФЗ").strip(),
+        url=urljoin(BASE_URL, links[0].get("href")),  # a 223-ФЗ notice links to its own, absolute address
+        # The law stays in front of the way of a 223-ФЗ or ПП РФ 615 notice: "223-ФЗ Иной способ".
+        placing_way=header.removeprefix("44-ФЗ").strip(),
         stage=_text(block.find_class("registry-entry__header-mid__title")),
         title=title,
         organization=organization,
@@ -199,6 +212,8 @@ def parse_entry(block: lxml.html.HtmlElement) -> SearchHit:
         published=parse_date(dates.get("Размещено", "")),
         updated=parse_date(dates.get("Обновлено", "")),
         deadline=parse_date(dates.get("Окончание подачи заявок", "")),
+        law=law,
+        guid=guid,
     )
 
 

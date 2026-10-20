@@ -37,6 +37,7 @@ class Preferences:
     export_words: str = ""
     export_details: bool = False
     export_filter: str = ""  # a template name or "Мой профиль: …"; empty — every open notice
+    export_laws: list[str] = field(default_factory=lambda: ["44", "223", "615"])
 
     @staticmethod
     def default_path() -> Path:

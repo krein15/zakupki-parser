@@ -34,7 +34,7 @@ from .profiles import Profile
 from .shortlist import can_shortlist, shortlist
 from .website.client import SiteError
 from .website.okpd2 import Okpd2Ids
-from .website.search import Client, SearchHit, SearchQuery, Stage, search
+from .website.search import ALL_LAWS, Client, SearchHit, SearchQuery, Stage, search
 
 log = logging.getLogger("zkparser.website")
 
@@ -51,6 +51,7 @@ class ExportQuery:
     text: str = ""  # optional words for the site's search, with word forms
     details: bool = False  # download every notice's XML: customers, INNs, positions
     profile: Profile | None = None  # keep only the notices that fit it (implies details)
+    laws: tuple[str, ...] = ALL_LAWS  # kinds of procurement: "44", "223", "615"
 
     @property
     def detailed(self) -> bool:
@@ -122,7 +123,7 @@ def export_open(
     for region in query.regions:
         search_query = SearchQuery(
             (region,), result.since, today, text=query.text, price_from=query.price_from,
-            price_to=query.price_to, stages=(Stage.APPLICATIONS,),
+            price_to=query.price_to, stages=(Stage.APPLICATIONS,), laws=query.laws,
         )
 
         def on_page(collected: int, total: int, region: str = region) -> None:
@@ -153,7 +154,7 @@ def export_open(
     profile = query.profile
     if profile is not None and ids is not None and can_shortlist([profile]) and candidates and not result.error:
         every_region = SearchQuery(query.regions, result.since, today, text=query.text, price_from=query.price_from,
-                                   price_to=query.price_to, stages=(Stage.APPLICATIONS,))
+                                   price_to=query.price_to, stages=(Stage.APPLICATIONS,), laws=query.laws)
         try:
             wanted = shortlist(client, ids, every_region, [item.hit for item in candidates], [profile])
         except SiteError as error:

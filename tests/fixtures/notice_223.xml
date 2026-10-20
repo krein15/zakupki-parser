@@ -1,0 +1,305 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<ns2:purchaseNotice xmlns="http://zakupki.gov.ru/223fz/types/1" xmlns:ns2="http://zakupki.gov.ru/223fz/purchase/1" xmlns:ns4="http://zakupki.gov.ru/223fz/agencyRelation/1" xmlns:ns3="http://zakupki.gov.ru/223fz/dishonestSupplier/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ns6="http://zakupki.gov.ru/223fz/contract/1" xmlns:ns5="http://zakupki.gov.ru/223fz/complaint/1" xmlns:ns30="http://zakupki.gov.ru/223fz/ecp-packet/1" xmlns:ns8="http://zakupki.gov.ru/223fz/customerRegistry/1" xmlns:ns7="http://zakupki.gov.ru/223fz/customerAccredited/1" xmlns:ns13="http://zakupki.gov.ru/223fz/machineryListInfo/1" xmlns:ns9="http://zakupki.gov.ru/223fz/decisionSuspension/1" xmlns:ns12="http://zakupki.gov.ru/223fz/exclusion/1" xmlns:ns11="http://zakupki.gov.ru/223fz/disagreementProtocol/1" xmlns:ns10="http://zakupki.gov.ru/223fz/detachedRights/1" xmlns:ns17="http://zakupki.gov.ru/223fz/purchasePlan/1" xmlns:ns16="http://zakupki.gov.ru/223fz/orderClauseList/1" xmlns:ns15="http://zakupki.gov.ru/223fz/notificationIssue/1" xmlns:ns14="http://zakupki.gov.ru/223fz/missedNotice/1" xmlns:ns19="http://zakupki.gov.ru/223fz/purchasePlanAdditionalPosition/1" xmlns:ns18="http://zakupki.gov.ru/223fz/purchasePlanUpdatePositionDataType/1" xmlns:ns20="http://zakupki.gov.ru/223fz/purchasePlanProject/1" xmlns:ns24="http://zakupki.gov.ru/223fz/stopCommodity/1" xmlns:ns23="http://zakupki.gov.ru/223fz/revenue/1" xmlns:ns22="http://zakupki.gov.ru/223fz/reference/1" xmlns:ns21="http://zakupki.gov.ru/223fz/purchasePlanProjectAdditionalPosition/1" xmlns:ns28="http://zakupki.gov.ru/223fz/integration/1" xmlns:ns27="http://zakupki.gov.ru/223fz/guarantee/1" xmlns:ns26="http://zakupki.gov.ru/223fz/webRequest/1" xmlns:ns25="http://zakupki.gov.ru/223fz/typalOrderClauseList/1" xmlns:ns29="http://zakupki.gov.ru/223fz/ecp-packetSpec/1" xsi:schemaLocation="https://zakupki.gov.ru/223/integration/schema/TFF-16.2 https://zakupki.gov.ru/223/integration/schema/TFF-16.2/purchase.xsd">
+    <header>
+        <guid>ccf51674-b451-421b-ab3a-7aebebd447d6</guid>
+        <createDateTime>2026-10-20T14:00:50</createDateTime>
+    </header>
+    <ns2:extendedType>
+        <contentUid>01A158F85FED74F896C3B3D677DE96E6</contentUid>
+        <cryptoSigns>
+            <signature>
+                <userSignature></userSignature>
+                <trustedSignature></trustedSignature>
+                <userSignatureUid>01A158F894E37B079E4D08026613E029</userSignatureUid>
+                <trustedUserSignatureUid>01A158F8952277C7A6A05B2D3F1A0457</trustedUserSignatureUid>
+            </signature>
+        </cryptoSigns>
+        <xsltFileDsUid>80E08677626442D3A4C13E42F5969A16</xsltFileDsUid>
+    </ns2:extendedType>
+    <ns2:body>
+        <ns2:item>
+            <guid>6fcd0eb1-0526-41cd-8e1f-9a58e9978eb8</guid>
+            <ns2:purchaseNoticeData>
+                <ns2:guid>6fcd0eb1-0526-41cd-8e1f-9a58e9978eb8</ns2:guid>
+                <ns2:createDateTime>2026-10-20T15:59:18</ns2:createDateTime>
+                <ns2:urlEIS>https://lk.zakupki.gov.ru/223/purchase/private/purchase/notice-info/details.html?noticeInfoId=20382765</ns2:urlEIS>
+                <ns2:urlVSRZ>https://223.rts-tender.ru/supplier/auction/Trade/View.aspx?Id=4069175</ns2:urlVSRZ>
+                <ns2:registrationNumber>32616488407</ns2:registrationNumber>
+                <ns2:name>Поставка и настил сценического покрытия.</ns2:name>
+                <ns2:customer>
+                    <mainInfo>
+                        <fullName>МУНИЦИПАЛЬНОЕ АВТОНОМНОЕ УЧРЕЖДЕНИЕ КУЛЬТУРЫ ГОРОДА ЯЛУТОРОВСКА "АРТ-ВОЯЖ"</fullName>
+                        <shortName>МАУК "АРТ-ВОЯЖ"</shortName>
+                        <iko>57207010960720701001</iko>
+                        <inn>7207010960</inn>
+                        <kpp>720701001</kpp>
+                        <ogrn>1087207000594</ogrn>
+                        <legalAddress>627010, ТЮМЕНСКАЯ ОБЛАСТЬ, Г.. ЯЛУТОРОВСК, УЛ. РЕВОЛЮЦИИ, ЗД. 44</legalAddress>
+                        <postalAddress>627010, обл. Тюменская, г. Ялуторовск, ул. Революции, д. 44</postalAddress>
+                        <email>contact@example.org</email>
+                        <okato>71415000000</okato>
+                        <okopf>75401</okopf>
+                        <okopfName>Муниципальные автономные учреждения</okopfName>
+                        <okpo>87206049</okpo>
+                        <okfs>14</okfs>
+                        <okfsName>Муниципальная собственность</okfsName>
+                        <timeZone>
+                            <offset>2</offset>
+                            <name>МСК+2 (СГВ+5) Екатеринбург, Челябинск, Уфа</name>
+                        </timeZone>
+                        <region>ТЮМЕНСКАЯ ОБЛАСТЬ</region>
+                    </mainInfo>
+                </ns2:customer>
+                <ns2:purchaseMethodCode>663971</ns2:purchaseMethodCode>
+                <ns2:purchaseCodeName>Запрос предварительных предложений в электронной форме, участниками которого являются только СМСП</ns2:purchaseCodeName>
+                <ns2:placer>
+                    <mainInfo>
+                        <fullName>МУНИЦИПАЛЬНОЕ АВТОНОМНОЕ УЧРЕЖДЕНИЕ КУЛЬТУРЫ ГОРОДА ЯЛУТОРОВСКА "АРТ-ВОЯЖ"</fullName>
+                        <shortName>МАУК "АРТ-ВОЯЖ"</shortName>
+                        <iko>57207010960720701001</iko>
+                        <inn>7207010960</inn>
+                        <kpp>720701001</kpp>
+                        <ogrn>1087207000594</ogrn>
+                        <legalAddress>627010, ТЮМЕНСКАЯ ОБЛАСТЬ, Г.. ЯЛУТОРОВСК, УЛ. РЕВОЛЮЦИИ, ЗД. 44</legalAddress>
+                        <postalAddress>627010, обл. Тюменская, г. Ялуторовск, ул. Революции, д. 44</postalAddress>
+                        <email>contact@example.org</email>
+                        <okato>71415000000</okato>
+                        <okopf>75401</okopf>
+                        <okopfName>Муниципальные автономные учреждения</okopfName>
+                        <okpo>87206049</okpo>
+                        <okfs>14</okfs>
+                        <okfsName>Муниципальная собственность</okfsName>
+                        <timeZone>
+                            <offset>2</offset>
+                            <name>МСК+2 (СГВ+5) Екатеринбург, Челябинск, Уфа</name>
+                        </timeZone>
+                        <region>ТЮМЕНСКАЯ ОБЛАСТЬ</region>
+                    </mainInfo>
+                </ns2:placer>
+                <ns2:contact>
+                    <firstName>Иван</firstName>
+                    <middleName>Иванович</middleName>
+                    <lastName>Иванов</lastName>
+                    <phone>7-000-0000000</phone>
+                    <email>contact@example.org</email>
+                </ns2:contact>
+                <ns2:publicationDateTime>2026-10-20T16:00:48</ns2:publicationDateTime>
+                <ns2:documentationDelivery>
+                    <deliveryStartDateTime>2026-10-20</deliveryStartDateTime>
+                    <deliveryEndDateTime>2026-10-22</deliveryEndDateTime>
+                    <place>Электронная площадка РТС-тендер (http://www.rts-tender.ru) и Официальный сайт (http://zakupki.gov.ru)</place>
+                    <procedure>В электронной форме на площадке РТС-тендер (http://www.rts-tender.ru) и Официальном сайте (http://zakupki.gov.ru)</procedure>
+                </ns2:documentationDelivery>
+                <ns2:status>P</ns2:status>
+                <ns2:version>1</ns2:version>
+                <ns2:notDishonest>true</ns2:notDishonest>
+                <ns2:attachments>
+                    <totalDocumentsCount>6</totalDocumentsCount>
+                    <document>
+                        <guid>e9f67864-808e-4cb2-8037-7303bb164871</guid>
+                        <createDateTime>2026-10-20T13:57:49</createDateTime>
+                        <fileName>Приложение № 1 к извещению техническое задание.doc</fileName>
+                        <description>Приложение № 1 к извещению техническое задание.doc</description>
+                        <url>https://zakupki.gov.ru/223/filestore/public/1.0/download/fz223/file.html?uid=352FF740529640D2A3AC22A3C602C385</url>
+                        <contentUid>352FF740529640D2A3AC22A3C602C385</contentUid>
+                        <cryptoSigns>
+                            <signature>
+                                <userSignature></userSignature>
+                                <trustedSignature></trustedSignature>
+                                <userSignatureUid>01A158F895F47F9FA606496E2112E469</userSignatureUid>
+                                <trustedUserSignatureUid>01A158F896337C46848AFEA318DF0AD8</trustedUserSignatureUid>
+                            </signature>
+                        </cryptoSigns>
+                    </document>
+                    <document>
+                        <guid>13d2facd-cca6-443b-b9f9-5c610977caea</guid>
+                        <createDateTime>2026-10-20T13:50:43</createDateTime>
+                        <fileName>Приложение № 2 к извещению (проект договора) (1).doc</fileName>
+                        <description>Приложение № 2 к извещению (проект договора) (1).doc</description>
+                        <url>https://zakupki.gov.ru/223/filestore/public/1.0/download/fz223/file.html?uid=D3D55193C7894C4F8BDFB40F838D288C</url>
+                        <contentUid>D3D55193C7894C4F8BDFB40F838D288C</contentUid>
+                        <cryptoSigns>
+                            <signature>
+                                <userSignature></userSignature>
+                                <trustedSignature></trustedSignature>
+                                <userSignatureUid>01A158F897FC7DDE86014888BC962CAC</userSignatureUid>
+                                <trustedUserSignatureUid>01A158F8983E744BB8795759759549BB</trustedUserSignatureUid>
+                            </signature>
+                        </cryptoSigns>
+                    </document>
+                    <document>
+                        <guid>675cb76d-7dba-4614-8509-44339e36230f</guid>
+                        <createDateTime>2026-10-20T13:50:42</createDateTime>
+                        <fileName>Приложение № 4 к извещению (форма заявки) +.doc</fileName>
+                        <description>Приложение № 4 к извещению (форма заявки) +.doc</description>
+                        <url>https://zakupki.gov.ru/223/filestore/public/1.0/download/fz223/file.html?uid=70B2AAB2BDCB46FE8623BB37D0C94B22</url>
+                        <contentUid>70B2AAB2BDCB46FE8623BB37D0C94B22</contentUid>
+                        <cryptoSigns>
+                            <signature>
+                                <userSignature></userSignature>
+                                <trustedSignature></trustedSignature>
+                                <userSignatureUid>01A158F89997719EB2562C6C34B77F5F</userSignatureUid>
+                                <trustedUserSignatureUid>01A158F899D07505A5E37C45DA3BA8F8</trustedUserSignatureUid>
+                            </signature>
+                        </cryptoSigns>
+                    </document>
+                    <document>
+                        <guid>af9b007e-11e1-4df4-b24d-89ce75df1a76</guid>
+                        <createDateTime>2026-10-20T13:50:42</createDateTime>
+                        <fileName>Приложение № 5 к извещению (Обоснование цены договора)+ .docx</fileName>
+                        <description>Приложение № 5 к извещению (Обоснование цены договора)+ .docx</description>
+                        <url>https://zakupki.gov.ru/223/filestore/public/1.0/download/fz223/file.html?uid=DD5A8B4E607E4994994D28F8788715C5</url>
+                        <contentUid>DD5A8B4E607E4994994D28F8788715C5</contentUid>
+                        <cryptoSigns>
+                            <signature>
+                                <userSignature></userSignature>
+                                <trustedSignature></trustedSignature>
+                                <userSignatureUid>01A158F89AB77010AE0E23B2FCD5355B</userSignatureUid>
+                                <trustedUserSignatureUid>01A158F89B2475738D3CD0CE6B605370</trustedUserSignatureUid>
+                            </signature>
+                        </cryptoSigns>
+                    </document>
+                    <document>
+                        <guid>32b889ef-bdd1-4b50-9169-cc970cce31a4</guid>
+                        <createDateTime>2026-10-20T15:50:34</createDateTime>
+                        <fileName>Извещение с печатью.doc</fileName>
+                        <description>Извещение с печатью.doc</description>
+                        <url>https://zakupki.gov.ru/223/filestore/public/1.0/download/fz223/file.html?uid=C46F2CEA7F594E4DA2C9A194A861BD36</url>
+                        <contentUid>C46F2CEA7F594E4DA2C9A194A861BD36</contentUid>
+                        <cryptoSigns>
+                            <signature>
+                                <userSignature></userSignature>
+                                <trustedSignature></trustedSignature>
+                                <userSignatureUid>01A158F89C0974AEB3E86576D29273D9</userSignatureUid>
+                                <trustedUserSignatureUid>01A158F89C4E78D3B6F101DA9028463A</trustedUserSignatureUid>
+                            </signature>
+                        </cryptoSigns>
+                    </document>
+                    <document>
+                        <guid>7fc6bc96-a61d-41c7-9f93-ff5c01cb08ef</guid>
+                        <createDateTime>2026-10-20T13:50:42</createDateTime>
+                        <fileName>Приложение № 3 к извещению (декларация)+ .docx</fileName>
+                        <description>Приложение № 3 к извещению (декларация)+ .docx</description>
+                        <url>https://zakupki.gov.ru/223/filestore/public/1.0/download/fz223/file.html?uid=18E4ABEBB9AE42F19113F521BF2E548D</url>
+                        <contentUid>18E4ABEBB9AE42F19113F521BF2E548D</contentUid>
+                        <cryptoSigns>
+                            <signature>
+                                <userSignature></userSignature>
+                                <trustedSignature></trustedSignature>
+                                <userSignatureUid>01A158F89D0778AB85592FEAC97E446A</userSignatureUid>
+                                <trustedUserSignatureUid>01A158F89D437FFAB6BD247DC85BA68D</trustedUserSignatureUid>
+                            </signature>
+                        </cryptoSigns>
+                    </document>
+                </ns2:attachments>
+                <ns2:modificationDate>2026-10-20T16:00:34</ns2:modificationDate>
+                <ns2:saveUserId>202314</ns2:saveUserId>
+                <ns2:deliveryPlaceIndication>DIFFERENT_PLACE</ns2:deliveryPlaceIndication>
+                <ns2:emergency>false</ns2:emergency>
+                <ns2:jointPurchase>false</ns2:jointPurchase>
+                <ns2:hidePurchase>false</ns2:hidePurchase>
+                <ns2:antimonopolyDecisionTaken>false</ns2:antimonopolyDecisionTaken>
+                <ns2:applSubmisionPlace>Электронная площадка РТС-тендер (http://www.rts-tender.ru)</ns2:applSubmisionPlace>
+                <ns2:applSubmisionStartDate>2026-10-20</ns2:applSubmisionStartDate>
+                <ns2:applSubmisionOrder>В соответствии с документацией о закупке</ns2:applSubmisionOrder>
+                <ns2:summingupOrder>В соответствии с документацией о закупке</ns2:summingupOrder>
+                <ns2:electronicPlaceInfo>
+                    <name>РТС-тендер</name>
+                    <url>www.rts-tender.ru</url>
+                    <electronicPlaceId>1698</electronicPlaceId>
+                </ns2:electronicPlaceInfo>
+                <ns2:placingProcedure>
+                    <ns2:summingupDateTime>2026-10-22T23:59:59</ns2:summingupDateTime>
+                    <ns2:summingupPlace>627010, Российская Федерация, Тюменская обл., г. Ялуторовск, ул. Революции, 44, ОКАТО: 71415000000</ns2:summingupPlace>
+                </ns2:placingProcedure>
+                <ns2:submissionCloseDateTime>2026-10-22T08:00:00</ns2:submissionCloseDateTime>
+                <ns2:isLotOriented>false</ns2:isLotOriented>
+                <ns2:lots>
+                    <lot>
+                        <guid>db56825d-aeb0-48ab-a1d0-9265694babe7</guid>
+                        <ordinalNumber>1</ordinalNumber>
+                        <lotEditEnabled>true</lotEditEnabled>
+                        <lotData>
+                            <subject>Поставка и настил сценического покрытия.</subject>
+                            <currency>
+                                <code>RUB</code>
+                                <digitalCode>643</digitalCode>
+                                <name>Российский рубль</name>
+                            </currency>
+                            <maxContractPrice>650000</maxContractPrice>
+                            <deliveryPlace>
+                                <state>Уральский федеральный округ</state>
+                                <region>Тюменская   обл</region>
+                                <regionOkato>71000000000</regionOkato>
+                                <address>627010, Российская Федерация, Тюменская обл., г. Ялуторовск, ул. Революции, 44, ОКАТО: 71415000000</address>
+                            </deliveryPlace>
+                            <lotItems>
+                                <newCodes>true</newCodes>
+                                <superiorityNationalRegime>true</superiorityNationalRegime>
+                                <lotItem>
+                                    <guid>b0f4724d-1e25-428a-8606-5de15d652453</guid>
+                                    <ordinalNumber>1</ordinalNumber>
+                                    <okpd2>
+                                        <code>22.23.15.000</code>
+                                        <name>Линолеум и твердые неполимерные материалы для покрытия пола, т.е. упругие напольные покрытия, такие как виниловое покрытие, линолеум и аналогичные изделия</name>
+                                    </okpd2>
+                                    <okved2>
+                                        <code>22.23.1</code>
+                                        <name>Производство материалов, изделий и конструкций строительного назначения из полимерных композитов</name>
+                                    </okved2>
+                                    <okei>
+                                        <code>055</code>
+                                        <name>Квадратный метр</name>
+                                    </okei>
+                                    <qty>160</qty>
+                                    <commodityItemPrice>0</commodityItemPrice>
+                                    <prohibitionNationalRegime>false</prohibitionNationalRegime>
+                                    <constraintNationalRegime>false</constraintNationalRegime>
+                                    <exceptionNationalRegime>false</exceptionNationalRegime>
+                                </lotItem>
+                                <lotItem>
+                                    <guid>54e9a765-0835-4987-9850-8c04f152fc2f</guid>
+                                    <ordinalNumber>2</ordinalNumber>
+                                    <okpd2>
+                                        <code>43.33.29.110</code>
+                                        <name>Работы по укладке ковровых покрытий, линолеума и прочих гибких материалов для покрытия полов</name>
+                                    </okpd2>
+                                    <okved2>
+                                        <code>43.33</code>
+                                        <name>Работы по устройству покрытий полов и облицовке стен</name>
+                                    </okved2>
+                                    <okei>
+                                        <code>876</code>
+                                        <name>Условная единица</name>
+                                    </okei>
+                                    <qty>1</qty>
+                                    <commodityItemPrice>0</commodityItemPrice>
+                                    <prohibitionNationalRegime>false</prohibitionNationalRegime>
+                                    <constraintNationalRegime>false</constraintNationalRegime>
+                                    <exceptionNationalRegime>false</exceptionNationalRegime>
+                                </lotItem>
+                            </lotItems>
+                            <forSmallOrMiddle>true</forSmallOrMiddle>
+                            <excludePurchaseFromPlan>false</excludePurchaseFromPlan>
+                            <subcontractorsRequirement>false</subcontractorsRequirement>
+                            <ignoredPurchase>false</ignoredPurchase>
+                            <centralized>false</centralized>
+                        </lotData>
+                        <deliveryPlaceIndication>GL</deliveryPlaceIndication>
+                        <jointLotData>
+                            <jointLot>false</jointLot>
+                        </jointLotData>
+                        <lotPlanInfo>
+                            <planRegistrationNumber>2250848737</planRegistrationNumber>
+                            <planGuid>552c683d-97b5-4558-b630-c890ee613309</planGuid>
+                            <positionNumber>46</positionNumber>
+                            <lotPlanPosition>COMMODITY</lotPlanPosition>
+                            <positionGuid>45b22d62-bd50-495b-a72a-f94f3baf13cb</positionGuid>
+                        </lotPlanInfo>
+                        <cancelled>false</cancelled>
+                    </lot>
+                </ns2:lots>
+            </ns2:purchaseNoticeData>
+        </ns2:item>
+    </ns2:body>
+</ns2:purchaseNotice>

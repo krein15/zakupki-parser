@@ -1,0 +1,423 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<ns2:purchaseNoticeZKESMBO xmlns="http://zakupki.gov.ru/223fz/types/1" xmlns:ns2="http://zakupki.gov.ru/223fz/purchase/1" xmlns:ns4="http://zakupki.gov.ru/223fz/agencyRelation/1" xmlns:ns3="http://zakupki.gov.ru/223fz/dishonestSupplier/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ns6="http://zakupki.gov.ru/223fz/contract/1" xmlns:ns5="http://zakupki.gov.ru/223fz/complaint/1" xmlns:ns30="http://zakupki.gov.ru/223fz/ecp-packet/1" xmlns:ns8="http://zakupki.gov.ru/223fz/customerRegistry/1" xmlns:ns7="http://zakupki.gov.ru/223fz/customerAccredited/1" xmlns:ns13="http://zakupki.gov.ru/223fz/machineryListInfo/1" xmlns:ns9="http://zakupki.gov.ru/223fz/decisionSuspension/1" xmlns:ns12="http://zakupki.gov.ru/223fz/exclusion/1" xmlns:ns11="http://zakupki.gov.ru/223fz/disagreementProtocol/1" xmlns:ns10="http://zakupki.gov.ru/223fz/detachedRights/1" xmlns:ns17="http://zakupki.gov.ru/223fz/purchasePlan/1" xmlns:ns16="http://zakupki.gov.ru/223fz/orderClauseList/1" xmlns:ns15="http://zakupki.gov.ru/223fz/notificationIssue/1" xmlns:ns14="http://zakupki.gov.ru/223fz/missedNotice/1" xmlns:ns19="http://zakupki.gov.ru/223fz/purchasePlanAdditionalPosition/1" xmlns:ns18="http://zakupki.gov.ru/223fz/purchasePlanUpdatePositionDataType/1" xmlns:ns20="http://zakupki.gov.ru/223fz/purchasePlanProject/1" xmlns:ns24="http://zakupki.gov.ru/223fz/stopCommodity/1" xmlns:ns23="http://zakupki.gov.ru/223fz/revenue/1" xmlns:ns22="http://zakupki.gov.ru/223fz/reference/1" xmlns:ns21="http://zakupki.gov.ru/223fz/purchasePlanProjectAdditionalPosition/1" xmlns:ns28="http://zakupki.gov.ru/223fz/integration/1" xmlns:ns27="http://zakupki.gov.ru/223fz/guarantee/1" xmlns:ns26="http://zakupki.gov.ru/223fz/webRequest/1" xmlns:ns25="http://zakupki.gov.ru/223fz/typalOrderClauseList/1" xmlns:ns29="http://zakupki.gov.ru/223fz/ecp-packetSpec/1" xsi:schemaLocation="https://zakupki.gov.ru/223/integration/schema/TFF-16.2 https://zakupki.gov.ru/223/integration/schema/TFF-16.2/purchase.xsd">
+    <header>
+        <guid>dc6b7d66-5fd5-42cb-9369-fb3aa5ef97db</guid>
+        <createDateTime>2026-10-20T13:31:32</createDateTime>
+    </header>
+    <ns2:extendedType>
+        <contentUid>01A158DD8B3D774BA09AFB8BB1BB9CC6</contentUid>
+        <cryptoSigns>
+            <signature>
+                <userSignature></userSignature>
+                <trustedSignature></trustedSignature>
+                <userSignatureUid>01A158DDC8B277D28F200CD3377F0F53</userSignatureUid>
+                <trustedUserSignatureUid>01A158DDC8FA7E6CB71B00FA38DC2324</trustedUserSignatureUid>
+            </signature>
+        </cryptoSigns>
+        <xsltFileDsUid>63E3AFD2DB614A8FA753E4939885803A</xsltFileDsUid>
+    </ns2:extendedType>
+    <ns2:body>
+        <ns2:item>
+            <guid>704ae42d-cd6c-4c06-a45f-2383f066b249</guid>
+            <ns2:purchaseNoticeZKESMBOData>
+                <ns2:guid>704ae42d-cd6c-4c06-a45f-2383f066b249</ns2:guid>
+                <ns2:createDateTime>2026-10-20T15:29:20</ns2:createDateTime>
+                <ns2:urlEIS>https://lk.zakupki.gov.ru/223/purchase/private/purchase/notice-info/details.html?noticeInfoId=20382487</ns2:urlEIS>
+                <ns2:urlVSRZ>https://223.rts-tender.ru/supplier/auction/Trade/View.aspx?Id=4069112</ns2:urlVSRZ>
+                <ns2:registrationNumber>32616488206</ns2:registrationNumber>
+                <ns2:name>Оказание услуг по техническому обслуживанию систем видеонаблюдения на объектах МАУК «ЦИиК» г. Тобольска</ns2:name>
+                <ns2:customer>
+                    <mainInfo>
+                        <fullName>МУНИЦИПАЛЬНОЕ АВТОНОМНОЕ УЧРЕЖДЕНИЕ КУЛЬТУРЫ "ЦЕНТР ИСКУССТВ И КУЛЬТУРЫ" ГОРОДА ТОБОЛЬСКА</fullName>
+                        <shortName>МАУК "ЦИИК" Г. ТОБОЛЬСКА</shortName>
+                        <iko>57206026735720601001</iko>
+                        <inn>7206026735</inn>
+                        <kpp>720601001</kpp>
+                        <ogrn>1037200146037</ogrn>
+                        <legalAddress>626150, ТЮМЕНСКАЯ ОБЛАСТЬ, г.о. ГОРОД ТОБОЛЬСК, Г. ТОБОЛЬСК, МКР 6, Д. 52</legalAddress>
+                        <postalAddress>626156, Тюменская область, г Тобольск, 6 микрорайон, № 52</postalAddress>
+                        <okato>71410000000</okato>
+                        <okopf>75401</okopf>
+                        <okopfName>Муниципальные автономные учреждения</okopfName>
+                        <okpo>59206464</okpo>
+                        <okfs>14</okfs>
+                        <okfsName>Муниципальная собственность</okfsName>
+                        <timeZone>
+                            <offset>2</offset>
+                            <name>МСК+2 (СГВ+5) Екатеринбург, Челябинск, Уфа</name>
+                        </timeZone>
+                        <region>ТЮМЕНСКАЯ ОБЛАСТЬ</region>
+                        <autonomousAgencyType>MUNICIPAL</autonomousAgencyType>
+                    </mainInfo>
+                </ns2:customer>
+                <ns2:purchaseMethodCode>200610</ns2:purchaseMethodCode>
+                <ns2:purchaseCodeName>Запрос котировок в электронной форме, участниками которого могут быть только субъекты малого и среднего предпринимательства</ns2:purchaseCodeName>
+                <ns2:placer>
+                    <mainInfo>
+                        <fullName>МУНИЦИПАЛЬНОЕ АВТОНОМНОЕ УЧРЕЖДЕНИЕ КУЛЬТУРЫ "ЦЕНТР ИСКУССТВ И КУЛЬТУРЫ" ГОРОДА ТОБОЛЬСКА</fullName>
+                        <shortName>МАУК "ЦИИК" Г. ТОБОЛЬСКА</shortName>
+                        <iko>57206026735720601001</iko>
+                        <inn>7206026735</inn>
+                        <kpp>720601001</kpp>
+                        <ogrn>1037200146037</ogrn>
+                        <legalAddress>626150, ТЮМЕНСКАЯ ОБЛАСТЬ, г.о. ГОРОД ТОБОЛЬСК, Г. ТОБОЛЬСК, МКР 6, Д. 52</legalAddress>
+                        <postalAddress>626156, Тюменская область, г Тобольск, 6 микрорайон, № 52</postalAddress>
+                        <okato>71410000000</okato>
+                        <okopf>75401</okopf>
+                        <okopfName>Муниципальные автономные учреждения</okopfName>
+                        <okpo>59206464</okpo>
+                        <okfs>14</okfs>
+                        <okfsName>Муниципальная собственность</okfsName>
+                        <timeZone>
+                            <offset>2</offset>
+                            <name>МСК+2 (СГВ+5) Екатеринбург, Челябинск, Уфа</name>
+                        </timeZone>
+                        <region>ТЮМЕНСКАЯ ОБЛАСТЬ</region>
+                        <autonomousAgencyType>MUNICIPAL</autonomousAgencyType>
+                    </mainInfo>
+                </ns2:placer>
+                <ns2:contact>
+                    <firstName>Иван</firstName>
+                    <middleName>Иванович</middleName>
+                    <lastName>Иванов</lastName>
+                    <phone>7-000-0000000</phone>
+                    <email>contact@example.org</email>
+                </ns2:contact>
+                <ns2:publicationDateTime>2026-10-20T15:31:32</ns2:publicationDateTime>
+                <ns2:status>P</ns2:status>
+                <ns2:version>1</ns2:version>
+                <ns2:notDishonest>true</ns2:notDishonest>
+                <ns2:attachments>
+                    <totalDocumentsCount>1</totalDocumentsCount>
+                    <document>
+                        <guid>e5c15bf6-04bc-4b4c-9891-75c3b93102da</guid>
+                        <createDateTime>2026-10-20T15:24:49</createDateTime>
+                        <fileName>12-26-ЗК_Извещение.docx</fileName>
+                        <description>12-26-ЗК_Извещение.docx</description>
+                        <url>https://zakupki.gov.ru/223/filestore/public/1.0/download/fz223/file.html?uid=69CA09273EF74D429FF340F814AFC0DF</url>
+                        <contentUid>69CA09273EF74D429FF340F814AFC0DF</contentUid>
+                        <cryptoSigns>
+                            <signature>
+                                <userSignature></userSignature>
+                                <trustedSignature></trustedSignature>
+                                <userSignatureUid>01A158DDC9C775C98826D56C81B5EDBA</userSignatureUid>
+                                <trustedUserSignatureUid>01A158DDCA347BB1A722F323F826B32B</trustedUserSignatureUid>
+                            </signature>
+                        </cryptoSigns>
+                    </document>
+                </ns2:attachments>
+                <ns2:modificationDate>2026-10-20T15:31:16</ns2:modificationDate>
+                <ns2:saveUserId>9133561</ns2:saveUserId>
+                <ns2:deliveryPlaceIndication>DIFFERENT_PLACE</ns2:deliveryPlaceIndication>
+                <ns2:emergency>false</ns2:emergency>
+                <ns2:jointPurchase>false</ns2:jointPurchase>
+                <ns2:antimonopolyDecisionTaken>false</ns2:antimonopolyDecisionTaken>
+                <ns2:applSubmisionPlace>Электронная площадка РТС-тендер (http://www.rts-tender.ru)</ns2:applSubmisionPlace>
+                <ns2:applSubmisionStartDate>2026-10-20</ns2:applSubmisionStartDate>
+                <ns2:applSubmisionOrder>В электронной форме</ns2:applSubmisionOrder>
+                <ns2:summingupOrder>В соответствии с извещением о закупке</ns2:summingupOrder>
+                <ns2:signatureAuthorizedBody/>
+                <ns2:electronicPlaceInfo>
+                    <name>ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ «РТС-ТЕНДЕР»</name>
+                    <url>http://www.rts-tender.ru</url>
+                    <electronicPlaceId>6</electronicPlaceId>
+                    <specialized>false</specialized>
+                </ns2:electronicPlaceInfo>
+                <ns2:placingProcedure>
+                    <ns2:summingupDateTime>2026-10-27T00:00:00</ns2:summingupDateTime>
+                    <ns2:summingupPlace>626150, Российская Федерация, Тюменская обл., г. Тобольск, микрорайон 6, дом 52, ОКАТО: 71410000000</ns2:summingupPlace>
+                </ns2:placingProcedure>
+                <ns2:submissionCloseDateTime>2026-10-27T09:00:00</ns2:submissionCloseDateTime>
+                <ns2:templateVersion>2</ns2:templateVersion>
+                <ns2:templateStructure>
+                    <ns2:level>
+                        <ns2:tabLevel>NOTICE</ns2:tabLevel>
+                        <ns2:tab>
+                            <tabOrdinal>1</tabOrdinal>
+                            <tabName>Общая информация</tabName>
+                            <fixedName>MAIN</fixedName>
+                            <section>
+                                <sectionOrdinal>1</sectionOrdinal>
+                                <sectionName>Сведения о состоянии извещения</sectionName>
+                                <fixedName>MAIN_STATUS</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>2</sectionOrdinal>
+                                <sectionName>Сведения о заказчике</sectionName>
+                                <fixedName>MAIN_CUSTOMER</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>3</sectionOrdinal>
+                                <sectionName>Сведения об обособленном подразделении</sectionName>
+                                <fixedName>MAIN_DETACHED_DEPARTMENT</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>4</sectionOrdinal>
+                                <sectionName>Cведения о закупке</sectionName>
+                                <fixedName>MAIN_PURCHASE</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>5</sectionOrdinal>
+                                <sectionName>Требования к участникам закупки</sectionName>
+                                <fixedName>MAIN_PARTICIPANT_REQUIREMENTS</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>6</sectionOrdinal>
+                                <sectionName>Контактная информация</sectionName>
+                                <fixedName>MAIN_CONTACTS</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>7</sectionOrdinal>
+                                <sectionName>Дополнительная информация</sectionName>
+                                <fixedName>MAIN_ADDITIONAL_INFO</fixedName>
+                            </section>
+                        </ns2:tab>
+                        <ns2:tab>
+                            <tabOrdinal>2</tabOrdinal>
+                            <tabName>Порядок проведения процедуры</tabName>
+                            <fixedName>COMMISSION</fixedName>
+                            <section>
+                                <sectionOrdinal>1</sectionOrdinal>
+                                <sectionName>Размещение извещения</sectionName>
+                                <fixedName>COMMISSION_PUBLISH</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>2</sectionOrdinal>
+                                <sectionName>Подача заявок</sectionName>
+                                <fixedName>APPLICATIONS_SUBMISSION</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>4</sectionOrdinal>
+                                <sectionName>Обсуждение функциональных характеристик</sectionName>
+                                <fixedName>FUNCTIONAL_CHARACTERISTIC</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>5</sectionOrdinal>
+                                <sectionName>Обсуждение предложений о функциональных характеристиках</sectionName>
+                                <fixedName>FUNCTIONAL_CHARACTERISTIC_DISCUSSION</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>6</sectionOrdinal>
+                                <sectionName>Рассмотрение и оценка окончательных предложений о функциональных характеристиках</sectionName>
+                                <fixedName>FUNCTIONAL_CHARACTERISTIC_ASSESSMENT_AND_FINAL_OFFER</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>7</sectionOrdinal>
+                                <sectionName>Рассмотрение первых частей заявок</sectionName>
+                                <fixedName>APPLICATIONS_EXAM_FIRST_PART</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>8</sectionOrdinal>
+                                <sectionName>Подача ценовых предложений</sectionName>
+                                <fixedName>PRICE_OFFER_SUBMISSION</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>9</sectionOrdinal>
+                                <sectionName>Сопоставление ценовых предложений</sectionName>
+                                <fixedName>PRICE_OFFER_COMPARISION</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>10</sectionOrdinal>
+                                <sectionName>Подача дополнительных ценовых предложений</sectionName>
+                                <fixedName>ADDITIONAL_PRICE_OFFER_APPLICATION</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>11</sectionOrdinal>
+                                <sectionName>Сопоставление дополнительных ценовых предложений</sectionName>
+                                <fixedName>ADDITIONAL_PRICE_OFFER_COMPARISION</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>12</sectionOrdinal>
+                                <sectionName>Квалификационный отбор</sectionName>
+                                <fixedName>QUALIFYING_SELECTION</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>13</sectionOrdinal>
+                                <sectionName>Рассмотрение вторых частей заявок</sectionName>
+                                <fixedName>APPLICATIONS_EXAM_SECOND_PART</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>14</sectionOrdinal>
+                                <sectionName>Рассмотрение котировочных заявок</sectionName>
+                                <fixedName>QUTATION_EXAMINATION_APP</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>15</sectionOrdinal>
+                                <sectionName>Форма котировочной заявки</sectionName>
+                                <fixedName>QUTATION_EXAMINATION_APP_FORM</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>16</sectionOrdinal>
+                                <sectionName>Вскрытие конвертов</sectionName>
+                                <fixedName>ENVELOPE_OPENING</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>17</sectionOrdinal>
+                                <sectionName>Проведение аукциона</sectionName>
+                                <fixedName>AUCTION_EXECUTION</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>18</sectionOrdinal>
+                                <sectionName>Проведение аукциона в электронной форме</sectionName>
+                                <fixedName>EAUCTION_EXECUTION</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>19</sectionOrdinal>
+                                <sectionName>Подведение итогов</sectionName>
+                                <fixedName>SUMMARIZING</fixedName>
+                            </section>
+                        </ns2:tab>
+                        <ns2:tab>
+                            <tabOrdinal>3</tabOrdinal>
+                            <tabName>Список лотов</tabName>
+                            <fixedName>LOTS</fixedName>
+                            <section>
+                                <sectionOrdinal>1</sectionOrdinal>
+                                <sectionName>Сведения о лотах</sectionName>
+                                <fixedName>LOTS_INFO</fixedName>
+                            </section>
+                        </ns2:tab>
+                        <ns2:tab>
+                            <tabOrdinal>6</tabOrdinal>
+                            <tabName>Документация</tabName>
+                            <fixedName>DOCS</fixedName>
+                            <section>
+                                <sectionOrdinal>1</sectionOrdinal>
+                                <sectionName>Предоставление документации</sectionName>
+                                <fixedName>DOCS_INFO</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>2</sectionOrdinal>
+                                <sectionName>Файлы документации</sectionName>
+                                <fixedName>DOCS_FILES</fixedName>
+                            </section>
+                        </ns2:tab>
+                    </ns2:level>
+                    <ns2:level>
+                        <ns2:tabLevel>LOT</ns2:tabLevel>
+                        <ns2:tab>
+                            <tabOrdinal>4</tabOrdinal>
+                            <tabName>Формирование лота</tabName>
+                            <fixedName>LOT_INFORMATION</fixedName>
+                            <section>
+                                <sectionOrdinal>1</sectionOrdinal>
+                                <sectionName>Общая информация о лоте</sectionName>
+                                <fixedName>LOT_INFO</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>2</sectionOrdinal>
+                                <sectionName>Информация о товаре, работе, услуге</sectionName>
+                                <fixedName>LOT_GOODS</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>3</sectionOrdinal>
+                                <sectionName>Место поставки</sectionName>
+                                <fixedName>LOT_PLACE</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>4</sectionOrdinal>
+                                <sectionName>Требования к обеспечению заявки</sectionName>
+                                <fixedName>LOT_REQUIREMENTS</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>5</sectionOrdinal>
+                                <sectionName>Требования к обеспечению исполнения договора</sectionName>
+                                <fixedName>LOT_COMPLETING_REQUIREMENTS</fixedName>
+                            </section>
+                        </ns2:tab>
+                    </ns2:level>
+                    <ns2:level>
+                        <ns2:tabLevel>LOT_CUSTOMER</ns2:tabLevel>
+                        <ns2:tab>
+                            <tabOrdinal>5</tabOrdinal>
+                            <tabName>Формирование сведений по заказчику</tabName>
+                            <fixedName>LOT_CUSTOMER</fixedName>
+                            <section>
+                                <sectionOrdinal>1</sectionOrdinal>
+                                <sectionName>Общая информация по Заказчику</sectionName>
+                                <fixedName>LOT_CUSTOMER_INFO</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>2</sectionOrdinal>
+                                <sectionName>Информация о товаре, работе, услуге</sectionName>
+                                <fixedName>LOT_CUSTOMER_GOODS</fixedName>
+                            </section>
+                            <section>
+                                <sectionOrdinal>3</sectionOrdinal>
+                                <sectionName>Место поставки</sectionName>
+                                <fixedName>LOT_CUSTOMER_PLACE</fixedName>
+                            </section>
+                        </ns2:tab>
+                    </ns2:level>
+                </ns2:templateStructure>
+                <ns2:lots>
+                    <lot>
+                        <guid>a2076eef-e6ac-436d-958f-2f51e134258f</guid>
+                        <ordinalNumber>1</ordinalNumber>
+                        <lotEditEnabled>true</lotEditEnabled>
+                        <lotData>
+                            <subject>Оказание услуг по техническому обслуживанию систем видеонаблюдения на объектах МАУК «ЦИиК» г. Тобольска</subject>
+                            <currency>
+                                <code>RUB</code>
+                                <digitalCode>643</digitalCode>
+                                <name>Российский рубль</name>
+                            </currency>
+                            <initialSum>222000</initialSum>
+                            <deliveryPlace>
+                                <state>Уральский федеральный округ</state>
+                                <region>Тюменская   обл</region>
+                                <regionOkato>71000000000</regionOkato>
+                                <address>626150, Тюменская область, г. Тобольск, мкр. 6, д. 52;
+626109, Тюменская область, г. Тобольск, мкр. Иртышский, ул. Железнодорожная, д. 20;
+626102, Тюменская область, г. Тобольска, п. Сумкино, ул. Водников, д. 5;
+626156, Тюменская область, г. Тобольск, ул. Семакова, д. 14;
+626156, Тюменская область, город Тобольск, ул. С. Ремезова, №103 д, строение 5, помещение 1.</address>
+                            </deliveryPlace>
+                            <lotItems>
+                                <newCodes>true</newCodes>
+                                <superiorityNationalRegime>false</superiorityNationalRegime>
+                                <lotItem>
+                                    <guid>b9552108-fa1f-4d7c-9580-306e5799d881</guid>
+                                    <ordinalNumber>1</ordinalNumber>
+                                    <okpd2>
+                                        <code>80.20.10.000</code>
+                                        <name>Услуги систем обеспечения безопасности</name>
+                                    </okpd2>
+                                    <okved2>
+                                        <code>80.2</code>
+                                        <name>Деятельность систем обеспечения безопасности</name>
+                                    </okved2>
+                                    <okei>
+                                        <code>876</code>
+                                        <name>Условная единица</name>
+                                    </okei>
+                                    <qty>1</qty>
+                                    <prohibitionNationalRegime>false</prohibitionNationalRegime>
+                                    <constraintNationalRegime>false</constraintNationalRegime>
+                                    <exceptionNationalRegime>false</exceptionNationalRegime>
+                                </lotItem>
+                            </lotItems>
+                            <forSmallOrMiddle>true</forSmallOrMiddle>
+                            <excludePurchaseFromPlan>false</excludePurchaseFromPlan>
+                            <subcontractorsRequirement>false</subcontractorsRequirement>
+                            <ignoredPurchase>false</ignoredPurchase>
+                            <centralized>false</centralized>
+                        </lotData>
+                        <deliveryPlaceIndication>GL</deliveryPlaceIndication>
+                        <jointLotData>
+                            <jointLot>false</jointLot>
+                        </jointLotData>
+                        <lotPlanInfo>
+                            <planRegistrationNumber>2250856591</planRegistrationNumber>
+                            <planGuid>a006f06c-3b05-4bbf-a687-9d8e93c67496</planGuid>
+                            <positionNumber>118</positionNumber>
+                            <lotPlanPosition>COMMODITY</lotPlanPosition>
+                            <positionGuid>3a887867-3bae-4551-9d70-b4496e1da22a</positionGuid>
+                        </lotPlanInfo>
+                        <cancelled>false</cancelled>
+                    </lot>
+                </ns2:lots>
+            </ns2:purchaseNoticeZKESMBOData>
+        </ns2:item>
+    </ns2:body>
+</ns2:purchaseNoticeZKESMBO>

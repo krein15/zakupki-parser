@@ -15,6 +15,7 @@ from __future__ import annotations
 import re
 from collections import Counter
 from dataclasses import dataclass
+from datetime import date
 from itertools import pairwise
 
 from .cache import NoticeCache
@@ -25,13 +26,16 @@ from .profiles import Profile
 from .regions import resolve_region
 from .website.client import SiteError
 from .website.notice import download_notice
-from .website.search import Client, SearchHit
+from .website.search import Client, SearchHit, SearchQuery, read_page
 
 MAX_KEYWORDS = 8
+LENGTH_223 = 11
 MIN_LETTERS = 3
 NOUN, ADJECTIVES = "NOUN", ("ADJF", "PRTF")
 LINK_NUMBER = re.compile(r"regNumber=(\d+)")
-BARE_NUMBER = re.compile(r"(?<!\d)(\d{19})(?!\d)")  # a 44-ФЗ purchase number: 19 digits
+# A purchase number: 19 digits (44-ФЗ), 18 (ПП РФ 615) or 11 starting with 3 (223-ФЗ, not a phone number).
+BARE_NUMBER = re.compile(r"(?<!\d)(\d{18,19}|3\d{10})(?!\d)")
+SINCE = date(2014, 1, 1)  # the search of a 223-ФЗ number reaches back this far
 # Words of nearly every notice: they tell nothing about the niche.
 STOP_WORDS = frozenset([
     "поставка", "поставить", "оказание", "оказать", "услуга", "выполнение", "выполнить", "работа", "нужда", "нужды",
@@ -65,12 +69,23 @@ def load_examples(client: Client, cache: NoticeCache, numbers: list[str]) -> tup
         try:
             xml = cache.load(number)
             if xml is None:
-                xml = download_notice(client, number)
-                cache.store(SearchHit(number, ""), xml)
+                hit = _find(client, number) if len(number) == LENGTH_223 else SearchHit(number, "")
+                xml = download_notice(client, number, hit.guid)
+                cache.store(hit, xml)
             notices.append(parse_notice(xml))
         except (SiteError, NoticeFormatError) as error:
             problems.append(f"{number}: {error}")
     return notices, problems
+
+
+def _find(client: Client, number: str) -> SearchHit:
+    """A 223-ФЗ notice is downloaded by its guid, which only its search result gives."""
+    query = SearchQuery((), SINCE, date.today(), text=number, stages=(), laws=("223",))
+    hits, _ = read_page(client, query, 1)
+    hit = next((hit for hit in hits if hit.reg_number == number), None)
+    if hit is None or not hit.guid:
+        raise SiteError("поиск ЕИС не нашёл такую закупку 223-ФЗ")
+    return hit
 
 
 def to_profile(suggestion: Suggestion, name: str, regions: tuple[str, ...] = ()) -> Profile:

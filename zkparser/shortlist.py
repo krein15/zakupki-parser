@@ -33,7 +33,7 @@ def search_only_notice(hit: SearchHit) -> Notice:
         reg_number=hit.reg_number, version=0, document_type=SEARCH_ONLY, url=hit.url, title=hit.title,
         placing_way=hit.placing_way, placing_way_code="", etp="", published=None, applications_start=None,
         applications_end=None, max_price=hit.price, currency="RUB", placer=organization, placer_role="",
-        customers=(CustomerPart(organization),), positions=(),
+        customers=(CustomerPart(organization),), positions=(), law=hit.law,
     )
 
 

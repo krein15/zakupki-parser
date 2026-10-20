@@ -51,6 +51,8 @@ def test_customers_alone_are_enough():
         ({"regions": ["72"], "keywords": ["б"], "price_to": "много"}, "сумма в рублях"),
         ({"regions": ["72"], "keywords": ["б"], "all_stages": "да"}, "true или false"),
         ({"regions": ["72"], "keywords": ["б"], "filters": ["мусор"]}, "нет фильтра «мусор». Есть: licences"),
+        ({"regions": ["72"], "keywords": ["б"], "laws": ["94"]}, "«94» в laws"),
+        ({"regions": ["72"], "keywords": ["б"], "laws": []}, "хотя бы один тип торгов"),
     ],
 )
 def test_mistakes_are_named(data, message):
@@ -68,6 +70,7 @@ def test_saved_profile_reads_back_the_same(tmp_path):
             "minus": ["ремонт*"],
             "strong": ["заправк* картридж*"],
             "filters": ["repair", "licences"],
+            "laws": ["223", "44"],
             "okpd2": ["17.23"],
             "customer_inn": ["7202161807"],
             "price_from": 10000,
@@ -93,3 +96,10 @@ def test_broken_toml(tmp_path):
 def test_missing_file(tmp_path):
     with pytest.raises(ProfileError, match="не удалось прочитать"):
         load_profile(tmp_path / "nope.toml")
+
+
+
+def test_every_law_by_default(tmp_path):
+    from zkparser.website.search import ALL_LAWS
+
+    assert parse_profile({"regions": ["72"], "keywords": ["бумага"]}, tmp_path / "a.toml").laws == ALL_LAWS

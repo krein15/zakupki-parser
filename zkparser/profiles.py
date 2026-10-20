@@ -16,9 +16,10 @@ from pathlib import Path
 
 from .filters import FILTERS
 from .regions import resolve_region
+from .website.search import ALL_LAWS, LAW_NAMES
 
 LIST_FIELDS = ("regions", "keywords", "strong", "minus", "filters", "okpd2", "ktru", "customer_inn",
-               "exclude_customer_inn")
+               "exclude_customer_inn", "laws")
 KNOWN_FIELDS = {"name", "price_from", "price_to", "all_stages", "telegram_chat", *LIST_FIELDS}
 TELEGRAM_CHAT = re.compile(r"-?\d{3,}|@[A-Za-z]\w{3,}")
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
@@ -45,6 +46,7 @@ class Profile:
     price_to: int | None = None
     all_stages: bool = False
     telegram_chat: str = ""  # where to send new notices; empty — the default chat from .env
+    laws: tuple[str, ...] = ALL_LAWS  # kinds of procurement: "44", "223", "615"
     path: Path | None = field(default=None, compare=False)
 
 
@@ -102,6 +104,7 @@ def dump_profile(profile: Profile) -> str:
         if getattr(profile, name) is not None:
             lines.append(f"{name} = {getattr(profile, name)}")
     lines.append(f"all_stages = {'true' if profile.all_stages else 'false'}")
+    lines.append(f"laws = {_strings(profile.laws)}  # 44-ФЗ, 223-ФЗ, ПП РФ 615 (капремонт)")
     if profile.telegram_chat:
         lines.append(f"telegram_chat = {_string(profile.telegram_chat)}")
     return "\n".join(lines) + "\n"
@@ -154,6 +157,12 @@ def parse_profile(data: dict, path: Path) -> Profile:
     except ValueError as error:
         raise ProfileError(f"{path}: {error}") from error
 
+    unknown_laws = [law for law in lists["laws"] if law not in LAW_NAMES]
+    if unknown_laws:
+        raise ProfileError(f"{path}: «{unknown_laws[0]}» в laws — бывают \"44\", \"223\" и \"615\"")
+    if "laws" in data and not lists["laws"]:
+        raise ProfileError(f"{path}: в laws нужен хотя бы один тип торгов: \"44\", \"223\" или \"615\"")
+
     unknown_filters = [key for key in lists["filters"] if key not in FILTERS]
     if unknown_filters:
         known = ", ".join(f"{key} ({item.title})" for key, item in FILTERS.items())
@@ -200,5 +209,6 @@ def parse_profile(data: dict, path: Path) -> Profile:
         price_to=prices["price_to"],
         all_stages=all_stages,
         telegram_chat=telegram_chat,
+        laws=tuple(dict.fromkeys(lists["laws"])) or ALL_LAWS,
         path=path,
     )

@@ -189,3 +189,39 @@ def test_a_drug_unit_is_named_in_words(code, name, unit):
 
     element = etree.fromstring(f"<manualUserOKEI><code>{code}</code><name>{name}</name></manualUserOKEI>")
     assert _drug_unit(element) == unit
+
+
+
+def test_a_capital_repair_notice_of_pp_615():
+    """No positions with codes: the kinds of works and the subject stand in for them."""
+    n = notice("615")
+    assert (n.law, n.reg_number, n.document_type) == ("615", "206750000012600293", "pprf615NotificationEF")
+    assert n.placing_way.startswith("ПП РФ 615 Электронный аукцион")
+    assert n.max_price == Decimal("81337583.14")
+    assert n.applications_end == datetime(2026, 10, 28, 9, 0, tzinfo=TYUMEN_TIME)
+    assert n.customer_inns == ("7204201389",)  # the regional fund of capital repairs
+    assert n.etp == "АО «Сбербанк-АСТ»"
+    assert len(n.positions) == 3 and not any(position.okpd2_code for position in n.positions)
+    assert n.positions[0].name.startswith("Ремонт внутридомовых")
+
+
+def test_a_223_notice_keeps_its_moments_in_the_customers_zone():
+    n = notice("223")
+    assert (n.law, n.reg_number, n.document_type) == ("223", "32616488407", "purchaseNotice")
+    assert n.title == "Поставка и настил сценического покрытия."
+    assert n.placing_way.startswith("223-ФЗ Запрос предварительных предложений")
+    assert n.applications_end == datetime(2026, 10, 22, 8, 0, tzinfo=TYUMEN_TIME)  # written as 08:00, МСК+2
+    assert (n.max_price, n.currency, n.etp) == (Decimal("650000"), "RUB", "РТС-тендер")
+    assert n.customer_inns == ("7207010960",)
+    assert [(p.okpd2_code, p.quantity, p.unit) for p in n.positions] == [
+        ("22.23.15.000", Decimal("160"), "Квадратный метр"), ("43.33.29.110", Decimal("1"), "Условная единица")]
+    assert n.url == "https://zakupki.gov.ru/223/purchase/public/purchase/info/common-info.html?regNumber=32616488407"
+
+
+def test_a_223_quotation_keeps_its_data_under_a_name_of_its_own():
+    n = notice("223_zk")
+    assert n.document_type == "purchaseNoticeZKESMBO"
+    assert n.max_price == Decimal("222000")  # initialSum, not maxContractPrice
+    (position,) = n.positions
+    assert position.name.startswith("Оказание услуг по техническому обслуживанию")  # the only item: the lot's subject
+    assert position.okpd2_code == "80.20.10.000"

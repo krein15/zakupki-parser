@@ -84,6 +84,7 @@ class Notice:
     # The quantity cannot be set in advance: the maximum price caps the contract and positions carry unit prices,
     # so their totals do not add up to it.
     quantity_undefined: bool = False
+    law: str = "44"  # "44" (44-ФЗ), "223" (223-ФЗ) or "615" (ПП РФ 615, capital repairs), see website/search.LAWS
 
     @property
     def placer_role_name(self) -> str:

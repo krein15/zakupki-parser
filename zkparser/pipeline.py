@@ -133,6 +133,8 @@ def run_profiles(
                 continue
             if not profile.all_stages and hit.stage != APPLICATIONS_STAGE:
                 continue
+            if hit.law not in profile.laws:
+                continue
             profile_result.checked += 1
             verdict = matcher.evaluate(notice)
             if verdict.matched:
@@ -155,7 +157,9 @@ def _queries(profiles: list[Profile], start: date, end: date) -> list[tuple[str,
     price_from = min(floors) if None not in floors else None
     price_to = max(ceilings) if None not in ceilings else None
     regions = dict.fromkeys(code for profile in profiles for code in profile.regions)
+    laws = tuple(dict.fromkeys(law for profile in profiles for law in profile.laws))
     return [
-        (region, SearchQuery((region,), start, end, price_from=price_from, price_to=price_to, stages=stages))
+        (region, SearchQuery((region,), start, end, price_from=price_from, price_to=price_to, stages=stages,
+                             laws=laws))
         for region in regions
     ]

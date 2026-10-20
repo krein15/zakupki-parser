@@ -9,7 +9,14 @@ import pytest
 from conftest import FakeSite, days, numbers, results_page
 
 from zkparser.website.client import SiteError
-from zkparser.website.search import SEARCH_PATH, SearchQuery, Stage, parse_price, parse_results, search
+from zkparser.website.search import (
+    SEARCH_PATH,
+    SearchQuery,
+    Stage,
+    parse_price,
+    parse_results,
+    search,
+)
 
 TYUMEN, KHMAO = "72000000000", "86000000000"
 DAY = date(2026, 9, 30)
@@ -135,3 +142,39 @@ def test_page_callback_sees_the_count_grow():
     seen = []
     search(FakeSite({DAY: numbers(112)}), query(), on_page=lambda collected, total: seen.append((collected, total)))
     assert seen == [(50, 112), (100, 112), (112, 112)]
+
+
+
+ENTRY_223 = (
+    '<div class="search-registry-entry-block">'
+    '<div class="registry-entry__header-top__title">223-ФЗ Иной способ</div>'
+    '<div class="registry-entry__header-mid__number"><a href="https://zakupki.gov.ru/223/purchase/public/purchase/info/'
+    'common-info.html?regNumber=32616488407">№ 32616488407</a></div>'
+    '<div class="registry-entry__header-mid__title">Подача заявок</div>'
+    '<a href="/epz/order/notice/notice223/printForm/view.html?purchaseNoticeGuid=6fcd0eb1-0526-41cd-8e1f-9a58e9978eb8'
+    '&amp;purchaseNoticeNumber=32616488407">Печатная форма</a></div>'
+)
+ENTRY_615 = (
+    '<div class="search-registry-entry-block">'
+    '<div class="registry-entry__header-top__title">ПП РФ 615 Электронный аукцион на оказание услуг</div>'
+    '<div class="registry-entry__header-mid__number"><a href="/epz/order/notice/ea615/view/common-info.html'
+    '?regNumber=206750000012600293">№ 206750000012600293</a></div></div>'
+)
+
+
+def test_entries_of_223_and_615_name_their_law():
+    page = f'<html><body><div class="search-results__total">2</div>{ENTRY_223}{ENTRY_615}</body></html>'.encode()
+    (fz223, pp615), _ = parse_results(page)
+    assert (fz223.law, fz223.guid, fz223.placing_way) == (
+        "223", "6fcd0eb1-0526-41cd-8e1f-9a58e9978eb8", "223-ФЗ Иной способ")
+    assert fz223.url == "https://zakupki.gov.ru/223/purchase/public/purchase/info/common-info.html?regNumber=32616488407"
+    assert (pp615.law, pp615.guid, pp615.reg_number) == ("615", "", "206750000012600293")
+    assert pp615.url.startswith("https://zakupki.gov.ru/epz/order/notice/ea615/")
+
+
+def test_params_ask_for_the_laws():
+    query = SearchQuery(("72000000000",), date(2026, 10, 1), date(2026, 10, 1), laws=("44", "223", "615"))
+    params = query.params()
+    assert (params["fz44"], params["fz223"], params["ppRf615"]) == ("on", "on", "on")
+    only_223 = SearchQuery(("72000000000",), date(2026, 10, 1), date(2026, 10, 1), laws=("223",)).params()
+    assert "fz44" not in only_223 and only_223["fz223"] == "on"

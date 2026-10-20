@@ -44,6 +44,7 @@ from ..settings import app_data_dir, default_cache_dir, default_output_dir, okpd
 from ..telegram import SecretFilter, TelegramBot, TelegramError
 from ..website.client import SiteClient
 from ..website.okpd2 import Okpd2Ids
+from ..website.search import ALL_LAWS
 from . import theme
 from .forms import period_text, rubles, safe_file_name, short_path, split_list, without_path
 from .preferences import CUSTOM, PERIODS, Preferences, period_dates
@@ -79,7 +80,8 @@ SEARCH_TAB, RESULTS_TAB, PROFILE_TAB, MONITORING_TAB = "Поиск", "Резул
 ALL_NOTICES = "Все закупки"
 MY_PROFILE = "Мой профиль: "  # a saved profile in the niche menu; templates are listed by their names
 PROFILE_FILTER, TEMPLATE_FILTER = "Профиль: ", "Шаблон: "  # how the niche menu was remembered before 0.9
-MORE = "Дополнительно: только или кроме заказчиков, чат Telegram, этап"
+MORE = "Дополнительно: типы торгов, только или кроме заказчиков, чат Telegram, этап"
+LAW_TITLES = {"44": "44-ФЗ", "223": "223-ФЗ", "615": "ПП РФ 615 (капремонт)"}
 FIRST_STEPS = (
     "Как начать:\n"
     "1. Выберите регион.\n"
@@ -195,7 +197,7 @@ class App(ctk.CTk):
                               cursor="hand2")
         author.pack(side="left", padx=(8, 0), pady=(6, 0))
         author.bind("<Button-1>", lambda _: webbrowser.open(BRAND_URL))
-        ctk.CTkLabel(titles, text="Закупки 44-ФЗ под ваш ассортимент: отчёт в Excel и новые закупки в Telegram",
+        ctk.CTkLabel(titles, text="Госзакупки под ваш ассортимент: отчёт в Excel и новые закупки в Telegram",
                      font=theme.font(13), text_color=theme.TEXT_MUTED).pack(anchor="w")
         image = _brand_image("logo-light@2x.png", "logo-dark@2x.png", LOGO_SIZE)
         logo = ctk.CTkLabel(header, image=image, text="", cursor="hand2") if image else None
@@ -209,8 +211,7 @@ class App(ctk.CTk):
 
     def _build_search_tab(self, tab: ctk.CTkBaseClass) -> None:
         card = SectionCard(tab, "Найти открытые закупки",
-                           "Закупки, по которым ещё принимаются заявки. Сайт ЕИС годами не меняет этап «Подача "
-                           "заявок», поэтому программа сама сверяет срок подачи.")
+                           f"Те, по которым ещё принимаются заявки, — размещённые за {LOOKBACK_DAYS} дней.")
         card.pack(fill="x")
         grid = ctk.CTkFrame(card.body, fg_color="transparent")
         grid.pack(fill="x")
@@ -248,6 +249,9 @@ class App(ctk.CTk):
         self.export_price_to.pack(side="left")
         label(prices, "необязательно").pack(side="left", padx=10)
         field("3. Цена", prices)
+        laws_row = ctk.CTkFrame(grid, fg_color="transparent")
+        self.export_law_vars = self._law_boxes(laws_row, self.prefs.export_laws)
+        field("Тип торгов", laws_row, strong=False)
 
         self.export_button = ctk.CTkButton(card.body, text="Найти закупки", width=260, height=46, corner_radius=12,
                                            font=theme.font(17, "bold"), fg_color=theme.ACCENT,
@@ -256,13 +260,6 @@ class App(ctk.CTk):
         self.export_details = ctk.CTkSwitch(card.body, text="с позициями и ИНН заказчиков — дольше",
                                             font=theme.font(12), text_color=theme.TEXT, progress_color=theme.ACCENT)
         self.export_details.pack(anchor="w", pady=(10, 0))
-        note = ctk.CTkLabel(card.body, font=theme.font(12), text_color=theme.TEXT_MUTED, anchor="w", justify="left",
-                            text=f"Закупки, размещённые за {LOOKBACK_DAYS} дней. «Все закупки» собираются за "
-                                 "минуту-две. Для ниши программа сначала отбирает закупки по её кодам и словам "
-                                 "в названии и скачивает только их — обычно несколько минут, потом быстрее.",
-                            wraplength=500)
-        note.pack(fill="x", pady=(10, 0))
-        wrap_to_width(card, [note])
 
         set_entry(self.export_price_from, self.prefs.export_price_from)
         set_entry(self.export_price_to, self.prefs.export_price_to)
@@ -382,6 +379,9 @@ class App(ctk.CTk):
         self.all_stages = ctk.CTkSwitch(self.more, text="любой, а не только подача заявок", font=theme.font(13),
                                         text_color=theme.TEXT, progress_color=theme.ACCENT)
         field("Этап закупки", self.all_stages)
+        laws_row = ctk.CTkFrame(self.more, fg_color="transparent")
+        self.law_vars = self._law_boxes(laws_row, ALL_LAWS)
+        field("Типы торгов", laws_row)
         wrap_to_width(card, hints, margin=220)
 
         run = ctk.CTkFrame(card.body, fg_color="transparent")
@@ -407,6 +407,16 @@ class App(ctk.CTk):
         note = "Файлы профилей — в папке profiles. Окно сохраняет файл целиком, без комментариев."
         ctk.CTkLabel(card.body, text=note, font=theme.font(12), text_color=theme.TEXT_MUTED, anchor="w").pack(
             fill="x", pady=(10, 0))
+
+    def _law_boxes(self, master: ctk.CTkFrame, chosen: Any) -> dict[str, ctk.BooleanVar]:
+        """A checkbox per kind of procurement, in a row."""
+        variables = {}
+        for law, title in LAW_TITLES.items():
+            var = variables[law] = ctk.BooleanVar(value=law in chosen)
+            ctk.CTkCheckBox(master, text=title, variable=var, font=theme.font(13), text_color=theme.TEXT,
+                            fg_color=theme.ACCENT, hover_color=theme.ACCENT_HOVER, checkbox_width=18,
+                            checkbox_height=18, corner_radius=5).pack(side="left", padx=(0, 16))
+        return variables
 
     def _toggle_more(self, show: bool | None = None) -> None:
         show = not self.more_shown if show is None else show
@@ -644,8 +654,11 @@ class App(ctk.CTk):
             self.all_stages.select()
         else:
             self.all_stages.deselect()
+        for law, var in self.law_vars.items():
+            var.set(law in profile.laws)
         # A folded filter must not work unseen.
-        used = profile.customer_inn or profile.exclude_customer_inn or profile.telegram_chat or profile.all_stages
+        used = (profile.customer_inn or profile.exclude_customer_inn or profile.telegram_chat or profile.all_stages
+                or set(profile.laws) != set(ALL_LAWS))
         self._toggle_more(bool(used) or self.more_shown)
 
     def _form_profile(self) -> Profile:
@@ -662,6 +675,7 @@ class App(ctk.CTk):
             "customer_inn": split_list(self.customer_inn.get()),
             "exclude_customer_inn": split_list(self.exclude_inn.get()),
             "all_stages": bool(self.all_stages.get()),
+            "laws": [law for law, var in self.law_vars.items() if var.get()],
             "telegram_chat": self.telegram_chat.get().strip(),
         }
         for key, widget in (("price_from", self.price_from), ("price_to", self.price_to)):
@@ -832,8 +846,11 @@ class App(ctk.CTk):
         price_from, price_to = rubles(self.export_price_from.get()), rubles(self.export_price_to.get())
         if price_from is not None and price_to is not None and price_from > price_to:
             raise ValueError("Цена «от» больше цены «до»")
+        laws = tuple(law for law, var in self.export_law_vars.items() if var.get())
+        if not laws:
+            raise ValueError("Отметьте хотя бы один тип торгов: 44-ФЗ, 223-ФЗ или ПП РФ 615")
         return ExportQuery(tuple(self.export_regions), price_from, price_to, self.export_words.get().strip(),
-                           bool(self.export_details.get()), self._export_profile())
+                           bool(self.export_details.get()), self._export_profile(), laws)
 
     def _start_export(self) -> None:
         if self._busy():
@@ -1360,6 +1377,7 @@ class App(ctk.CTk):
         self.prefs.export_price_to = self.export_price_to.get().strip()
         self.prefs.export_words = self.export_words.get().strip()
         self.prefs.export_details = bool(self.export_details.get())
+        self.prefs.export_laws = [law for law, var in self.export_law_vars.items() if var.get()]
         self.prefs.export_filter = self.export_filter.get()
         try:
             self.prefs.save()

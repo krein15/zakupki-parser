@@ -52,7 +52,7 @@ from .settings import default_cache_dir, default_output_dir, okpd2_ids_path, pro
 from .website.client import SiteClient, SiteError
 from .website.notice import download_notice
 from .website.okpd2 import Okpd2Ids
-from .website.search import SearchHit, SearchQuery, Stage
+from .website.search import ALL_LAWS, LAWS, SearchHit, SearchQuery, Stage
 
 DATE_FORMATS = ("%Y-%m-%d", "%d.%m.%Y")
 
@@ -109,6 +109,10 @@ def build_parser() -> argparse.ArgumentParser:
     niche = export.add_mutually_exclusive_group()
     niche.add_argument("--template", metavar="ШАБЛОН", help="только закупки ниши: шаблон (название или его начало)")
     niche.add_argument("--profile", type=Path, metavar="ПРОФИЛЬ", help="только закупки, подходящие профилю .toml")
+    export.add_argument(
+        "--law", action="append", choices=list(LAWS), metavar="ЗАКОН",
+        help="тип торгов: 44, 223 (223-ФЗ) или 615 (ПП РФ 615, капремонт); по умолчанию все три",
+    )
     export.add_argument("--out", type=Path, metavar="ПАПКА", help="куда сохранить Excel")
     export.add_argument("--no-excel", action="store_true", help="только вывод в консоль, без Excel")
     add_cache_dir(export)
@@ -332,7 +336,8 @@ def run_export(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int
         parser.error(str(error))
     if args.template:
         profile = from_template(find_template(args.template, parser))
-    query = ExportQuery(regions, args.price_from, args.price_to, args.query.strip(), args.details, profile)
+    laws = tuple(dict.fromkeys(args.law)) if args.law else ALL_LAWS
+    query = ExportQuery(regions, args.price_from, args.price_to, args.query.strip(), args.details, profile, laws)
     client = SiteClient()
     now = datetime.now().astimezone()
     names = ", ".join(REGIONS[code] for code in regions) if len(regions) <= 3 else regions_count(len(regions))

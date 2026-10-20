@@ -1,0 +1,118 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<ns4:pprf615NotificationEF xmlns="http://zakupki.gov.ru/oos/pprf615types/1" xmlns:ns2="http://zakupki.gov.ru/oos/common/1" xmlns:ns4="http://zakupki.gov.ru/oos/printform/1" xmlns:ns3="http://zakupki.gov.ru/oos/base/1" schemeVersion="16.3">
+    <id>44312715</id>
+    <versionNumber>1</versionNumber>
+    <commonInfo>
+        <purchaseNumber>206750000012600293</purchaseNumber>
+        <docNumber>2067500000126002930001</docNumber>
+        <purchaseObjectInfo>293П/26. Оказание услуг и (или) выполнение работ по оценке технического состояния многоквартирных домов, разработке проектной документации на проведение капитального ремонта общего имущества многоквартирных домов, капитальному ремонту общего имущества многоквартирных домов, расположенных по адресам: обл. Тюменская, г. Тюмень, ул. Московский тракт, д. 163; обл. Тюменская, г. Тюмень, ул. Муравленко, д. 35; обл. Тюменская, г. Тюмень, ул. Олимпийская, д. 12а.</purchaseObjectInfo>
+        <docPublishDate>2026-10-20T16:24:15.956+05:00</docPublishDate>
+        <href>https://zakupki.gov.ru/epz/order/notice/ea615/view/common-info.html?regNumber=206750000012600293</href>
+    </commonInfo>
+    <placingWayInfo>
+        <code>EA615</code>
+        <name>Электронный аукцион на оказание услуг или выполнение работ по капитальному ремонту общего имущества в многоквартирном доме</name>
+    </placingWayInfo>
+    <printFormInfo>
+        <url>https://zakupki.gov.ru/epz/order/notice/printForm/view.html?regNumber=206750000012600293</url>
+    </printFormInfo>
+    <attachmentsInfo>
+        <attachmentInfo>
+            <publishedContentId>01A1590D3E177C7D9EF25FE0B9EC5237</publishedContentId>
+            <fileName>Аукционная документация 293П-26.rar</fileName>
+            <fileSize>40.73 Мб</fileSize>
+            <docDescription>Аукционная документация 293П-26</docDescription>
+            <url>https://zakupki.gov.ru/44fz/filestore/public/1.0/download/priz/file.html?uid=01A1590D3E177C7D9EF25FE0B9EC5237</url>
+        </attachmentInfo>
+    </attachmentsInfo>
+    <purchaseResponsibleInfo>
+        <publisherRole>RO</publisherRole>
+        <responsibleOrgInfo>
+            <regNum>20675000001</regNum>
+            <consRegistryNum>712J0527</consRegistryNum>
+            <fullName>НЕКОММЕРЧЕСКАЯ ОРГАНИЗАЦИЯ "ФОНД КАПИТАЛЬНОГО РЕМОНТА МНОГОКВАРТИРНЫХ ДОМОВ ТЮМЕНСКОЙ ОБЛАСТИ"</fullName>
+            <postAddress>625048, Тюменская обл, г Тюмень, Тюменская обл, г Тюмень, ул Новгородская, дом 10</postAddress>
+            <INN>7204201389</INN>
+            <KPP>720301001</KPP>
+            <region>
+                <kladrCode>72000000000</kladrCode>
+                <fullName>Тюменская обл</fullName>
+            </region>
+        </responsibleOrgInfo>
+        <responsibleInfo>
+            <contactPerson>
+                <lastName>Иванов</lastName>
+                <firstName>Иван</firstName>
+                <middleName>Иванович</middleName>
+            </contactPerson>
+            <contactEMail>contact@example.org</contactEMail>
+            <contactPhone>7-000-0000000</contactPhone>
+        </responsibleInfo>
+    </purchaseResponsibleInfo>
+    <notificationInfo>
+        <ETPInfo>
+            <ns3:code>ETP_SBAST</ns3:code>
+            <ns3:name>АО «Сбербанк-АСТ»</ns3:name>
+            <ns3:url>http://www.sberbank-ast.ru</ns3:url>
+        </ETPInfo>
+        <procedureInfo>
+            <collectingEndDate>2026-10-28T09:00:00+05:00</collectingEndDate>
+            <scoringDate>2026-10-30+05:00</scoringDate>
+            <biddingDate>2026-11-02+05:00</biddingDate>
+        </procedureInfo>
+        <contractCondition>
+            <maxPriceInfo>
+                <maxPrice>81337583.14</maxPrice>
+                <applicationGuarantee>
+                    <amount>813375.83</amount>
+                </applicationGuarantee>
+                <contractGuarantee>
+                    <amount>813375.83</amount>
+                </contractGuarantee>
+            </maxPriceInfo>
+            <kladrPlacesInfo>
+                <kladrPlace>
+                    <kladr>
+                        <kladrCode>72000001000</kladrCode>
+                        <fullName>Российская Федерация, Тюменская обл, Тюмень г</fullName>
+                    </kladr>
+                    <deliveryPlace>ул. Московский тракт, д. 163</deliveryPlace>
+                </kladrPlace>
+                <kladrPlace>
+                    <kladr>
+                        <kladrCode>72000001000</kladrCode>
+                        <fullName>Российская Федерация, Тюменская обл, Тюмень г</fullName>
+                    </kladr>
+                    <deliveryPlace>ул. Муравленко, д. 35</deliveryPlace>
+                </kladrPlace>
+                <kladrPlace>
+                    <kladr>
+                        <kladrCode>72000001000</kladrCode>
+                        <fullName>Российская Федерация, Тюменская обл, Тюмень г</fullName>
+                    </kladr>
+                    <deliveryPlace>ул. Олимпийская, д. 12а</deliveryPlace>
+                </kladrPlace>
+            </kladrPlacesInfo>
+            <deliveryTerm>- срок начала выполнения работ: В соответствии с разделом XVI «Проект договора»;&#13;
+- срок окончания выполнения работ: согласно разделу XIV к документации «График выполнения работ, включая стоимость этапов выполнения работ».</deliveryTerm>
+            <deliveryConditions>В соответствии с разделом XVI «Проект договора».</deliveryConditions>
+        </contractCondition>
+        <purchaseObjectsInfo>
+            <servicesWorksKindCh1St166Info>
+                <serviceWorkKindCh1St166Info>
+                    <ns3:code>2</ns3:code>
+                    <ns3:name>Ремонт внутридомовых инженерных систем теплоснабжения</ns3:name>
+                </serviceWorkKindCh1St166Info>
+                <serviceWorkKindCh1St166Info>
+                    <ns3:code>5</ns3:code>
+                    <ns3:name>Ремонт внутридомовых инженерных систем водоотведения</ns3:name>
+                </serviceWorkKindCh1St166Info>
+            </servicesWorksKindCh1St166Info>
+            <servicesWorksKindNPAInfo/>
+        </purchaseObjectsInfo>
+        <purchaseSubjectInfo>
+            <ns3:code>8</ns3:code>
+            <ns3:name>Оказание услуг и (или) выполнение работ по оценке технического состояния многоквартирных домов, разработке проектной документации на проведение капитального ремонта общего имущества многоквартирных домов, капитальному ремонту общего имущества многоквартирных домов</ns3:name>
+        </purchaseSubjectInfo>
+    </notificationInfo>
+</ns4:pprf615NotificationEF>
