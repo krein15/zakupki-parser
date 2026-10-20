@@ -50,6 +50,7 @@ def test_customers_alone_are_enough():
         ({"regions": ["72"], "keywords": ["б"], "price_from": 100, "price_to": 10}, "price_from больше price_to"),
         ({"regions": ["72"], "keywords": ["б"], "price_to": "много"}, "сумма в рублях"),
         ({"regions": ["72"], "keywords": ["б"], "all_stages": "да"}, "true или false"),
+        ({"regions": ["72"], "keywords": ["б"], "filters": ["мусор"]}, "нет фильтра «мусор». Есть: licences"),
     ],
 )
 def test_mistakes_are_named(data, message):
@@ -66,6 +67,7 @@ def test_saved_profile_reads_back_the_same(tmp_path):
             "keywords": ["канцеляр* товар*", '"бумага для офисной техники"', "ёлка\\ель"],
             "minus": ["ремонт*"],
             "strong": ["заправк* картридж*"],
+            "filters": ["repair", "licences"],
             "okpd2": ["17.23"],
             "customer_inn": ["7202161807"],
             "price_from": 10000,

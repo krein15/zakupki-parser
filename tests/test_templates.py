@@ -37,6 +37,7 @@ def test_template_is_a_valid_profile(name):
         "okpd2": list(template.okpd2),
         "ktru": list(template.ktru),
         "strong": list(template.strong),
+        "filters": list(template.filters),
     }
     profile = parse_profile(data, Path("template.toml"))
     Matcher(profile)  # every keyword and minus word compiles
@@ -76,10 +77,10 @@ def test_licence_resale_is_not_an_it_service():
     """A licence renewal carries an IT service code (62.03); only the minus words keep it out of the IT niche."""
     notice = parse_notice((FIXTURES / "notice_licence.xml").read_bytes())
     profile = from_template(TEMPLATES["IT-услуги и разработка ПО"], ("72000000000",))
-    assert Matcher(replace(profile, minus=())).evaluate(notice).matched
+    assert Matcher(replace(profile, minus=(), filters=())).evaluate(notice).matched
     verdict = Matcher(profile).evaluate(notice)
     assert not verdict.matched
-    assert verdict.reasons[0].startswith("минус-слово")
+    assert verdict.reasons[0].startswith("фильтр «Перепродажа лицензий»: «")
 
 
 def test_development_outweighs_the_licence_in_the_it_template():

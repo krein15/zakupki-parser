@@ -22,6 +22,7 @@ from functools import cache
 import pymorphy3
 
 from .display import money
+from .filters import filter_minus
 from .models import Notice, Position
 from .profiles import Profile, ProfileError
 
@@ -137,6 +138,12 @@ class Matcher:
         self._strong = [compile_term(term, self._morphology, profile) for term in profile.strong]
         self._keywords = [compile_term(term, self._morphology, profile) for term in profile.keywords]
         self._minus = [compile_term(term, self._morphology, profile) for term in profile.minus]
+        # The words of the junk filters work as minus words; a rejection names the filter.
+        self._filter_of: dict[Term, str] = {}
+        for term, title in filter_minus(profile.filters):
+            compiled = compile_term(term, self._morphology, profile)
+            self._minus.append(compiled)
+            self._filter_of.setdefault(compiled, title)
 
     def evaluate(self, notice: Notice) -> Verdict:
         profile = self.profile
@@ -148,6 +155,9 @@ class Matcher:
         strong = [term for term in self._strong if term.found_in(title)]
         minus = next((term for term in self._minus if term.found_in(title)), None)
         if minus and not strong:
+            title_of_filter = self._filter_of.get(minus)
+            if title_of_filter and minus.source not in profile.minus:
+                return Verdict(False, (f"фильтр «{title_of_filter}»: «{minus.source}» в названии",))
             return Verdict(False, (f"минус-слово «{minus.source}» в названии",))
 
         if not (self._strong or self._keywords or profile.okpd2 or profile.ktru):  # a profile of customers only

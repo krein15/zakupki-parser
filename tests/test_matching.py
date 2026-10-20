@@ -213,3 +213,22 @@ def test_price_inside_the_range_passes():
 def test_bad_terms_are_reported(term, message):
     with pytest.raises(ProfileError, match=message):
         matcher(keywords=(term,))
+
+
+
+def test_a_junk_filter_works_as_minus_words_and_names_itself():
+    rules = {"keywords": ("программн* обеспечени*",), "filters": ("licences",)}
+    result = verdict(rules, "Продление лицензии на программное обеспечение")
+    assert result.reasons == ("фильтр «Перепродажа лицензий»: «лицензи*» в названии",)
+    kept = verdict({**rules, "strong": ("доработк* программн*",)},
+                   "Доработка программного обеспечения и продление лицензии")
+    assert kept.matched  # a strong word outweighs a filter as it does a minus word
+    dropped = verdict(rules, "Закупка", position("Лицензия на программное обеспечение"),
+                      position("Программное обеспечение"))
+    assert dropped.positions == (2,)
+
+
+def test_an_own_minus_word_is_named_as_such_even_if_a_filter_has_it():
+    result = verdict({"keywords": ("программн*",), "minus": ("лицензи*",), "filters": ("licences",)},
+                     "Лицензия на программный продукт")
+    assert result.reasons == ("минус-слово «лицензи*» в названии",)

@@ -14,13 +14,15 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .filters import FILTERS
 from .regions import resolve_region
 
-LIST_FIELDS = ("regions", "keywords", "strong", "minus", "okpd2", "ktru", "customer_inn", "exclude_customer_inn")
+LIST_FIELDS = ("regions", "keywords", "strong", "minus", "filters", "okpd2", "ktru", "customer_inn",
+               "exclude_customer_inn")
 KNOWN_FIELDS = {"name", "price_from", "price_to", "all_stages", "telegram_chat", *LIST_FIELDS}
 TELEGRAM_CHAT = re.compile(r"-?\d{3,}|@[A-Za-z]\w{3,}")
 TEMPLATES_DIR = Path(__file__).resolve().parent / "templates"
-TEMPLATE_FIELDS = ("keywords", "minus", "okpd2", "ktru", "strong")
+TEMPLATE_FIELDS = ("keywords", "minus", "okpd2", "ktru", "strong", "filters")
 
 
 class ProfileError(ValueError):
@@ -36,6 +38,7 @@ class Profile:
     okpd2: tuple[str, ...] = ()
     ktru: tuple[str, ...] = ()
     strong: tuple[str, ...] = ()  # keywords that outweigh a minus word standing next to them
+    filters: tuple[str, ...] = ()  # junk filters switched on, keys of filters.FILTERS
     customer_inn: tuple[str, ...] = ()
     exclude_customer_inn: tuple[str, ...] = ()
     price_from: int | None = None
@@ -55,6 +58,7 @@ class Template:
     okpd2: tuple[str, ...] = ()
     ktru: tuple[str, ...] = ()
     strong: tuple[str, ...] = ()
+    filters: tuple[str, ...] = ()
 
 
 def load_templates(folder: Path = TEMPLATES_DIR) -> list[Template]:
@@ -76,6 +80,7 @@ def from_template(template: Template, regions: tuple[str, ...] = ()) -> Profile:
         okpd2=template.okpd2,
         ktru=template.ktru,
         strong=template.strong,
+        filters=template.filters,
     )
 
 
@@ -89,7 +94,7 @@ def dump_profile(profile: Profile) -> str:
         f"name = {_string(profile.name)}",
         f"regions = {_strings([code[:2] for code in profile.regions])}",
     ]
-    for name in ("keywords", "strong", "minus", "okpd2", "ktru", "customer_inn", "exclude_customer_inn"):
+    for name in ("keywords", "strong", "minus", "filters", "okpd2", "ktru", "customer_inn", "exclude_customer_inn"):
         values = getattr(profile, name)
         if values or name in ("keywords", "minus"):
             lines.append(f"{name} = {_strings(values)}")
@@ -149,6 +154,11 @@ def parse_profile(data: dict, path: Path) -> Profile:
     except ValueError as error:
         raise ProfileError(f"{path}: {error}") from error
 
+    unknown_filters = [key for key in lists["filters"] if key not in FILTERS]
+    if unknown_filters:
+        known = ", ".join(f"{key} ({item.title})" for key, item in FILTERS.items())
+        raise ProfileError(f"{path}: нет фильтра «{unknown_filters[0]}». Есть: {known}")
+
     for name in ("customer_inn", "exclude_customer_inn"):
         for inn in lists[name]:
             if not (inn.isdigit() and len(inn) in (10, 12)):
@@ -181,6 +191,7 @@ def parse_profile(data: dict, path: Path) -> Profile:
         keywords=lists["keywords"],
         strong=lists["strong"],
         minus=lists["minus"],
+        filters=tuple(dict.fromkeys(lists["filters"])),
         okpd2=lists["okpd2"],
         ktru=lists["ktru"],
         customer_inn=lists["customer_inn"],

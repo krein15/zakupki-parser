@@ -105,7 +105,7 @@ def main() -> None:
             app._show_results(demo_results(), date(2026, 9, 30), date(2026, 9, 30))
         if tab == "Профиль":  # the words, the strong and the minus words in sight
             app.update_idletasks()
-            app.profile_page._parent_canvas.yview_moveto(0.24)
+            app.profile_page._parent_canvas.yview_moveto(0.3)
 
     def capture() -> None:
         app.update()

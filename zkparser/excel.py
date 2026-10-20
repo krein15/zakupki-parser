@@ -34,6 +34,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 from .audit import AuditResult, AuditRow
 from .display import ON_PLATFORM, is_eshop, money, plural, price_range, regions_count
 from .export import ExportResult, OpenNotice
+from .filters import FILTERS
 from .models import Notice
 from .pipeline import SEARCH_ONLY, Found, ProfileResult
 from .profiles import Profile
@@ -585,6 +586,7 @@ def _write_profile(sheet: Worksheet, result: ProfileResult, start: date, end: da
             ("Ключевые слова", ", ".join(profile.keywords) or "—"),
             ("Сильные слова", ", ".join(profile.strong) or "—"),
             ("Минус-слова", ", ".join(profile.minus) or "—"),
+            ("Фильтры мусора", ", ".join(FILTERS[key].title for key in profile.filters) or "—"),
             ("ОКПД2", ", ".join(profile.okpd2) or "—"),
             ("КТРУ", ", ".join(profile.ktru) or "—"),
             ("Только заказчики (ИНН)", ", ".join(profile.customer_inn) or "любые"),

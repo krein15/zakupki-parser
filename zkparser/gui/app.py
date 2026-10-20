@@ -33,6 +33,7 @@ from ..examples import Suggestion, load_examples, parse_numbers, suggest, to_pro
 from ..excel import build_file_name, export_file_name, export_open_notices, export_profile, moscow_offset
 from ..export import LOOKBACK_DAYS, ExportQuery, ExportResult, OpenNotice, export_open
 from ..fetch import STOPPED, FetchReport, chosen, problems
+from ..filters import FILTERS
 from ..monitor import MonitorResult, MonitorState, monitor
 from ..monitor_cli import TEST_MESSAGE, bot_line, parse_time, state_path
 from ..pipeline import Found, RunResult, run_profiles
@@ -150,7 +151,7 @@ class App(ctk.CTk):
         self.tabs.set(SEARCH_TAB)
         self._build_run_panel(content)
 
-        handler = WindowLogHandler(self.events)
+        self.log_handler = handler = WindowLogHandler(self.events)
         handler.addFilter(SecretFilter(load_telegram_settings().token))
         for name in ("zkparser.website", "zkparser.monitor"):
             logging.getLogger(name).addHandler(handler)
@@ -345,8 +346,21 @@ class App(ctk.CTk):
         field("Сильные слова", self.strong,
               "Ключевые слова, которые перевешивают минус-слово рядом с собой: \"доработк* программн*\" оставит "
               "«Доработку программного обеспечения и продление лицензии», хотя «лицензи*» — минус-слово.")
+        junk = ctk.CTkFrame(grid, fg_color="transparent")
+        junk.grid_columnconfigure((0, 1), weight=1, uniform="junk")
+        self.filter_vars: dict[str, ctk.BooleanVar] = {}
+        for index, (key, item) in enumerate(FILTERS.items()):
+            var = self.filter_vars[key] = ctk.BooleanVar(value=False)
+            ctk.CTkCheckBox(junk, text=item.title, variable=var, font=theme.font(13), text_color=theme.TEXT,
+                            fg_color=theme.ACCENT, hover_color=theme.ACCENT_HOVER, checkbox_width=18,
+                            checkbox_height=18, corner_radius=5).grid(row=index // 2, column=index % 2, sticky="w",
+                                                                      padx=(0, 10), pady=3)
+        field("Фильтры мусора", junk,
+              "Отметьте, что вам точно не нужно: программа сама отсеет такие закупки — минус-слова для этого "
+              "писать не нужно.")
         self.minus = textbox(grid, 72)
-        field("Минус-слова", self.minus, "В названии отсеивают закупку, в позиции — только позицию.")
+        field("Минус-слова", self.minus, "Свои, сверх фильтров. В названии отсеивают закупку, в позиции — только "
+                                         "позицию.")
         self.okpd2 = entry(grid, "17.23, 32.99.12")
         field("ОКПД2", self.okpd2, "Начала кодов через запятую: «17.23» — вся группа.")
         self.ktru = entry(grid, "нет")
@@ -414,9 +428,16 @@ class App(ctk.CTk):
 
     def _build_monitoring_tab(self, tab: ctk.CTkBaseClass) -> None:
         bot = SectionCard(tab, "Telegram",
-                          "Токен бота — в файле .env (TELEGRAM_BOT_TOKEN=…). Напишите боту сообщение и нажмите "
-                          "«Найти мой чат».")
+                          "1. В Telegram откройте @BotFather, отправьте /newbot и придумайте боту имя — он пришлёт "
+                          "токен.\n2. Вставьте токен сюда и нажмите «Подключить».\n3. Напишите своему боту любое "
+                          "сообщение и нажмите «Найти мой чат».")
         bot.pack(fill="x", pady=(0, 12))
+        connect = ctk.CTkFrame(bot.body, fg_color="transparent")
+        connect.pack(fill="x", pady=(0, 8))
+        accent_button(connect, "Подключить", self._connect_bot, width=120).pack(side="right", padx=(8, 0))
+        self.token_entry = entry(connect, "токен от @BotFather: 123456789:AAE…")
+        self.token_entry.configure(show="•")
+        self.token_entry.pack(side="left", fill="x", expand=True)
         self.bot_status = ctk.CTkLabel(bot.body, text="Проверяю бота…", font=theme.font(13), text_color=theme.TEXT,
                                        anchor="w", justify="left")
         self.bot_status.pack(fill="x")
@@ -610,6 +631,8 @@ class App(ctk.CTk):
         set_text(self.keywords, profile.keywords)
         set_text(self.strong, profile.strong)
         set_text(self.minus, profile.minus)
+        for key, var in self.filter_vars.items():
+            var.set(key in profile.filters)
         set_entry(self.okpd2, ", ".join(profile.okpd2))
         set_entry(self.ktru, ", ".join(profile.ktru))
         set_entry(self.customer_inn, ", ".join(profile.customer_inn))
@@ -633,6 +656,7 @@ class App(ctk.CTk):
             "keywords": text_lines(self.keywords),
             "strong": text_lines(self.strong),
             "minus": text_lines(self.minus),
+            "filters": [key for key, var in self.filter_vars.items() if var.get()],
             "okpd2": split_list(self.okpd2.get()),
             "ktru": split_list(self.ktru.get()),
             "customer_inn": split_list(self.customer_inn.get()),
@@ -977,7 +1001,7 @@ class App(ctk.CTk):
             ctk.CTkCheckBox(self.monitored_frame, text=name, variable=var, font=theme.font(13),
                             text_color=theme.TEXT, fg_color=theme.ACCENT, hover_color=theme.ACCENT_HOVER,
                             checkbox_width=18, checkbox_height=18, corner_radius=5,
-                            command=self._remember_monitored).grid(row=index // 3, column=1 + index % 3, sticky="w",
+                            command=self._remember_monitored).grid(row=index // 2, column=1 + index % 2, sticky="w",
                                                                    padx=(0, 14), pady=2)
             self.monitored_vars[name] = var
 
@@ -991,7 +1015,7 @@ class App(ctk.CTk):
         def work() -> None:
             settings = load_telegram_settings()
             if not settings.token:
-                bot_text = "Бот не настроен: впишите TELEGRAM_BOT_TOKEN в .env (кнопка «Открыть .env»)."
+                bot_text = "Бот не подключён: вставьте токен от @BotFather и нажмите «Подключить»."
             else:
                 try:
                     bot_text = f"Бот @{TelegramBot(settings.token).username()}"
@@ -1006,6 +1030,39 @@ class App(ctk.CTk):
             self.events.put(("monitoring_status", (bot_text, schedule_text)))
 
         threading.Thread(target=work, name="monitoring-status", daemon=True).start()
+
+    def _connect_bot(self) -> None:
+        """Check the token with Telegram and keep it in .env; it never reaches a log."""
+        token = self.token_entry.get().strip()
+        if not token:
+            self._warn("Вставьте токен, который прислал @BotFather: он выглядит как 123456789:AAE…")
+            return
+        self._protect(token)
+
+        def work() -> None:
+            try:
+                name = TelegramBot(token).username()
+            except TelegramError as error:
+                self.events.put(("log", ("error", f"Бот не подключён: {_connect_hint(error)}")))
+                return
+            save_env_value(primary_env_file(), TOKEN_KEY, token)
+            self.events.put(("bot_connected", name))
+
+        threading.Thread(target=work, name="telegram-connect", daemon=True).start()
+
+    def _bot_connected(self, name: str) -> None:
+        set_entry(self.token_entry, "")
+        chat = load_telegram_settings().chat
+        next_step = "" if chat else " Теперь напишите ему любое сообщение и нажмите «Найти мой чат»."
+        self._log("success", f"Бот @{name} подключён.{next_step}")
+        self._refresh_monitoring()
+
+    def _protect(self, token: str) -> None:
+        """A token typed into the window is cut out of every log, as the one from .env is."""
+        for handler in [self.log_handler, *logging.getLogger().handlers]:
+            for item in handler.filters:
+                if isinstance(item, SecretFilter) and token not in item.secrets:
+                    item.secrets.append(token)
 
     def _find_chat(self) -> None:
         def work() -> None:
@@ -1043,7 +1100,7 @@ class App(ctk.CTk):
                 self.events.put(("log", ("error", str(error))))
 
         if not load_telegram_settings().token:
-            self._warn("Сначала впишите токен бота в .env: кнопка «Открыть .env».")
+            self._warn("Сначала подключите бота: вставьте токен от @BotFather и нажмите «Подключить».")
             return
         threading.Thread(target=guarded, name="telegram", daemon=True).start()
 
@@ -1208,6 +1265,8 @@ class App(ctk.CTk):
                     self._finish_export(*payload)
                 elif kind == "examples_done":
                     self._finish_examples(*payload)
+                elif kind == "bot_connected":
+                    self._bot_connected(payload)
                 elif kind == "monitor_done":
                     self._finish_monitor(payload)
                 elif kind == "failed":
@@ -1228,6 +1287,8 @@ class App(ctk.CTk):
 
     def _log(self, level: str, message: str) -> None:
         self.log_box.configure(state="normal")
+        if self.log_box.get("1.0", "end").strip() == FIRST_STEPS.strip():  # the first entry replaces the hint
+            self.log_box.delete("1.0", "end")
         self.log_box.insert("end", datetime.now().strftime("%H:%M:%S  "), "time")
         self.log_box.insert("end", message + "\n", level if level in LOG_COLORS else ())
         self.log_box.see("end")
@@ -1321,6 +1382,16 @@ def _brand_image(light: str, dark: str, size: tuple[int, int]) -> ctk.CTkImage |
     if not all(path.exists() for path in paths):
         return None
     return ctk.CTkImage(light_image=Image.open(paths[0]), dark_image=Image.open(paths[1]), size=size)
+
+
+def _connect_hint(error: TelegramError) -> str:
+    """What Telegram's refusal means for someone who pasted a token into the window, not into .env."""
+    text = str(error)
+    if "Unauthorized" in text:
+        return "Telegram не принял токен. Скопируйте его из сообщения @BotFather целиком и вставьте ещё раз."
+    if "не похож на токен" in text:
+        return "это не похоже на токен бота: он выглядит как 123456789:AAE… — скопируйте его из @BotFather целиком."
+    return text
 
 
 def _menu_choice(remembered: str) -> str:

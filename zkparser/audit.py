@@ -128,8 +128,8 @@ def parse_keywords(text: str, source: str = "файл слов") -> Keywords:
 
 def client_profile(keywords: Keywords, reference: Profile) -> Profile:
     """The client's words with the reference's regions, prices and customers: the two differ only in the words."""
-    return replace(reference, name=CLIENT_NAME, keywords=keywords.keywords, minus=keywords.minus, strong=(), okpd2=(),
-                   ktru=(), all_stages=True, path=None)
+    return replace(reference, name=CLIENT_NAME, keywords=keywords.keywords, minus=keywords.minus, strong=(),
+                   filters=(), okpd2=(), ktru=(), all_stages=True, path=None)
 
 
 def run_audit(
