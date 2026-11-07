@@ -180,9 +180,11 @@ def test_excel_from_search_results(tmp_path):
     assert [c.value for c in sheet[1]] == [column.title for column in OPEN_COLUMNS]
     row = [c.value for c in sheet[2]]
     assert row[:5] == [JOINT, "Поставка", 390592, datetime(2026, 10, 8), 0]
-    assert row[6] == "ГКУ ТО «Центр закупок»"
+    assert row[5:8] == ["44-ФЗ", "Электронный аукцион", "ГКУ ТО «Центр закупок»"]
     assert sheet["A2"].hyperlink.target.endswith(JOINT)
+    assert workbook["Выгрузка"]["A1"].value == "Открытые закупки"
     summary = {r[0].value: r[1].value for r in workbook["Выгрузка"].iter_rows() if r[0].value}
+    assert summary["Типы торгов"] == "44-ФЗ, 223-ФЗ, ПП РФ 615"
     assert summary["На сайте с этапом «Подача заявок»"] == 6
     assert summary["Из них срок подачи уже прошёл"] == 2
     assert summary["Открыты — в выгрузке"] == 4

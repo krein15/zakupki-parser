@@ -88,6 +88,8 @@ def main() -> None:
         set_entry(app.export_words, "")
         app.export_filter.set(window.ALL_NOTICES)
         app.export_details.deselect()
+        for var in app.export_law_vars.values():  # all three kinds of procurement, as a new window has them
+            var.set(True)
     if tab == "Профиль":
         app.profile_menu.set("Разработка ПО — Урал")
         app._choose_profile("Разработка ПО — Урал")

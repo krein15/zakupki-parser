@@ -28,7 +28,7 @@ import customtkinter as ctk
 from .. import __version__, scheduler
 from ..cache import NoticeCache
 from ..config import CHAT_KEY, TOKEN_KEY, load_telegram_settings, primary_env_file, save_env_value
-from ..display import days_left, moment, money, no_deadline, price_range, regions_count
+from ..display import days_left, moment, money, no_deadline, price_range, regions_count, with_law
 from ..examples import Suggestion, load_examples, parse_numbers, suggest, to_profile
 from ..excel import build_file_name, export_file_name, export_open_notices, export_profile, moscow_offset
 from ..export import LOOKBACK_DAYS, ExportQuery, ExportResult, OpenNotice, export_open
@@ -437,11 +437,15 @@ class App(ctk.CTk):
         self.results_list.pack(fill="both", expand=True)
 
     def _build_monitoring_tab(self, tab: ctk.CTkBaseClass) -> None:
-        bot = SectionCard(tab, "Telegram",
+        # Scrolls like the profile: with the token field the tab is taller than a laptop screen fits, and the buttons
+        # of the schedule at its bottom must not be cut off.
+        self.monitoring_page = page = ctk.CTkScrollableFrame(tab, fg_color="transparent")
+        page.pack(fill="both", expand=True)
+        bot = SectionCard(page, "Telegram",
                           "1. В Telegram откройте @BotFather, отправьте /newbot и придумайте боту имя — он пришлёт "
                           "токен.\n2. Вставьте токен сюда и нажмите «Подключить».\n3. Напишите своему боту любое "
                           "сообщение и нажмите «Найти мой чат».")
-        bot.pack(fill="x", pady=(0, 12))
+        bot.pack(fill="x", padx=(0, 6), pady=(0, 12))
         connect = ctk.CTkFrame(bot.body, fg_color="transparent")
         connect.pack(fill="x", pady=(0, 8))
         accent_button(connect, "Подключить", self._connect_bot, width=120).pack(side="right", padx=(8, 0))
@@ -457,9 +461,9 @@ class App(ctk.CTk):
         neutral_button(buttons, "Тестовое сообщение", self._test_message, width=170).pack(side="left", padx=8)
         neutral_button(buttons, "Открыть .env", self._open_env, width=120).pack(side="left")
 
-        schedule = SectionCard(tab, "Проверки по расписанию",
+        schedule = SectionCard(page, "Проверки по расписанию",
                                "Планировщик Windows проверяет отмеченные профили и шлёт новые закупки в Telegram.")
-        schedule.pack(fill="x")
+        schedule.pack(fill="x", padx=(0, 6))
         self.monitored_frame = ctk.CTkFrame(schedule.body, fg_color="transparent")
         self.monitored_frame.pack(fill="x", pady=(0, 8))
         self.monitored_vars: dict[str, ctk.BooleanVar] = {}
@@ -800,7 +804,8 @@ class App(ctk.CTk):
         customer = (f"{customers[0].customer.name}, ИНН {customers[0].customer.inn or 'не указан'}"
                     if len(customers) == 1
                     else f"Совместная закупка, заказчиков: {len(customers)}")
-        meta = ctk.CTkLabel(card, text=f"№ {notice.reg_number} · {notice.placing_way} · {customer}",
+        way = with_law(notice.law, notice.placing_way)
+        meta = ctk.CTkLabel(card, text=f"№ {notice.reg_number} · {way} · {customer}",
                             font=theme.font(12), text_color=theme.TEXT_MUTED, anchor="w", justify="left",
                             wraplength=500)
         meta.pack(fill="x", padx=14)
@@ -962,7 +967,7 @@ class App(ctk.CTk):
             customer = f"Совместная закупка, заказчиков: {len(notice.customers)}"
         else:
             customer = hit.organization
-        parts = [f"№ {hit.reg_number}", hit.placing_way, customer]
+        parts = [f"№ {hit.reg_number}", with_law(hit.law, hit.placing_way), customer]
         if show_regions:
             parts.append(", ".join(REGIONS.get(code, code) for code in item.regions))
         meta = ctk.CTkLabel(card, text=" · ".join(part for part in parts if part), font=theme.font(12),

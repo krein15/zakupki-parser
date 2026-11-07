@@ -5,11 +5,12 @@ from __future__ import annotations
 from conftest import FIXTURES
 
 from zkparser.cache import NoticeCache
-from zkparser.examples import group_code, load_examples, parse_numbers, suggest, to_profile
+from zkparser.examples import group_code, load_examples, load_notice, parse_numbers, suggest, to_profile
 from zkparser.matching import Matcher, default_morphology
 from zkparser.notice_xml import parse_notice
 from zkparser.website.client import SiteError
-from zkparser.website.notice import NOTICE_XML_PATH
+from zkparser.website.notice import NOTICE_223_XML_PATH, NOTICE_XML_PATH
+from zkparser.website.search import SEARCH_PATH
 
 TYUMEN = "72000000000"
 
@@ -79,3 +80,46 @@ def test_examples_are_downloaded_once_and_failures_named(tmp_path):
     assert [notice.reg_number for notice in notices + again] == ["0167200003426008053"] * 2
     assert problems == ["0000000000000000001: ЕИС не отдал XML извещения"]
     assert site.asked == ["0167200003426008053", "0000000000000000001"]
+
+
+ENTRY_223 = (
+    '<div class="search-registry-entry-block">'
+    '<div class="registry-entry__header-top__title">223-ФЗ Иной способ</div>'
+    '<div class="registry-entry__header-mid__number"><a href="https://zakupki.gov.ru/223/purchase/public/purchase/info/'
+    'common-info.html?regNumber=32616488407">№ 32616488407</a></div>'
+    '<a href="/epz/order/notice/notice223/printForm/view.html?purchaseNoticeGuid=6fcd0eb1-0526-41cd-8e1f-9a58e9978eb8'
+    '&amp;purchaseNoticeNumber=32616488407">Печатная форма</a></div>'
+)
+
+
+class Site223:
+    """The search finds the 223-ФЗ number and gives its guid; the XML is asked for by that guid."""
+
+    def __init__(self):
+        self.asked: list[str] = []
+
+    def get(self, path, params=None):
+        self.asked.append(path)
+        if path == SEARCH_PATH:
+            assert params["searchString"] == "32616488407" and params["fz223"] == "on"
+            return f'<html><body><div class="search-results__total">1</div>{ENTRY_223}</body></html>'.encode()
+        assert path == NOTICE_223_XML_PATH
+        assert params["purchaseNoticeGuid"] == "6fcd0eb1-0526-41cd-8e1f-9a58e9978eb8"
+        return (FIXTURES / "notice_223.xml").read_bytes()
+
+
+def test_a_223_notice_is_found_by_the_search_first_then_kept(tmp_path):
+    site = Site223()
+    with NoticeCache(tmp_path) as cache:
+        notice = load_notice(site, cache, "32616488407")
+        again = load_notice(site, cache, "32616488407")
+    assert notice.law == again.law == "223"
+    assert site.asked == [SEARCH_PATH, NOTICE_223_XML_PATH]
+
+
+def test_show_prints_a_223_notice_by_its_number(tmp_path, monkeypatch, capsys):
+    from zkparser import __main__ as cli
+
+    monkeypatch.setattr(cli, "SiteClient", Site223)
+    assert cli.main(["show", "32616488407", "--cache-dir", str(tmp_path)]) == 0
+    assert capsys.readouterr().out.startswith("32616488407 · 223-ФЗ Запрос предварительных предложений")

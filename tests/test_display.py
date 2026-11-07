@@ -8,7 +8,7 @@ from decimal import Decimal
 import pytest
 from conftest import FIXTURES
 
-from zkparser.display import format_notice, money, quantity, utc_offset
+from zkparser.display import format_notice, money, quantity, utc_offset, with_law, without_law
 from zkparser.notice_xml import parse_notice
 
 
@@ -25,6 +25,20 @@ def test_quantity(value, text):
     assert quantity(Decimal(value)) == text
 
 
+@pytest.mark.parametrize(
+    ("law", "way", "named", "bare"),
+    [
+        ("44", "Электронный аукцион", "44-ФЗ Электронный аукцион", "Электронный аукцион"),
+        ("223", "223-ФЗ Иной способ", "223-ФЗ Иной способ", "Иной способ"),
+        ("615", "ПП РФ 615 Электронный аукцион", "ПП РФ 615 Электронный аукцион", "Электронный аукцион"),
+        ("44", "", "44-ФЗ", ""),
+    ],
+)
+def test_the_law_is_named_once(law, way, named, bare):
+    assert with_law(law, way) == named
+    assert without_law(way) == bare
+
+
 def test_utc_offset():
     assert utc_offset(datetime(2026, 9, 30, tzinfo=timezone(timedelta(hours=5)))) == "UTC+05:00"
     assert utc_offset(None) == ""
@@ -32,7 +46,7 @@ def test_utc_offset():
 
 def test_joint_notice_lists_every_customer_and_the_placer():
     text = format_notice(parse_notice((FIXTURES / "notice_joint.xml").read_bytes()))
-    assert text.startswith("0167200003426008053 · Электронный аукцион · редакция 1")
+    assert text.startswith("0167200003426008053 · 44-ФЗ Электронный аукцион · редакция 1")
     assert "Разместил: УПРАВЛЕНИЕ ГОСУДАРСТВЕННЫХ ЗАКУПОК ТЮМЕНСКОЙ ОБЛАСТИ, ИНН 7202203221" in text
     assert "Заказчики (4):" in text
     assert "ИНН 7224009250 · 136 000,00 ₽" in text

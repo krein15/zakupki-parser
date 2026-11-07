@@ -67,15 +67,20 @@ def load_examples(client: Client, cache: NoticeCache, numbers: list[str]) -> tup
     notices, problems = [], []
     for number in numbers:
         try:
-            xml = cache.load(number)
-            if xml is None:
-                hit = _find(client, number) if len(number) == LENGTH_223 else SearchHit(number, "")
-                xml = download_notice(client, number, hit.guid)
-                cache.store(hit, xml)
-            notices.append(parse_notice(xml))
+            notices.append(load_notice(client, cache, number))
         except (SiteError, NoticeFormatError) as error:
             problems.append(f"{number}: {error}")
     return notices, problems
+
+
+def load_notice(client: Client, cache: NoticeCache, number: str) -> Notice:
+    """A notice by its number alone, from the cache or the site; also for the ``show`` command."""
+    xml = cache.load(number)
+    if xml is None:
+        hit = _find(client, number) if len(number) == LENGTH_223 else SearchHit(number, "")
+        xml = download_notice(client, number, hit.guid)
+        cache.store(hit, xml)
+    return parse_notice(xml)
 
 
 def _find(client: Client, number: str) -> SearchHit:

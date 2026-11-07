@@ -6,11 +6,31 @@ from datetime import datetime
 from decimal import Decimal
 
 from .models import Notice, Position
+from .website.search import LAW_NAMES
 
 MAX_POSITIONS = 20
 CURRENCY_SIGNS = {"RUB": "₽"}
 ESHOP = "частью 12 статьи 93"  # how the search and the XML name a purchase through an electronic shop
 ON_PLATFORM = "на площадке"  # where an electronic shop keeps its deadline: the site does not publish it
+
+
+def law_name(law: str) -> str:
+    """"223" → "223-ФЗ"."""
+    return LAW_NAMES.get(law, law)
+
+
+def with_law(law: str, placing_way: str) -> str:
+    """"Электронный аукцион" → "44-ФЗ Электронный аукцион"; a 223-ФЗ or ПП РФ 615 way already names its law."""
+    name = law_name(law)
+    return placing_way if placing_way.startswith(name) else f"{name} {placing_way}".strip()
+
+
+def without_law(placing_way: str) -> str:
+    """"223-ФЗ Иной способ" → "Иной способ", for a report that keeps the law in a column of its own."""
+    for name in LAW_NAMES.values():
+        if placing_way.startswith(f"{name} "):
+            return placing_way.removeprefix(name).strip()
+    return placing_way
 
 
 def is_eshop(placing_way: str) -> bool:
@@ -92,7 +112,7 @@ def utc_offset(value: datetime | None) -> str:
 
 def format_notice(notice: Notice) -> str:
     lines = [
-        f"{notice.reg_number} · {notice.placing_way} · редакция {notice.version}",
+        f"{notice.reg_number} · {with_law(notice.law, notice.placing_way)} · редакция {notice.version}",
         notice.title,
         f"Начальная цена: {money(notice.max_price, notice.currency)}",
         f"Подача заявок: {moment(notice.applications_start)} – {moment(notice.applications_end)}"

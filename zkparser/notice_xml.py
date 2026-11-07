@@ -1,4 +1,4 @@
-"""Notice XML (epNotification* documents of 44-ФЗ, schema 16.x) → Notice.
+"""Notice XML (epNotification* documents of 44-ФЗ, schema 16.x; 223-ФЗ and ПП РФ 615 notices below) → Notice.
 
 The site's viewXml and the SOAP archives carry the same document under different root namespaces, so the parser
 reads local names only. Where each field lives is described in docs/recon.md.

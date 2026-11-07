@@ -51,6 +51,8 @@ def main() -> None:
     set_entry(app.export_words, "")
     app.export_filter.set(window.ALL_NOTICES)
     app.export_details.deselect()
+    for var in app.export_law_vars.values():  # 44-ФЗ, 223-ФЗ and ПП РФ 615, as a new window has them
+        var.set(True)
     app.tabs.set("Поиск")
     frames: list[Image.Image] = []
 

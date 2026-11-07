@@ -24,7 +24,7 @@ from .audit import parse_keywords, run_audit
 from .cache import NoticeCache
 from .config import load_telegram_settings
 from .display import days_left, format_match, format_notice, money, no_deadline, price_range, regions_count
-from .examples import load_examples, parse_numbers, suggest, to_profile
+from .examples import load_examples, load_notice, parse_numbers, suggest, to_profile
 from .excel import (
     audit_file_name,
     build_file_name,
@@ -36,7 +36,7 @@ from .excel import (
 )
 from .export import LOOKBACK_DAYS, ExportQuery, ExportResult, export_open
 from .fetch import CACHED, STOPPED, FetchReport, chosen, fetch_notices, problems
-from .notice_xml import NoticeFormatError, parse_notice
+from .notice_xml import NoticeFormatError
 from .pipeline import ProfileResult, run_profiles
 from .profiles import (
     ProfileError,
@@ -50,11 +50,17 @@ from .profiles import (
 from .regions import REGIONS, resolve_region
 from .settings import default_cache_dir, default_output_dir, okpd2_ids_path, profiles_dir
 from .website.client import SiteClient, SiteError
-from .website.notice import download_notice
 from .website.okpd2 import Okpd2Ids
-from .website.search import ALL_LAWS, LAWS, SearchHit, SearchQuery, Stage
+from .website.search import ALL_LAWS, LAW_NAMES, LAWS, SearchHit, SearchQuery, Stage
 
 DATE_FORMATS = ("%Y-%m-%d", "%d.%m.%Y")
+
+
+def add_laws(command: argparse.ArgumentParser) -> None:
+    command.add_argument(
+        "--law", action="append", choices=list(LAWS), metavar="ЗАКОН",
+        help="тип торгов: 44, 223 (223-ФЗ) или 615 (ПП РФ 615, капремонт); по умолчанию все три",
+    )
 
 
 def parse_day(value: str) -> date:
@@ -67,7 +73,9 @@ def parse_day(value: str) -> date:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="zkparser", description="Извещения о закупках 44-ФЗ с zakupki.gov.ru")
+    parser = argparse.ArgumentParser(
+        prog="zkparser", description="Извещения о закупках 44-ФЗ, 223-ФЗ и ПП РФ 615 с zakupki.gov.ru"
+    )
     parser.add_argument("-v", "--verbose", action="store_true", help="подробный журнал")
     commands = parser.add_subparsers(dest="command", required=True)
 
@@ -81,6 +89,7 @@ def build_parser() -> argparse.ArgumentParser:
     fetch.add_argument("--price-from", type=int, metavar="РУБ", help="начальная цена от")
     fetch.add_argument("--price-to", type=int, metavar="РУБ", help="начальная цена до")
     fetch.add_argument("--all-stages", action="store_true", help="любой этап, а не только «Подача заявок»")
+    add_laws(fetch)
     add_cache_dir(fetch)
 
     match = commands.add_parser("match", help="отобрать закупки по профилям (словарям ниш или клиентов)")
@@ -109,10 +118,7 @@ def build_parser() -> argparse.ArgumentParser:
     niche = export.add_mutually_exclusive_group()
     niche.add_argument("--template", metavar="ШАБЛОН", help="только закупки ниши: шаблон (название или его начало)")
     niche.add_argument("--profile", type=Path, metavar="ПРОФИЛЬ", help="только закупки, подходящие профилю .toml")
-    export.add_argument(
-        "--law", action="append", choices=list(LAWS), metavar="ЗАКОН",
-        help="тип торгов: 44, 223 (223-ФЗ) или 615 (ПП РФ 615, капремонт); по умолчанию все три",
-    )
+    add_laws(export)
     export.add_argument("--out", type=Path, metavar="ПАПКА", help="куда сохранить Excel")
     export.add_argument("--no-excel", action="store_true", help="только вывод в консоль, без Excel")
     add_cache_dir(export)
@@ -202,7 +208,12 @@ def build_query(args: argparse.Namespace, parser: argparse.ArgumentParser) -> Se
         price_from=args.price_from,
         price_to=args.price_to,
         stages=() if args.all_stages else (Stage.APPLICATIONS,),
+        laws=chosen_laws(args),
     )
+
+
+def chosen_laws(args: argparse.Namespace) -> tuple[str, ...]:
+    return tuple(dict.fromkeys(args.law)) if args.law else ALL_LAWS
 
 
 def format_period(start: date, end: date) -> str:
@@ -218,6 +229,8 @@ def describe(query: SearchQuery) -> str:
     if query.price_from is not None or query.price_to is not None:
         parts.append(f"цена {query.price_from or 0}–{query.price_to if query.price_to is not None else '…'} ₽")
     parts.append("подача заявок" if query.stages else "все этапы")
+    if set(query.laws) != set(ALL_LAWS):
+        parts.append(", ".join(LAW_NAMES[law] for law in query.laws))
     return " · ".join(parts)
 
 
@@ -336,8 +349,8 @@ def run_export(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int
         parser.error(str(error))
     if args.template:
         profile = from_template(find_template(args.template, parser))
-    laws = tuple(dict.fromkeys(args.law)) if args.law else ALL_LAWS
-    query = ExportQuery(regions, args.price_from, args.price_to, args.query.strip(), args.details, profile, laws)
+    query = ExportQuery(regions, args.price_from, args.price_to, args.query.strip(), args.details, profile,
+                        chosen_laws(args))
     client = SiteClient()
     now = datetime.now().astimezone()
     names = ", ".join(REGIONS[code] for code in regions) if len(regions) <= 3 else regions_count(len(regions))
@@ -468,19 +481,12 @@ def run_show(args: argparse.Namespace, parser: argparse.ArgumentParser) -> int:
     if not number.isdigit():
         parser.error(f"номер закупки состоит из цифр: «{args.number}»")
     with NoticeCache(args.cache_dir or default_cache_dir()) as cache:
-        xml = cache.load(number)
-        if xml is None:
-            try:
-                xml = download_notice(SiteClient(), number)
-            except SiteError as error:
-                print(error, file=sys.stderr)
-                return 1
-            cache.store(SearchHit(reg_number=number, url=""), xml)
-    try:
-        print(format_notice(parse_notice(xml)))
-    except NoticeFormatError as error:
-        print(error, file=sys.stderr)
-        return 1
+        try:
+            notice = load_notice(SiteClient(), cache, number)  # a 223-ФЗ one is found by the search first
+        except (SiteError, NoticeFormatError) as error:
+            print(error, file=sys.stderr)
+            return 1
+    print(format_notice(notice))
     return 0
 
 

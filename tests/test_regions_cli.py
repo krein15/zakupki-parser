@@ -73,10 +73,19 @@ def test_build_query():
     assert query.text == "канцтовары"
     assert (query.price_from, query.price_to) == (None, 500000)
     assert query.stages == (Stage.APPLICATIONS,)
+    assert query.laws == ("44", "223", "615")
     assert describe(query) == (
         "Тюменская область, Ханты-Мансийский автономный округ - Югра · 30.09.2026 · «канцтовары» · "
         "цена 0–500000 ₽ · подача заявок"
     )
+
+
+def test_fetch_can_take_only_some_laws():
+    query = build_query(*args("--law", "223", "--law", "615", "--law", "223"))
+    assert query.laws == ("223", "615")
+    assert describe(query).endswith(" · 223-ФЗ, ПП РФ 615")
+    assert query.params()["fz223"] == query.params()["ppRf615"] == "on"
+    assert "fz44" not in query.params()
 
 
 def test_all_stages_flag():

@@ -1,3 +1,3 @@
-"""Закупки Парсер (Zakupki Parser) by kreinstudio: 44-ФЗ procurement notices from zakupki.gov.ru."""
+"""Закупки Парсер (Zakupki Parser) by kreinstudio: 44-ФЗ, 223-ФЗ and ПП РФ 615 notices from zakupki.gov.ru."""
 
-__version__ = "0.9.0"
+__version__ = "0.10.0"

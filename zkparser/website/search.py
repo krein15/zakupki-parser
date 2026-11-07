@@ -1,4 +1,4 @@
-"""Search of 44-ФЗ notices: the site's extended search, read from its HTML results.
+"""Search of 44-ФЗ, 223-ФЗ and ПП РФ 615 notices: the site's extended search, read from its HTML results.
 
 The site also exports the same search as RSS, but the feed holds only the first 200 results and ignores the page
 number and the sort order, so it cannot list a busy region's day (Moscow publishes ~840 notices a day).

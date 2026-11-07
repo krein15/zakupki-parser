@@ -32,7 +32,7 @@ from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.worksheet.worksheet import Worksheet
 
 from .audit import AuditResult, AuditRow
-from .display import ON_PLATFORM, is_eshop, money, plural, price_range, regions_count
+from .display import ON_PLATFORM, is_eshop, law_name, money, plural, price_range, regions_count, without_law
 from .export import ExportResult, OpenNotice
 from .filters import FILTERS
 from .models import Notice
@@ -86,6 +86,7 @@ NOTICE_COLUMNS = [
     Column("Подача заявок до", 17, DATETIME),
     Column("Часовой пояс", 10),
     Column("Этап", 18, wrap=True),
+    Column("Тип торгов", 11, wrap=True),
     Column("Способ", 24, wrap=True),
     Column("Заказчик", 40, wrap=True),
     Column("ИНН заказчика", 14, wrap=True),
@@ -114,6 +115,7 @@ OPEN_COLUMNS = [
     Column("Начальная цена", 17, MONEY),
     Column("Подача заявок до", 13, DATE),
     Column("Осталось дней", 10),
+    Column("Тип торгов", 11, wrap=True),
     Column("Способ", 24, wrap=True),
     Column("Заказчик или организатор", 44, wrap=True),
     Column("Регион", 22, wrap=True),
@@ -127,6 +129,7 @@ DETAILED_COLUMNS = [
     Column("Подача заявок до", 17, DATETIME),
     Column("Часовой пояс", 10),
     Column("Осталось дней", 10),
+    Column("Тип торгов", 11, wrap=True),
     Column("Способ", 24, wrap=True),
     Column("Заказчик", 40, wrap=True),
     Column("ИНН заказчика", 14, wrap=True),
@@ -420,7 +423,8 @@ def _notice_row(found: Found, now: datetime) -> list[Any]:
         _deadline(_local(notice.applications_end), notice.placing_way),
         moscow_offset(notice.applications_end),
         found.stage(now),
-        notice.placing_way,
+        law_name(notice.law),
+        without_law(notice.placing_way),
         "\n".join(customer.name for customer in customers),
         "\n".join(customer.inn for customer in customers if customer.inn),
         ", ".join(REGIONS.get(code, code) for code in found.regions),
@@ -457,7 +461,8 @@ def _open_row(item: OpenNotice, today: date) -> list[Any]:
         hit.price,
         _deadline(hit.deadline, hit.placing_way),
         item.days_left(today),
-        hit.placing_way,
+        law_name(hit.law),
+        without_law(hit.placing_way),
         hit.organization,
         _regions(item.regions),
         hit.published,
@@ -469,7 +474,7 @@ def _detailed_row(item: OpenNotice, today: date) -> list[Any]:
     hit, notice = item.hit, item.notice
     if notice is None:  # the XML did not download: what the search showed
         return [hit.reg_number, hit.title, hit.price, _deadline(hit.deadline, hit.placing_way), "",
-                item.days_left(today), hit.placing_way,
+                item.days_left(today), law_name(hit.law), without_law(hit.placing_way),
                 hit.organization, "", _regions(item.regions), "", hit.published, "подробности не скачались"]
     customers = [part.customer for part in notice.customers]
     return [
@@ -479,7 +484,8 @@ def _detailed_row(item: OpenNotice, today: date) -> list[Any]:
         _deadline(_local(notice.applications_end) or hit.deadline, notice.placing_way),
         moscow_offset(notice.applications_end),
         item.days_left(today),
-        notice.placing_way,
+        law_name(notice.law),
+        without_law(notice.placing_way),
         "\n".join(customer.name for customer in customers),
         "\n".join(customer.inn for customer in customers if customer.inn),
         _regions(item.regions),
@@ -615,7 +621,7 @@ def _write_export(sheet: Worksheet, result: ExportResult, generated_at: datetime
     sheet.sheet_view.showGridLines = False
     sheet.column_dimensions["A"].width = 34
     sheet.column_dimensions["B"].width = 90
-    sheet["A1"] = "Открытые закупки 44-ФЗ"
+    sheet["A1"] = "Открытые закупки"
     sheet["A1"].font = TITLE_FONT
     sheet["A2"] = f"Сформировано {generated_at:%d.%m.%Y в %H:%M} по данным zakupki.gov.ru"
     sheet["A2"].font = MUTED_FONT
@@ -626,6 +632,7 @@ def _write_export(sheet: Worksheet, result: ExportResult, generated_at: datetime
         row,
         [
             ("Регионы", _regions(query.regions)),
+            ("Типы торгов", ", ".join(LAW_NAMES[law] for law in query.laws)),
             ("Начальная цена", price_range(query.price_from, query.price_to) or "любая"),
             ("Слова (поиск ЕИС)", query.text or "—"),
             ("Размещены", f"с {result.since:%d.%m.%Y} — за {(result.today - result.since).days} дней"),

@@ -60,13 +60,14 @@ def test_notice_row(tmp_path):
     assert row["E"].value == datetime(2026, 10, 8, 8, 0)  # local time of the customer, Excel keeps no zones
     assert row["F"].value == "МСК+2"
     assert row["G"].value == "Подача заявок"
-    assert row["H"].value == "Электронный аукцион"
-    assert len(row["I"].value.splitlines()) == 4
-    assert row["J"].value.splitlines() == ["7224009250", "7216001666", "7228000177", "7215004008"]
-    assert row["K"].value == "Тюменская область"
-    assert row["L"].value == "АО «Сбербанк-АСТ»"
-    assert row["M"].value == datetime(2026, 10, 2)  # from the search, not the XML's signing date
-    assert row["N"].value == "совместная закупка, заказчиков: 4"
+    assert row["H"].value == "44-ФЗ"
+    assert row["I"].value == "Электронный аукцион"
+    assert len(row["J"].value.splitlines()) == 4
+    assert row["K"].value.splitlines() == ["7224009250", "7216001666", "7228000177", "7215004008"]
+    assert row["L"].value == "Тюменская область"
+    assert row["M"].value == "АО «Сбербанк-АСТ»"
+    assert row["N"].value == datetime(2026, 10, 2)  # from the search, not the XML's signing date
+    assert row["O"].value == "совместная закупка, заказчиков: 4"
 
 
 @pytest.mark.parametrize(
@@ -101,7 +102,7 @@ def test_positions_sheet_marks_matching_positions(tmp_path):
 
 def test_undefined_quantity_keeps_unit_prices_only(tmp_path):
     workbook = export(tmp_path, [found("quotation")])
-    assert "количество не определено" in workbook["Закупки"]["N2"].value
+    assert "количество не определено" in workbook["Закупки"]["O2"].value
     quantity, _, price, total = next(workbook["Позиции"].iter_rows(min_row=2, min_col=7, values_only=True))
     assert (quantity, price, total) == (None, 25.94, None)
 
@@ -152,7 +153,13 @@ def test_profiles_with_the_same_name_get_separate_files(tmp_path):
     assert first.exists() and second.exists()
 
 
+def test_a_223_notice_has_its_law_in_a_column_of_its_own(tmp_path):
+    row = {cell.column_letter: cell for cell in export(tmp_path, [found("223")])["Закупки"][2]}
+    assert row["H"].value == "223-ФЗ"
+    assert row["I"].value.startswith("Запрос предварительных предложений")
+
+
 def test_an_e_shop_purchase_has_its_deadline_on_the_platform(tmp_path):
     row = {cell.column_letter: cell for cell in export(tmp_path, [found("eshop")])["Закупки"][2]}
     assert row["E"].value == "на площадке"
-    assert "электронный магазин: срок подачи предложений знает только площадка АО «Сбербанк-АСТ»" in row["N"].value
+    assert "электронный магазин: срок подачи предложений знает только площадка АО «Сбербанк-АСТ»" in row["O"].value

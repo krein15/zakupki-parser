@@ -19,7 +19,7 @@ from typing import Any
 
 import requests
 
-from .display import money, no_deadline, plural
+from .display import money, no_deadline, plural, with_law
 from .excel import moscow_offset
 from .models import Notice
 from .pipeline import Found
@@ -211,7 +211,7 @@ def notice_message(profile_name: str, found: Found, now: datetime) -> str:
         lines.append("⚠️ Извещение не скачалось с сайта: проверено только название, позиции — по ссылке")
     lines += [
         f"🎯 {_e(_cut(matched, REASONS_LIMIT))}",
-        f"{_e(notice.placing_way)} · № {_e(notice.reg_number)} · {_e(profile_name)}",
+        f"{_e(with_law(notice.law, notice.placing_way))} · № {_e(notice.reg_number)} · {_e(profile_name)}",
     ]
     return "\n".join(lines)[:MESSAGE_LIMIT]
 
