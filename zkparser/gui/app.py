@@ -34,6 +34,7 @@ from ..excel import build_file_name, export_file_name, export_open_notices, expo
 from ..export import LOOKBACK_DAYS, ExportQuery, ExportResult, OpenNotice, export_open
 from ..fetch import STOPPED, FetchReport, chosen, problems
 from ..filters import FILTERS
+from ..learn import merge_learned
 from ..monitor import MonitorResult, MonitorState, monitor
 from ..monitor_cli import TEST_MESSAGE, bot_line, parse_time, state_path
 from ..pipeline import Found, RunResult, run_profiles
@@ -580,11 +581,13 @@ class App(ctk.CTk):
             messagebox.showerror(TITLE, str(error), parent=self)
             return
         self.profile_path = path
+        self.profile_loaded = profile  # what the file held: the bot may change it while the form is open
         self.prefs.profile = name
         self._show_profile(profile)
 
     def _new_profile(self) -> None:
         self.profile_path = None
+        self.profile_loaded = None
         self.profile_menu.set(NEW_PROFILE)
         self._show_profile(Profile(name="Новый профиль", regions=tuple(self.regions)))
 
@@ -598,6 +601,7 @@ class App(ctk.CTk):
             self._new_profile()
             return
         self.profile_path = None
+        self.profile_loaded = None
         self.profile_menu.set(NEW_PROFILE)
         self._show_profile(from_template(self.templates[choice], tuple(self.regions)))
         self._log("info", f"Шаблон «{choice}»: проверьте регионы и слова, затем «Сохранить».")
@@ -632,6 +636,7 @@ class App(ctk.CTk):
         for note in suggestion.notes:
             self._log("info", note)
         self.profile_path = None
+        self.profile_loaded = None
         self.profile_menu.set(NEW_PROFILE)
         self._show_profile(to_profile(suggestion, "Профиль по примерам", tuple(self.regions)))
         self.tabs.set(PROFILE_TAB)
@@ -705,6 +710,14 @@ class App(ctk.CTk):
             if not chosen:
                 return
             path = Path(chosen)
+        loaded = self.profile_loaded
+        if loaded is not None and loaded.path == path:
+            try:
+                profile, kept = merge_learned(profile, loaded, load_profile(path))
+            except ProfileError:
+                kept = []  # the file is broken: the form replaces it, as before
+            if kept:
+                self._log("info", f"Из файла сохранено то, что бот изменил по «Не моё»: {', '.join(kept)}")
         save_profile(profile, path)
         self._log("success", f"Профиль сохранён: {path.name}")
         self._load_profile_list(path.stem)

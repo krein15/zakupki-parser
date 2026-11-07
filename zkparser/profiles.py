@@ -94,17 +94,17 @@ def dump_profile(profile: Profile) -> str:
         "# Сильные слова — ключевые, которые перевешивают минус-слово рядом с собой.",
         "",
         f"name = {_string(profile.name)}",
-        f"regions = {_strings([code[:2] for code in profile.regions])}",
+        f"regions = {toml_strings([code[:2] for code in profile.regions])}",
     ]
     for name in ("keywords", "strong", "minus", "filters", "okpd2", "ktru", "customer_inn", "exclude_customer_inn"):
         values = getattr(profile, name)
         if values or name in ("keywords", "minus"):
-            lines.append(f"{name} = {_strings(values)}")
+            lines.append(f"{name} = {toml_strings(values)}")
     for name in ("price_from", "price_to"):
         if getattr(profile, name) is not None:
             lines.append(f"{name} = {getattr(profile, name)}")
     lines.append(f"all_stages = {'true' if profile.all_stages else 'false'}")
-    lines.append(f"laws = {_strings(profile.laws)}  # 44-ФЗ, 223-ФЗ, ПП РФ 615 (капремонт)")
+    lines.append(f"laws = {toml_strings(profile.laws)}  # 44-ФЗ, 223-ФЗ, ПП РФ 615 (капремонт)")
     if profile.telegram_chat:
         lines.append(f"telegram_chat = {_string(profile.telegram_chat)}")
     return "\n".join(lines) + "\n"
@@ -119,7 +119,7 @@ def _string(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
-def _strings(values) -> str:
+def toml_strings(values) -> str:
     if not values:
         return "[]"
     if sum(len(value) for value in values) < 80:

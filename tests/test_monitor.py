@@ -216,6 +216,11 @@ def test_cards_go_out_with_buttons_and_are_remembered_for_the_presses(stores):
     assert (row.chat, row.profile, row.sent, row.taken) == ("42", "ГСМ", 1, 0)
     assert state.record_feedback("42", 101, FUEL, "take", NOW) == "ГСМ"
     assert state.stats(NOW - timedelta(days=1), chat="7") == []
+    # For learning from "Не моё" the bot finds the profile file again, from a folder of its own.
+    card = state.card("42", 101)
+    assert Path(card.path).is_absolute() and Path(card.path).name == "ГСМ.toml"
+    assert card.title == "Приобретение горюче-смазочных материалов"
+    assert state.taken_titles("ГСМ") == ["Приобретение горюче-смазочных материалов"]
 
 
 def test_incident_opens_once_and_closes(tmp_path):

@@ -51,6 +51,17 @@ class Incident:
     reason: str
 
 
+@dataclass(frozen=True)
+class Card:
+    """A notice sent to a chat, as the bot finds it again when its buttons are pressed."""
+
+    profile: str
+    reg_number: str
+    path: str  # the profile file; empty for a card sent before it was kept
+    title: str
+    verdict: str | None
+
+
 class MonitorState:
     def __init__(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -74,6 +85,10 @@ class MonitorState:
             columns = {row[1] for row in self._db.execute("PRAGMA table_info(checked)")}
             if "period_start" not in columns:  # a state file from before the day's start was kept
                 self._db.execute("ALTER TABLE checked ADD COLUMN period_start TEXT")
+            columns = {row[1] for row in self._db.execute("PRAGMA table_info(messages)")}
+            for column in ("path", "title"):  # the profile file and the title, for learning from "Не моё"
+                if column not in columns:
+                    self._db.execute(f"ALTER TABLE messages ADD COLUMN {column} TEXT")
 
     def __enter__(self) -> MonitorState:
         return self
@@ -124,13 +139,28 @@ class MonitorState:
 
     # Cards and the presses of their buttons.
 
-    def record_message(self, chat: str, message_id: int, profile: str, reg_number: str) -> None:
+    def record_message(self, chat: str, message_id: int, profile: str, reg_number: str, path: str = "",
+                       title: str = "") -> None:
         with self._db:
             self._db.execute(
-                "INSERT OR REPLACE INTO messages (chat, message_id, profile, reg_number, sent_at)"
-                " VALUES (?, ?, ?, ?, ?)",
-                (chat, message_id, profile, reg_number, _now()),
+                "INSERT OR REPLACE INTO messages (chat, message_id, profile, reg_number, sent_at, path, title)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (chat, message_id, profile, reg_number, _now(), path, title),
             )
+
+    def card(self, chat: str, message_id: int) -> Card | None:
+        row = self._db.execute(
+            "SELECT profile, reg_number, COALESCE(path, ''), COALESCE(title, ''), verdict FROM messages"
+            " WHERE chat = ? AND message_id = ?", (chat, message_id),
+        ).fetchone()
+        return Card(*row) if row else None
+
+    def taken_titles(self, profile: str) -> list[str]:
+        """The titles of the profile's notices marked "Беру": words they have are not offered as minus words."""
+        rows = self._db.execute(
+            "SELECT title FROM messages WHERE profile = ? AND verdict = 'take' AND title IS NOT NULL", (profile,)
+        )
+        return [row[0] for row in rows]
 
     def record_feedback(self, chat: str, message_id: int, reg_number: str, verdict: str, at: datetime) -> str:
         """Keep the latest press under a card; return its profile ("" for a card sent before buttons were kept)."""
@@ -294,7 +324,9 @@ def _report(
                                           feedback_buttons(number, item.notice.url))
             state.mark_reported(name, [number])
             if message_id:
-                state.record_message(chat, message_id, name, number)
+                # The bot runs as a process of its own, maybe from another folder: the path must not be relative.
+                path = str(Path(outcome.profile.path).resolve()) if outcome.profile.path else ""
+                state.record_message(chat, message_id, name, number, path, item.notice.title)
             outcome.sent += 1
         rest = fresh[MAX_MESSAGES:]
         if rest:

@@ -23,6 +23,7 @@ class FakeTelegram:
     def __init__(self, *rounds):
         self.rounds = list(rounds)
         self.offsets, self.sent, self.answers, self.edits = [], [], [], []
+        self.markups, self.texts = [], []
 
     def updates(self, offset, timeout):
         self.offsets.append(offset)
@@ -33,7 +34,11 @@ class FakeTelegram:
 
     def send_message(self, chat, text, buttons=None):
         self.sent.append((chat, text))
+        self.markups.append(buttons)
         return len(self.sent)
+
+    def edit_message(self, chat, message_id, text, buttons=None):
+        self.texts.append((chat, message_id, text, buttons))
 
     def answer_callback(self, callback_id, text=""):
         self.answers.append((callback_id, text))
@@ -238,3 +243,69 @@ def test_watchdog_ignores_a_bot_switched_off_with_monitoring(state):
     watchdog = Watchdog(state, enabled=False)
     watchdog.run()
     assert (watchdog.starts, watchdog.told) == (0, [])
+
+
+
+LEARNING_PROFILE = """# Разработка: комментарий остаётся
+name = "Разработка"
+regions = ["72"]
+keywords = ["информационная система"]
+minus = []
+"""
+JUNK = "Оказание услуг по адаптации и сопровождению экземпляров Систем КонсультантПлюс"
+
+
+@pytest.fixture
+def card(state, tmp_path):
+    path = tmp_path / "Разработка.toml"
+    path.write_text(LEARNING_PROFILE, encoding="utf-8")
+    state.record_message(OWNER, 7, "Разработка", "123", str(path), JUNK)
+    return path
+
+
+def tap(update_id, data, message_id, chat=OWNER):
+    message = {"message_id": message_id, "chat": {"id": int(chat)}}
+    return {"update_id": update_id, "callback_query": {"id": f"cb{update_id}", "data": data, "message": message}}
+
+
+def test_not_mine_offers_what_to_exclude_and_a_tap_changes_the_profile(state, card):
+    telegram = FakeTelegram([press(1, "skip:123")])
+    listen(state, telegram)
+    (chat, offer), markup = telegram.sent[0], telegram.markups[0]
+    assert chat == OWNER and offer.startswith("Не присылать похожие в «Разработка»?")
+    buttons = [row[0] for row in markup["inline_keyboard"]]
+    assert buttons[0] == {"text": "Фильтр «Справочные системы»", "callback_data": "lf:7:legal_systems"}
+    assert {"text": "Минус-слово «адаптация»", "callback_data": "lm:7:адаптация"} in buttons
+
+    telegram = FakeTelegram([tap(2, "lf:7:legal_systems", message_id=8)])
+    listen(state, telegram)
+    from zkparser.profiles import load_profile
+
+    assert load_profile(card).filters == ("legal_systems",)
+    assert "# Разработка: комментарий остаётся" in card.read_text(encoding="utf-8")
+    (_, edited, text, undo), = telegram.texts
+    assert edited == 8 and text == ("Готово: фильтр «Справочные системы» — в профиле «Разработка». Закупки со словами "
+                                    "этого фильтра в названии больше не придут.")
+    assert undo == {"inline_keyboard": [[{"text": "Отменить", "callback_data": "uf:7:legal_systems"}]]}
+
+    telegram = FakeTelegram([tap(3, "uf:7:legal_systems", message_id=8)])
+    listen(state, telegram)
+    assert load_profile(card).filters == ()
+    assert telegram.texts[0][2].startswith("Отменено: фильтр «Справочные системы» убрано")
+
+
+def test_a_client_chat_and_a_second_press_get_no_offer(state, card):
+    state.record_message(CLIENT, 9, "Разработка", "123", str(card), JUNK)
+    telegram = FakeTelegram([press(1, "skip:123", chat=CLIENT, message_id=9)])
+    listen(state, telegram)
+    assert telegram.sent == []
+    telegram = FakeTelegram([press(2, "skip:123")], [press(3, "skip:123")])
+    listen(state, telegram)
+    assert len(telegram.sent) == 1
+
+
+def test_a_tap_from_a_client_chat_changes_nothing(state, card):
+    telegram = FakeTelegram([tap(1, "lm:7:адаптация", message_id=8, chat=CLIENT)])
+    listen(state, telegram)
+    assert card.read_text(encoding="utf-8") == LEARNING_PROFILE
+    assert telegram.answers == [("cb1", "Профиль этой закупки не найден")]

@@ -13,18 +13,25 @@ monitoring is on (scheduler.py) and keeps the service up:
 * a monitoring check that fails — one warning when it starts failing and one when checks are back (``report_check``).
 
 Technical messages go to the owner's chat (TELEGRAM_CHAT_ID) only, never to clients' chats.
+
+A "Не моё" in the owner's chat also teaches the profile (learn.py): the bot offers a junk filter or a minus word that
+would have kept the notice away, and a tap adds it to the profile file — with "Отменить" right there.
 """
 
 from __future__ import annotations
 
+import html
 import logging
 import time
 from collections.abc import Callable
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 from .display import plural
+from .learn import FILTER, MINUS, Suggestion, apply, suggest
 from .monitor import FeedbackStats, MonitorState
+from .profiles import ProfileError, load_profile
 from .scheduler import MOSCOW
 from .telegram import SKIP, TAKE, TelegramBot, TelegramError, feedback_buttons
 
@@ -39,6 +46,7 @@ STALE = timedelta(minutes=10)  # a heartbeat older than this means the bot is no
 BOT_START_WAIT = 30  # seconds the watchdog gives a restarted bot to report in
 BOT_INCIDENT, CHECKS_INCIDENT = "bot", "checks"
 CHAT_INCIDENT = "chat:"  # + chat id: notices could not be delivered to a client's chat
+LEARN, UNDO = "l", "u"  # + MINUS or FILTER: "lm:<card>:<word>" adds a minus word, "uf:<card>:<filter>" takes it away
 
 Clock = Callable[[], datetime]
 Notify = Callable[[str], None]
@@ -148,9 +156,13 @@ class Listener:
         message = query.get("message") or {}
         chat = str((message.get("chat") or {}).get("id", ""))
         message_id = message.get("message_id")
+        if len(action) == 2 and action[0] in (LEARN, UNDO) and action[1] in (MINUS, FILTER) and chat and message_id:
+            self._learn(query, chat, message_id, action, reg_number)
+            return
         if action not in (TAKE, SKIP) or not chat or not message_id:
             self.bot.answer_callback(query["id"])
             return
+        card = self.state.card(chat, message_id)
         profile = self.state.record_feedback(chat, message_id, reg_number, action, self.clock())
         log.info("«%s» %s: %s", profile, reg_number, "беру" if action == TAKE else "не моё")
         self.bot.answer_callback(query["id"], "Отмечено: беру" if action == TAKE else "Отмечено: не моё")
@@ -159,6 +171,55 @@ class Listener:
         except TelegramError as error:
             if "not modified" not in str(error):  # the same button pressed twice
                 raise
+        if action == SKIP and chat == self.owner and card and card.verdict != SKIP:
+            self._offer(chat, message_id)
+
+    def _offer(self, chat: str, card_id: int) -> None:
+        """After "Не моё": what to add to the profile so that such notices stop coming."""
+        card = self.state.card(chat, card_id)
+        if not card or not card.path or not card.title:
+            return
+        try:
+            profile = load_profile(Path(card.path))
+            offers = suggest(profile, card.title, self.state.taken_titles(card.profile))
+        except ProfileError as error:
+            log.warning("Подсказка после «Не моё» не предложена: %s", error)
+            return
+        if not offers:
+            return
+        buttons = {"inline_keyboard": [
+            [{"text": offer.label[:1].upper() + offer.label[1:],
+              "callback_data": f"{LEARN}{offer.kind}:{card_id}:{offer.value}"}]
+            for offer in offers
+        ]}
+        self.bot.send_message(chat, f"Не присылать похожие в «{html.escape(profile.name)}»? Выберите, что "
+                                    "исключить, — добавлю в профиль:", buttons)
+
+    def _learn(self, query: dict[str, Any], chat: str, message_id: int, action: str, rest: str) -> None:
+        """A tap on an offer: the minus word or the filter goes into the profile file, or out of it."""
+        card_id, _, value = rest.partition(":")
+        card = self.state.card(chat, int(card_id)) if card_id.isdigit() else None
+        if chat != self.owner or not card or not card.path:
+            self.bot.answer_callback(query["id"], "Профиль этой закупки не найден")
+            return
+        offer, undo = Suggestion(action[1], value), action[0] == UNDO
+        try:
+            apply(Path(card.path), offer, undo=undo)
+        except (ProfileError, OSError) as error:
+            log.warning("Профиль «%s» не изменён: %s", card.profile, error)
+            self.bot.answer_callback(query["id"], "Не получилось изменить профиль — подробности в bot.log")
+            return
+        name = html.escape(card.profile)
+        log.info("«%s»: %s %s", card.profile, "убрано" if undo else "добавлено", offer.label)
+        if undo:
+            self.bot.edit_message(chat, message_id, f"Отменено: {html.escape(offer.label)} убрано из профиля «{name}».")
+            self.bot.answer_callback(query["id"], "Отменено")
+            return
+        again = {"inline_keyboard": [[{"text": "Отменить", "callback_data": f"{UNDO}{offer.kind}:{card_id}:{value}"}]]}
+        words = "с этим словом" if offer.kind == MINUS else "со словами этого фильтра"
+        self.bot.edit_message(chat, message_id, f"Готово: {html.escape(offer.label)} — в профиле «{name}». Закупки "
+                                                f"{words} в названии больше не придут.", again)
+        self.bot.answer_callback(query["id"], "Добавлено в профиль")
 
     def _message(self, message: dict[str, Any]) -> None:
         chat = str((message.get("chat") or {}).get("id", ""))

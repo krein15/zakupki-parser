@@ -130,6 +130,12 @@ class TelegramBot:
     def edit_buttons(self, chat: str, message_id: int, buttons: dict) -> None:
         self._call("editMessageReplyMarkup", chat_id=chat, message_id=message_id, reply_markup=buttons)
 
+    def edit_message(self, chat: str, message_id: int, text: str, buttons: dict | None = None) -> None:
+        """Replace a message's text and buttons; without ``buttons`` the old ones go."""
+        self._call("editMessageText", chat_id=chat, message_id=message_id, text=text[:MESSAGE_LIMIT],
+                   parse_mode="HTML", link_preview_options={"is_disabled": True},
+                   reply_markup=buttons or {"inline_keyboard": []})
+
     def send_document(self, chat: str, path: Path, caption: str = "") -> None:
         self._wait_turn(chat)
         with path.open("rb") as file:
